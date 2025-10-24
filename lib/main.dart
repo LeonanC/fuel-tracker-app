@@ -9,7 +9,7 @@ import 'package:fuel_tracker_app/provider/theme_provider.dart';
 import 'package:fuel_tracker_app/provider/unit_provider.dart';
 import 'package:fuel_tracker_app/screens/main_navigation_screen.dart';
 import 'package:fuel_tracker_app/services/notification_service.dart';
-import 'package:fuel_tracker_app/theme/app_theme.dart';
+import 'package:fuel_tracker_app/services/update_service.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -30,9 +30,18 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // This widget is the root of your application.
+  final UpdateService _updateService = UpdateService();
+
+  Future<void> _checkForUpdates(BuildContext context) async {
+    final update = await _updateService.checkForUpdates();
+    if (update != null && mounted) {
+      _updateService.showUpdateDialog(context, update);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: widget.languageProvider),
@@ -47,24 +56,26 @@ class _MyAppState extends State<MyApp> {
         builder: (context, themeProvider, child) {
           return Consumer<LanguageProvider>(
             builder: (context, languageProvider, child) {
-              return MaterialApp(
-                debugShowCheckedModeBanner: false,
-                title: 'Controle de Combustível',
-                themeMode: themeProvider.themeMode,
-                theme: ThemeData.light(),
-                darkTheme: ThemeData.dark(),
-                locale: languageProvider.locale,
-                localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
-                supportedLocales: const [Locale('pt'), Locale('en'), Locale('es'), Locale('fr')],
-                home: const MainNavigationScreen(),
-                builder: (context, child) {
-                  final mediaQuery = MediaQuery.of(context);
-                  return MediaQuery(
-                    data: mediaQuery.copyWith(
-                      textScaleFactor: themeProvider.fontScale),
-                    child: child!,
-                  );
-                },
+              return MediaQuery(
+                data: mediaQuery.copyWith(textScaleFactor: themeProvider.fontScale),
+                child: MaterialApp(
+                  debugShowCheckedModeBanner: false,
+                  title: 'Controle de Combustível',
+                  themeMode: themeProvider.themeMode,
+                  theme: ThemeData.light(),
+                  darkTheme: ThemeData.dark(),
+                  locale: languageProvider.locale,
+                  localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
+                  supportedLocales: const [Locale('pt'), Locale('en'), Locale('es'), Locale('fr')],
+                  home: Builder(
+                    builder: (innerContext) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _checkForUpdates(innerContext);
+                      });
+                      return const MainNavigationScreen();
+                    },
+                  ),
+                ),
               );
             },
           );

@@ -6,6 +6,7 @@ import 'package:fuel_tracker_app/provider/currency_provider.dart';
 import 'package:fuel_tracker_app/provider/fuel_entry_provider.dart';
 import 'package:fuel_tracker_app/provider/language_provider.dart';
 import 'package:fuel_tracker_app/provider/unit_provider.dart';
+import 'package:fuel_tracker_app/screens/about_screen.dart';
 import 'package:fuel_tracker_app/screens/fuel_entry_screen.dart';
 import 'package:fuel_tracker_app/screens/fuel_edit_entry_screen.dart';
 import 'package:fuel_tracker_app/services/application.dart';
@@ -175,61 +176,75 @@ class _FuelListScreenState extends State<FuelListScreen> {
     final fuelAlertCard = _buildFuelAlertCard(context, entries, overallConsumption);
     final unitProvider = context.watch<UnitProvider>();
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(context.tr(TranslationKeys.listScreenAppBarTitle)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        actions: [
-          IconButton(
-            icon: Icon(RemixIcons.refresh_line),
-            tooltip: context.tr(TranslationKeys.listScreenTooltipRefresh),
-            onPressed: () async {
-              context.read<FuelEntryProvider>().loadFuelEntries();
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr(TranslationKeys.listScreenSnackbarRefreshing))));
-            },
-          ),
-        ],
-      ),
-      body: fuelEntryProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                _buildOverallConsumptionCard(context, overallConsumption),
-                if (fuelAlertCard != null) fuelAlertCard,
-                Expanded(
-                  child: fuelEntryProvider.fuelEntries.isEmpty
-                      ? Center(child: Text('Ainda não Abasteceu'))
-                      : ListView.builder(
-                          itemCount: fuelEntryProvider.fuelEntries.length,
-                          itemBuilder: (context, index) {
-                            final entry = fuelEntryProvider.fuelEntries[index];
-                            final FuelEntry? previousEntryMap = (index + 1 < entries.length) ? entries[index + 1] : null;
-
-                            final FuelEntry currentEntry = FuelEntry.fromMap(entry.toMap());
-
-                            double consumptionForThisPeriod = 0.0;
-
-                            if (previousEntryMap != null && previousEntryMap.tanqueCheio == 1) {
-                              final FuelEntry previousEntry = FuelEntry.fromMap(previousEntryMap.toMap());
-                              consumptionForThisPeriod = currentEntry.calculateConsumption(previousEntry);
-                            }
-
-                            return _buildFuelEntryListItem(entry, context, consumptionForThisPeriod);
-                          },
-                        ),
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, child) {
+        return Directionality(
+          textDirection: languageProvider.textDirection,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              title: Text(context.tr(TranslationKeys.listScreenAppBarTitle)),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              centerTitle: false,
+              actions: [
+                IconButton(
+                  icon: Icon(RemixIcons.refresh_line),
+                  tooltip: context.tr(TranslationKeys.listScreenTooltipRefresh),
+                  onPressed: () async {
+                    context.read<FuelEntryProvider>().loadFuelEntries();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr(TranslationKeys.listScreenSnackbarRefreshing))));
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.info_outline),
+                  tooltip: context.tr(TranslationKeys.aboutTitle),
+                  onPressed: () async {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
+                  },
                 ),
               ],
             ),
-
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_fuelentry_list',
-        onPressed: () => _navigateAndSaveEntry(context),
-        child: Icon(RemixIcons.gas_station_line, color: Colors.white),
-        backgroundColor: Theme.of(context).primaryColor,
-      ),
+            body: fuelEntryProvider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                    children: [
+                      _buildOverallConsumptionCard(context, overallConsumption),
+                      if (fuelAlertCard != null) fuelAlertCard,
+                      Expanded(
+                        child: fuelEntryProvider.fuelEntries.isEmpty
+                            ? Center(child: Text('Ainda não Abasteceu'))
+                            : ListView.builder(
+                                itemCount: fuelEntryProvider.fuelEntries.length,
+                                itemBuilder: (context, index) {
+                                  final entry = fuelEntryProvider.fuelEntries[index];
+                                  final FuelEntry? previousEntryMap = (index + 1 < entries.length) ? entries[index + 1] : null;
+          
+                                  final FuelEntry currentEntry = FuelEntry.fromMap(entry.toMap());
+          
+                                  double consumptionForThisPeriod = 0.0;
+          
+                                  if (previousEntryMap != null && previousEntryMap.tanqueCheio == 1) {
+                                    final FuelEntry previousEntry = FuelEntry.fromMap(previousEntryMap.toMap());
+                                    consumptionForThisPeriod = currentEntry.calculateConsumption(previousEntry);
+                                  }
+          
+                                  return _buildFuelEntryListItem(entry, context, consumptionForThisPeriod);
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
+          
+            floatingActionButton: FloatingActionButton(
+              heroTag: 'fab_fuelentry_list',
+              onPressed: () => _navigateAndSaveEntry(context),
+              child: Icon(RemixIcons.gas_station_line, color: Colors.white),
+              backgroundColor: Theme.of(context).primaryColor,
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -312,9 +327,11 @@ class _FuelListScreenState extends State<FuelListScreen> {
             '$currencySymbol ${entry.totalPrice!.toStringAsFixed(2)}',
             style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.secondary),
           ),
-          onTap: (){
+          onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => FuelEntryScreen(entry: entry, lastOdometer: entry.quilometragem))
+              MaterialPageRoute(
+                builder: (context) => FuelEntryScreen(entry: entry, lastOdometer: entry.quilometragem),
+              ),
             );
           },
         ),

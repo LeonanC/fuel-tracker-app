@@ -21,18 +21,12 @@ class AppLocalizations {
   Locale get locale => _languageProvider.locale;
 
   static AppLocalizations of(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(
-      context,
-      listen: false,
-    );
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
     return AppLocalizations(languageProvider);
   }
 
   static AppLocalizations watch(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(
-      context,
-      listen: true,
-    );
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: true);
     return AppLocalizations(languageProvider);
   }
 
@@ -94,6 +88,19 @@ class TranslationKeys {
   static const String app = 'app';
   static const String appTitle = 'app.title';
   static const String appSubtitle = 'app.subtitle';
+
+  // About Screen
+  static const String aboutTitle = 'about.title';
+  static const String aboutVersion = 'about.version';
+  static const String aboutTagline = 'about.tagline';
+  static const String aboutDevelopedBy = 'about.developed_by';
+  static const String aboutDeveloper = 'about.developer';
+  static const String aboutDescription = 'about.description';
+  static const String aboutTelegramChannel = 'about.telegram_channel';
+  static const String aboutGithubSource = 'about.github_source';
+  static const String aboutPrivacyPolicy = 'about.privacy_policy';
+  static const String aboutTermsOfService = 'about.terms_of_service';
+  static const String aboutCopyright = 'about.copyright';
 
   // Navigation
   static const String navigation = 'navigation';
@@ -195,7 +202,7 @@ class TranslationKeys {
   static const String backupRestoreLoadingImport = 'backup_restore.loading_import';
   static const String backupRestoreDbNotReady = 'backup_restore.db_not_ready';
   static const String backupRestoreErrorInitializeDb = 'backup_restore.error_initialize_db';
-  
+
   static const String toolsScreen = 'tools_screen';
   static const String toolsScreenAppBarTitle = 'tools_screen.app_bar_title';
   static const String toolsScreenAppearanceTitle = 'tools_screen.appearance_title';
@@ -244,7 +251,7 @@ class TranslationKeys {
   static const String maintenanceAlertByDate = "maintenance.alert_by_date";
   static const String maintenanceSnackbarAdded = "maintenance.snackbar_added";
   static const String emptyStateMaintenanceMessage = "maintenance.empty_message";
-  
+
   static const String maintenanceFormServiceType = "maintenance.form_service_type";
   static const String maintenanceFormCost = "maintenance.form_cost";
   static const String maintenanceFormNotes = "maintenance.form_notes";
@@ -272,4 +279,25 @@ class TranslationKeys {
   static const String fuelTypeGasolinePremium = "maintenance.gasoline_premium";
   static const String fuelTypeOther = "maintenance.other";
 
+  static const String updateServiceUpdateAvailable = "update_service.update_available";
+  static const String updateServiceCurrentVersion = "update_service.current_version";
+  static const String updateServiceNewVersion = "update_service.new_version";
+  static const String updateServiceLater = "update_service.later";
+  static const String updateServiceDownload = "update_service.download";
+
+  static const String errorCouldNotOpenUrl = 'error.could_not_open_url';
+}
+
+class TrHelper {
+  static String errorUrlFormat(BuildContext context, String url){
+    return context.tr(
+      TranslationKeys.errorCouldNotOpenUrl,
+      parameters: {'url': url},
+    );
+  }
+
+  static String versionFormat(BuildContext context, String version, {bool isNew = false}) {
+    final key = isNew ? 'tools.new_version': 'tools.current_version';
+    return context.tr(key, parameters: {'version': version});
+  }
 }

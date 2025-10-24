@@ -191,6 +191,29 @@
         "service_tire_rotation": "Rodízio de Pneus",
         "service_brake_pads": "Pastilhas de Freio",
         "service_general_inspection": "Inspeção Geral"
+    },
+    "update_service": {
+        "update_available": "Atualização Disponível!",
+        "current_version": "Sua Versão: {current}",
+        "new_version": "Nova Versão: {version}",
+        "later": "Mais Tarde",
+        "download": "Baixar Agora"
+    },
+    "about": {
+        "title": "Sobre",
+        "version": "Versão {version}",
+        "tagline": "Controle Inteligente de Abastecimento e Custos",
+        "developed_by": "Desenvolvido por",
+        "developer": "Leonan Carvalho",
+        "description": "O Fuel Tracker App é o seu assistente pessoal para monitorar o consumo, os custos e a eficiência do combustivel do seu veículo. Registre abastecimentos, calcule a média de km/L (ou MPG) e gerencie despesas de forma transparente e fácil. Feito para motoristas que valorizam economia e controle.",
+        "telegram_channel": "Canal de Notícias",
+        "github_source": "Código Fonte no GitHub",
+        "privacy_policy": "Pólitica de Privacidade",
+        "terms_of_service": "Termos de Serviço",
+        "copyright": "© 2025 Fuel Tracker App"
+    },
+    "errors": {
+        "could_not_open_url": "Não foi possível abrir {url}"
     }
 
 }

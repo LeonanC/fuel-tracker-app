@@ -10,15 +10,23 @@ class AppTheme {
   static const Color errorRed = Color(0xFFFF5252);
   static const Color textLight = Color(0xFFFFFFFF);
   static const Color textGrey = Color(0xFFAAAAAA);
+  static const Color textDark = Color(0xFF1F1F1F);
 
   // Cores de Ação
   static const Color primaryFuelColor = Color(0xFF00796B);
   static const Color primaryFuelAccent = Color(0xFFFF1207);
   static const Color efficiencyGreen = Color(0xFF34A853);
 
+  static const Color surfaceLight = Color(0xFFF7F7F7);
+  static const Color surfaceLightContainer = Color(0xFFFFFFFF);
+
   static const Color primaryDark = surfaceDark;
   static const Color secondaryDark = surfaceContainer;
   static const Color cardDark = surfaceCard;
+
+  static const Color primaryLight = primaryFuelColor;
+  static const Color secondaryLight = surfaceLight;
+  static const Color cardLight = surfaceLightContainer;
 
   static const LinearGradient fuelGradient = LinearGradient(
     begin: Alignment.topLeft,
