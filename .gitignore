@@ -1,0 +1,47 @@
+Arquivos e diretórios de build gerados pelo Flutter
+
+/ios/Flutter/App.framework
+/ios/Flutter/App.podspec
+/ios/Flutter/engine
+/ios/Flutter/Flutter.framework
+/ios/Flutter/flutter_assets
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+
+/android/app/build
+/android/build
+/build
+.dart_tool/
+
+Exclui pacotes de dependências
+
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+
+Arquivos específicos do editor (VS Code, Android Studio, etc.)
+
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+Chaves de depuração e outros segredos (se houver)
+
+Por segurança, descomente a linha abaixo se você tiver chaves ou arquivos sensíveis
+
+*.keys
+
+*.json
+
+.env
+
+Excluir binários nativos gerados (Windows, Linux, macOS)
+
+/linux/flutter/generated
+/windows/flutter/generated
+/macos/Flutter/GeneratedPluginRegistrant.swift
+
+Configuração de testes de integração (se houver)
+
+/integration_test/
