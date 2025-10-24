@@ -32,7 +32,7 @@ Por segurança, descomente a linha abaixo se você tiver chaves ou arquivos sens
 
 *.keys
 
-*.json
+.json
 
 .env
 
