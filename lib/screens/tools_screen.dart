@@ -34,10 +34,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   Future<void> _checkForUpdates() async {
     final updateService = UpdateService();
-    final update = await updateService.checkForUpdates();
-    setState(() {
-      _update = update;
-    });
+    await updateService.checkAppUpdate(context);
   }
 
   Future<void> _launchUrl(String url) async {

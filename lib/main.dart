@@ -33,10 +33,7 @@ class _MyAppState extends State<MyApp> {
   final UpdateService _updateService = UpdateService();
 
   Future<void> _checkForUpdates(BuildContext context) async {
-    final update = await _updateService.checkForUpdates();
-    if (update != null && mounted) {
-      _updateService.showUpdateDialog(context, update);
-    }
+    await _updateService.checkAppUpdate(context);
   }
 
   @override

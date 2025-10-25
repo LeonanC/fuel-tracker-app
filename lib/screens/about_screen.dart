@@ -41,28 +41,19 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  Future<void> _checkForUpdates(BuildContext context) async {
-    if (_isCheckingForUpdate) return;
+  Future<void> _checkForUpdate() async {
+    if(_isCheckingForUpdate) return;
     setState(() {
       _isCheckingForUpdate = true;
     });
 
-    try {
-      final update = await _updateService.checkForUpdates();
-      if (mounted) {
-        if (update != null) {
-          _updateService.showUpdateDialog(context, update);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr(TranslationKeys.updateServiceNoUpdate)), duration: const Duration(seconds: 2)));
-        }
-      }
-    } catch (e) {
-      debugPrint('Manual update check error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr(TranslationKeys.updateServiceCheckFailed)), duration: const Duration(seconds: 3)));
-      }
-    } finally {
-      if (mounted) {
+    try{
+      await _updateService.checkAppUpdate(context);
+
+    }catch(e){
+      debugPrint('Erro durante a checagem de atualização: $e');
+    }finally{
+      if(mounted){
         setState(() {
           _isCheckingForUpdate = false;
         });
@@ -131,7 +122,7 @@ class _AboutScreenState extends State<AboutScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _isCheckingForUpdate ? null : () => _checkForUpdates(context),
+                onPressed: _isCheckingForUpdate ? null : () => _checkForUpdate(),
                 icon: _isCheckingForUpdate ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.cloud_download),
                 label: Text(context.tr(TranslationKeys.updateServiceCheckForUpdates)),
                 style: ElevatedButton.styleFrom(
