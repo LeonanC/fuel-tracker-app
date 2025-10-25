@@ -6,7 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class UpdateService {
-  static const String updateUrl = 'https://github.com/LeonanC/fuel-tracker-app/blob/main/config/update.json';
+  static const String updateUrl = 'https://raw.githubusercontent.com/LeonanC/fuel-tracker-app/main/config/update.json';
   Future<AppUpdate?> checkForUpdates() async {
     try {
       final response = await http.get(Uri.parse(updateUrl));
@@ -24,6 +24,8 @@ class UpdateService {
   }
 
   void showUpdateDialog(BuildContext context, AppUpdate update) {
+    final versionLabel = context.tr(TranslationKeys.updateServiceNewVersion);
+    final fullVersionText = '$versionLabel ${update.version}';
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -34,7 +36,7 @@ class UpdateService {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(context.tr(TranslationKeys.updateServiceNewVersion, parameters: {'version': update.version})),
+              Text(fullVersionText),
               const SizedBox(height: 8),
               Text(update.messText, style: Theme.of(context).textTheme.bodyMedium),
             ],

@@ -91,7 +91,8 @@ class TranslationKeys {
 
   // About Screen
   static const String aboutTitle = 'about.title';
-  static const String aboutVersion = 'about.version';
+  static const String aboutCurrentVersion = 'about.current_version';
+  static const String aboutNewversion = 'about.new_version';
   static const String aboutTagline = 'about.tagline';
   static const String aboutDevelopedBy = 'about.developed_by';
   static const String aboutDeveloper = 'about.developer';
@@ -280,10 +281,13 @@ class TranslationKeys {
   static const String fuelTypeOther = "maintenance.other";
 
   static const String updateServiceUpdateAvailable = "update_service.update_available";
+  static const String updateServiceCheckForUpdates = "update_service.check_for_updates";
   static const String updateServiceCurrentVersion = "update_service.current_version";
   static const String updateServiceNewVersion = "update_service.new_version";
   static const String updateServiceLater = "update_service.later";
   static const String updateServiceDownload = "update_service.download";
+  static const String updateServiceNoUpdate = "update_service.service_no_update";
+  static const String updateServiceCheckFailed = "update_service.check_failed";
 
   static const String errorCouldNotOpenUrl = 'error.could_not_open_url';
 }
@@ -297,7 +301,7 @@ class TrHelper {
   }
 
   static String versionFormat(BuildContext context, String version, {bool isNew = false}) {
-    final key = isNew ? 'tools.new_version': 'tools.current_version';
+    final key = isNew ? 'tools_screen.new_version': 'tools_screen.current_version';
     return context.tr(key, parameters: {'version': version});
   }
 }

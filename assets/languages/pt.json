@@ -194,14 +194,19 @@
     },
     "update_service": {
         "update_available": "Atualização Disponível!",
-        "current_version": "Sua Versão: {current}",
-        "new_version": "Nova Versão: {version}",
+        "check_for_updates": "Verificar Atualizações",
+        "current_version": "Sua Versão: ",
+        "new_version": "Nova Versão: ",
         "later": "Mais Tarde",
-        "download": "Baixar Agora"
+        "download": "Baixar Agora",
+        "service_no_update": "Nenhuma atualização encontrada.",
+        "check_failed": "Falha ao verificar atualizações."
     },
     "about": {
         "title": "Sobre",
-        "version": "Versão {version}",
+        "new_version": "Nova Versão: ",
+        "current_version": "Versão atual: ",
+        "update_now": "Atualizar Agora",
         "tagline": "Controle Inteligente de Abastecimento e Custos",
         "developed_by": "Desenvolvido por",
         "developer": "Leonan Carvalho",

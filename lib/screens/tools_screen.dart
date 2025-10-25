@@ -219,6 +219,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(height: 4),
+                      Text(
+                        TrHelper.versionFormat(context, update.version, isNew: true),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                      )
                     ],
                   ),
                 ),
