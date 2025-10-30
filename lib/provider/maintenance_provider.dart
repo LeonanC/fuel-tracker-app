@@ -7,8 +7,15 @@ class MaintenanceProvider with ChangeNotifier {
   List<MaintenanceEntry> _maintenanceEntries = [];
   bool _isLoading = false;
 
+  double? _lastOdometer;
+
   List<MaintenanceEntry> get maintenanceEntries => _maintenanceEntries;
   bool get isLoading => _isLoading;
+  double? get lastOdometer => _lastOdometer;
+
+  MaintenanceProvider(){
+    loadMaintenanceEntries();
+  }
 
   Future<void> loadMaintenanceEntries() async {
     _isLoading = true;
@@ -16,6 +23,7 @@ class MaintenanceProvider with ChangeNotifier {
 
     final List<Map<String, dynamic>> maps = await _db.getAllMaintenanceEntries();
     _maintenanceEntries = maps.map((map) => MaintenanceEntry.fromMap(map)).toList();
+    _lastOdometer = await _db.getLastOdometer();
     _maintenanceEntries.sort((a, b) => b.dataServico.compareTo(a.dataServico));
     _isLoading = false;
     notifyListeners();

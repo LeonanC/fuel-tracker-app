@@ -3,7 +3,6 @@ import 'package:fuel_tracker_app/models/app_language.dart';
 import 'package:fuel_tracker_app/provider/language_provider.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 
 class LanguageSettingsScreen extends StatefulWidget {
@@ -39,47 +38,44 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    final primaryTextColor = theme.colorScheme.onSurface;
+    final secondaryTextColor = theme.colorScheme.onSurfaceVariant;
+    final cardColor = theme.cardTheme.color ?? theme.colorScheme.surfaceContainerHigh;
+    final scaffoldBackgroundColor = theme.scaffoldBackgroundColor;
+
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, child) {
         final isRtlLanguage =
             languageProvider.currentLanguage.code == 'en' ||
             languageProvider.currentLanguage.code == 'pt';
+
         final titleStyle = isRtlLanguage
-            ? GoogleFonts.vazirmatn(
-                color: AppTheme.textLight,
-                fontWeight: FontWeight.bold,
-              )
-            : const TextStyle(
-                color: AppTheme.textLight,
-                fontWeight: FontWeight.bold,
-              );
+            ? GoogleFonts.vazirmatn(color: primaryTextColor, fontWeight: FontWeight.bold)
+            : theme.appBarTheme.titleTextStyle?.copyWith(color: primaryTextColor);
         final subtitleStyle = isRtlLanguage
-            ? GoogleFonts.vazirmatn(fontSize: 16, color: AppTheme.textGrey)
-            : const TextStyle(fontSize: 16, color: AppTheme.textLight);
+            ? GoogleFonts.vazirmatn(fontSize: 16, color: secondaryTextColor)
+            : theme.textTheme.titleMedium?.copyWith(color: secondaryTextColor);
+            
         final sectionTextStyle = isRtlLanguage
-            ? GoogleFonts.vazirmatn(
-                fontSize: 18,
-                color: AppTheme.textLight,
-                fontWeight: FontWeight.bold,
-              )
-            : const TextStyle(
-                fontSize: 18,
-                color: AppTheme.textLight,
-                fontWeight: FontWeight.bold,
-              );
+            ? GoogleFonts.vazirmatn(fontSize: 18, color: primaryTextColor, fontWeight: FontWeight.bold)
+            : theme.textTheme.titleLarge?.copyWith(fontSize: 18, color: primaryTextColor, fontWeight: FontWeight.bold);
 
         return Directionality(
           textDirection: languageProvider.textDirection,
           child: Scaffold(
-            backgroundColor: AppTheme.primaryDark,
+            backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
             appBar: AppBar(
+              backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
               title: Text(
                 languageProvider.translate('language_settings.title'),
                 style: titleStyle,
               ),
               centerTitle: false,
-              elevation: 0,
-              iconTheme: const IconThemeData(color: AppTheme.textLight),
+              elevation: theme.appBarTheme.elevation,
+              iconTheme: theme.appBarTheme.iconTheme,
             ),
             body: FadeTransition(
               opacity: _fadeAnimation,
@@ -101,6 +97,9 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
                         _buildCurrentLanguageCard(
                           languageProvider,
                           isRtlLanguage,
+                          primaryTextColor,
+                          secondaryTextColor,
+                          cardColor,
                         ),
                       ],
                     ),
@@ -121,6 +120,8 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
                             child: _buildLanguageList(
                               languageProvider,
                               isRtlLanguage,
+                              primaryTextColor,
+                              secondaryTextColor,
                             ),
                           ),
                         ],
@@ -139,30 +140,34 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
   Widget _buildCurrentLanguageCard(
     LanguageProvider languageProvider,
     bool isRtlLanguage,
+    Color primaryTextColor,
+    Color secondaryTextColor,
+    Color cardColor,
   ) {
     final languageNameStyle = isRtlLanguage
         ? GoogleFonts.vazirmatn(
             fontSize: 18,
-            color: AppTheme.textLight,
+            color: primaryTextColor,
             fontWeight: FontWeight.bold,
           )
-        : const TextStyle(
+        : TextStyle(
             fontSize: 18,
-            color: AppTheme.textLight,
+            color: primaryTextColor,
             fontWeight: FontWeight.bold,
           );
     final languageCodeStyle = isRtlLanguage
-        ? GoogleFonts.vazirmatn(fontSize: 14, color: AppTheme.textGrey)
-        : const TextStyle(fontSize: 14, color: AppTheme.textGrey);
+        ? GoogleFonts.vazirmatn(fontSize: 14, color: secondaryTextColor)
+        : TextStyle(fontSize: 14, color: secondaryTextColor);
+
     final currentlanguageLabelStyle = isRtlLanguage
         ? GoogleFonts.vazirmatn(
             fontSize: 14,
-            color: AppTheme.textGrey,
+            color: secondaryTextColor,
             fontWeight: FontWeight.w500,
           )
-        : const TextStyle(
+        : TextStyle(
             fontSize: 14,
-            color: AppTheme.textGrey,
+            color: secondaryTextColor,
             fontWeight: FontWeight.w500,
           );
 
@@ -170,7 +175,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
       width: double.infinity,
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: AppTheme.primaryFuelColor.withValues(alpha: 0.1),
+        color: AppTheme.primaryFuelColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: AppTheme.primaryFuelColor.withValues(alpha: 0.3),
@@ -182,7 +187,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
         children: [
           Text(
             languageProvider.translate('language_settings.current_language'),
-            style: currentlanguageLabelStyle,
+            style: currentlanguageLabelStyle.copyWith(color: AppTheme.textLight),
           ),
           const SizedBox(height: 12),
           Row(
@@ -190,7 +195,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryFuelColor.withValues(alpha: 0.2),
+                  color: AppTheme.textLight.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -204,18 +209,18 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
                 children: [
                   Text(
                     languageProvider.currentLanguage.name,
-                    style: languageNameStyle,
+                    style: languageNameStyle.copyWith(color: AppTheme.textLight),
                   ),
                   Text(
                     languageProvider.currentLanguage.code.toUpperCase(),
-                    style: languageCodeStyle,
+                    style: languageCodeStyle.copyWith(color: AppTheme.textLight.withOpacity(0.8)),
                   ),
                 ],
               ),
               const Spacer(),
               Icon(
                 Icons.check_circle,
-                color: AppTheme.primaryFuelColor,
+                color: AppTheme.textLight,
                 size: 24,
               ),
             ],
@@ -228,6 +233,8 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
   Widget _buildLanguageList(
     LanguageProvider languageProvider,
     bool isRtlLanguage,
+    Color primaryTextColor,
+    Color cardColor,
   ) {
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
@@ -245,6 +252,8 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
             languageProvider,
             index,
             isRtlLanguage,
+            primaryTextColor,
+            cardColor,
           ),
         );
       },
@@ -257,27 +266,31 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
     LanguageProvider languageProvider,
     int index,
     bool isRtlLanguage,
+    Color primaryTextColor,
+    Color cardColor,
   ) {
+    final selectedColor = AppTheme.primaryFuelColor;
+
     final languageNameStyle = isRtlLanguage
         ? GoogleFonts.vazirmatn(
             fontSize: 18,
-            color: isSelected ? AppTheme.primaryFuelColor : AppTheme.textLight,
+            color: isSelected ? selectedColor : primaryTextColor,
             fontWeight: FontWeight.bold,
           )
         : TextStyle(
             fontSize: 18,
-            color: isSelected ? AppTheme.primaryFuelColor : AppTheme.textLight,
+            color: isSelected ? selectedColor : primaryTextColor,
             fontWeight: FontWeight.bold,
           );
     final languageCodeStyle = isRtlLanguage
         ? GoogleFonts.vazirmatn(
             fontSize: 12,
-            color: AppTheme.textGrey,
+            color: isSelected ? selectedColor.withValues(alpha: 0.8) : AppTheme.textGrey,
             fontWeight: FontWeight.w500,
           )
-        : const TextStyle(
+        : TextStyle(
             fontSize: 12,
-            color: AppTheme.textGrey,
+            color: isSelected ? selectedColor.withValues(alpha: 0.8) : AppTheme.textGrey,
             fontWeight: FontWeight.w500,
           );
     final directionStyle = isRtlLanguage
@@ -302,14 +315,15 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
             opacity: value,
             child: Card(
               color: isSelected
-                  ? AppTheme.primaryFuelColor.withValues(alpha: 0.1)
-                  : AppTheme.cardDark,
+                  ? selectedColor.withValues(alpha: 0.1)
+                  : cardColor,
+                  
               elevation: isSelected ? 8 : 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
                   color: isSelected
-                      ? AppTheme.primaryFuelColor.withValues(alpha: 0.5)
+                      ? selectedColor.withValues(alpha: 0.5)
                       : Colors.transparent,
                   width: 2,
                 ),
@@ -328,8 +342,8 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppTheme.primaryFuelColor.withValues(alpha: 0.2)
-                              : AppTheme.secondaryDark,
+                              ? selectedColor.withValues(alpha: 0.2)
+                              : Theme.of(context).colorScheme.surfaceContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -376,7 +390,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryFuelColor,
+                            color: selectedColor,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(

@@ -3,6 +3,7 @@ import 'package:fuel_tracker_app/models/maintenance_entry_model.dart';
 import 'package:fuel_tracker_app/provider/fuel_entry_provider.dart';
 import 'package:fuel_tracker_app/provider/maintenance_provider.dart';
 import 'package:fuel_tracker_app/screens/maintenance_entry_screen.dart';
+import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -26,11 +27,11 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
 
   void _navigateToAddEntry(BuildContext context) async {
     final MaintenanceProvider provider = context.read<MaintenanceProvider>();
-    final currentOdometer = context.read<FuelEntryProvider>().lastOdometer;
+    final currentOdometer = provider.lastOdometer;
 
     final entry = await Navigator.of(context).push<MaintenanceEntry>(
       MaterialPageRoute(builder: (context) => MaintenanceEntryScreen(
-        lastOdometer: currentOdometer!)));
+        lastOdometer: currentOdometer)));
 
     if (entry != null) {
       await provider.insertEntry(entry);
@@ -71,6 +72,7 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final MaintenanceProvider maintenanceProvider = context.watch<MaintenanceProvider>();
     final provider = context.read<FuelEntryProvider>();
     final double? currentOdometer = context.watch<FuelEntryProvider>().lastOdometer;
@@ -79,8 +81,10 @@ class _MaintenanceListScreenState extends State<MaintenanceListScreen> {
     final List<MaintenanceEntry> activeReminders = maintenanceProvider.getActiveReminders(safeOdometer);
 
     return Scaffold(
+      backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
       appBar: AppBar(
         title: Text(context.tr(TranslationKeys.maintenanceScreenTitle)),
+        backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
         elevation: 0,
         centerTitle: false,
         actions: [IconButton(icon: const Icon(RemixIcons.refresh_line), onPressed: maintenanceProvider.loadMaintenanceEntries)],

@@ -134,13 +134,15 @@ class TranslationKeys {
   static const String commonLabelsDeleteConfirmMessage = "common_labels.confirm_message";
 
   static const String consumptionCards = 'consumption_cards';
+  static const String consumptionCardsOverallCostPerDistance = 'consumption_cards.overall_cost_per_distance';
   static const String consumptionCardsOverallAverage = 'consumption_cards.overall_average';
   static const String consumptionCardsNotAvailableShort = 'consumption_cards.not_available_short';
   static const String consumptionCardsUnitKmPerLiter = 'consumption_cards.unit_km_l';
   static const String consumptionCardsConsumptionPeriod = 'consumption_cards.consumption_period';
 
   static const String alerts = 'alerts';
-  static const String alertsThresholdMsg = 'alerts.alert_threshold_msg';
+  static const String alertsThresholdMsg1 = 'alerts.alert_threshold_msg_1';
+  static const String alertsThresholdMsg2 = 'alerts.alert_threshold_msg_2';
 
   static const String emptyState = 'empty_state';
   static const String emptyStateMainMessage = 'empty_state.main_message';
@@ -164,9 +166,10 @@ class TranslationKeys {
   static const String entryScreenLabelLiters = 'entry_screen.label_liters';
   static const String entryScreenLabelPricePerLiter = 'entry_screen.label_price_per_liter';
   static const String entryScreenLabelTotalPrice = 'entry_screen.label_total_price';
-  static const String entryScreenLabelGasStationOptional = 'entry_screen.label_gas_station_optional';
+  static const String entryScreenLabelGasStation = 'entry_screen.label_gas_station';
   static const String entryScreenLabelFullTank = 'entry_screen.label_full_tank';
   static const String entryScreenInfoLastOdometerPrefix = 'entry_screen.info_last_odometer_prefix';
+  static const String entryScreenInfoLastOdometerPrefix2 = 'entry_screen.info_last_odometer_prefix_2';
   static const String entryScreenReceiptAddOptional = 'entry_screen.receipt_add_optional';
   static const String entryScreenReceiptSelected = 'entry_screen.receipt_selected';
   static const String entryScreenReceiptPathPrefix = 'entry_screen.receipt_path_prefix';
@@ -280,6 +283,15 @@ class TranslationKeys {
   static const String fuelTypeGasolinePremium = "maintenance.gasoline_premium";
   static const String fuelTypeOther = "maintenance.other";
 
+  static const String postoTypePosto66 = 'maintenance.posto_66';
+  static const String postoTypePostoIA = 'maintenance.posto_IA';
+  static const String postoTypePostoBR = 'maintenance.posto_Bragas';
+  static const String postoTypePostoPE = 'maintenance.posto_Petrobras';
+  static const String postoTypePostoAX = 'maintenance.posto_AMRX';
+  static const String postoTypePostoAL = 'maintenance.posto_Ale';
+  static const String postoTypePostoGNV = 'maintenance.posto_GNV';
+  static const String postoTypePostoGA = 'maintenance.posto_Gasolina';
+
   static const String updateServiceUpdateAvailable = "update_service.update_available";
   static const String updateServiceCheckForUpdates = "update_service.check_for_updates";
   static const String updateServiceCurrentVersion = "update_service.current_version";
@@ -290,6 +302,16 @@ class TranslationKeys {
   static const String updateServiceCheckFailed = "update_service.check_failed";
 
   static const String errorCouldNotOpenUrl = 'error.could_not_open_url';
+  static const String dialogFilterTitle = "dialog_filter.filter_title";
+  static const String dialogFilterSelectFilters = "dialog_filter.select_filters";
+  static const String dialogFilterChartStructureTitle = "dialog_filter.chart_structure_title";
+  static const String dialogFilterChartStructureBody = "dialog_filter.chart_structure_body";
+  static const String dialogFilterChartPlaceholder = "dialog_filter.chart_placeholder";
+  static const String dialogFilterOptionsTitle = "dialog_filter.options_title";
+  static const String dialogFilterFuelTypeSuffix = "dialog_filter.fuel_type_suffix";
+  static const String dialogFilterFilterClearFilter = "dialog_filter.filter_clear_filter";
+  static const String dialogFilterFilterApply = "dialog_filter.filter_apply";
+  
 }
 
 class TrHelper {

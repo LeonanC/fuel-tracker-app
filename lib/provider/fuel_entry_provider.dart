@@ -42,7 +42,7 @@ class FuelEntryProvider with ChangeNotifier {
     final List<Map<String, dynamic>> maps = await _db.getAllFuelEntries();
     _fuelEntries = maps.map((map) => FuelEntry.fromMap(map)).toList();
     _lastOdometer = await _db.getLastOdometer();
-    _overallConsumption = calculateOverallAverageConsumption();
+    _overallConsumption = calculateOverallAverageConsumption(entries: _fuelEntries);
 
     _fuelEntries.sort((a, b) => b.dataAbastecimento.compareTo(a.dataAbastecimento));
     _isLoading = false;
@@ -67,7 +67,7 @@ class FuelEntryProvider with ChangeNotifier {
     }
   }
 
-  double calculateOverallAverageConsumption() {
+  double calculateOverallAverageConsumption({required List<FuelEntry> entries}) {
     if (_fuelEntries.length < 2) {
       _periodConsumptions = [];
       return 0.0;
@@ -88,14 +88,16 @@ class FuelEntryProvider with ChangeNotifier {
 
       final double currentOdometer = currentEntry.quilometragem;
       final double previousOdometer = previousEntry.quilometragem;
+
+      final double previousLiters = previousEntry.litros;
       final double currentLiters = currentEntry.litros;
 
       final double distance = currentOdometer - previousOdometer;
 
       double consumptionForThisPeriod = 0.0;
 
-      if (distance > 0 && currentLiters > 0) {
-        consumptionForThisPeriod = distance / currentLiters;
+      if (distance > 0 && previousLiters > 0 && previousEntry.tanqueCheio == 1) {
+        consumptionForThisPeriod = distance / previousLiters;
       }
 
       _periodConsumptions.add(consumptionForThisPeriod);
@@ -127,16 +129,16 @@ class FuelEntryProvider with ChangeNotifier {
       await loadFuelEntries();
     }
 
-    final List<Map> sortedMaps = List.from(_fuelEntries);
-    sortedMaps.sort((a, b) => b['data_abastecimento'].compareTo(a['data_abastecimento']));
+    final List<FuelEntry> sortedMaps = List.from(_fuelEntries);
+    sortedMaps.sort((a, b) => b.dataAbastecimento.compareTo(a.dataAbastecimento));
 
-    final List<FuelEntry> entries = sortedMaps.map((map) {
-      return FuelEntry.fromMap(map as Map<String, dynamic>);
-    }).toList();
+    // final List<FuelEntry> entries = sortedMaps.map((map) {
+      // return FuelEntry.fromMap(map as Map<String, dynamic>);
+    // }).toList();
 
     await Future.delayed(const Duration(milliseconds: 10));
 
-    return entries;
+    return sortedMaps;
   }
 
   Future<void> clearAllData() async {

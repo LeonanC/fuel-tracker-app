@@ -17,18 +17,26 @@ class ThemeProvider with ChangeNotifier {
 
   void _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedThemeIndex = prefs.getInt(_themeModeKey) ?? ThemeMode.system.index;
-    _themeMode = ThemeMode.values[savedThemeIndex];
+
+    final savedThemeIndex = prefs.getInt(_themeModeKey);
+    if(savedThemeIndex != null && savedThemeIndex >= 0 && savedThemeIndex < ThemeMode.values.length){
+      _themeMode = ThemeMode.values[savedThemeIndex];
+    }else{
+      _themeMode = ThemeMode.system;
+    }
+    
     _fontScale = prefs.getDouble(_fontScaleKey) ?? 1.0;
     notifyListeners();
   }
 
   void setThemeMode(ThemeMode mode) async {
+    final modeIndex = mode.index;
+
     if(_themeMode != mode){
       _themeMode = mode;
       notifyListeners();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_themeModeKey, mode.index);
+      await prefs.setInt(_themeModeKey, modeIndex);
     }
   }
 

@@ -34,29 +34,30 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         _database = db;
       });
     } catch (e) {
-      debugPrint(context.tr(TranslationKeys.backupRestoreErrorDbNotOpen, parameters: {'error': e.toString()}));
+      debugPrint(
+        context.tr(
+          TranslationKeys.backupRestoreErrorDbNotOpen,
+          parameters: {'error': e.toString()},
+        ),
+      );
     }
   }
 
   Future<List<Map<String, dynamic>>> _fetchFuelFromDb() async {
-    if (_database == null) throw Exception(context.tr(TranslationKeys.backupRestoreErrorDbNotInitialized));
+    if (_database == null)
+      throw Exception(context.tr(TranslationKeys.backupRestoreErrorDbNotInitialized));
     return await _database!.query('fuel_entries');
   }
 
   Future<void> _insertFuelFromDb(Map<String, dynamic> data) async {
-    if (_database == null) throw Exception(context.tr(TranslationKeys.backupRestoreErrorDbNotInitialized));
+    if (_database == null)
+      throw Exception(context.tr(TranslationKeys.backupRestoreErrorDbNotInitialized));
     await _database!.transaction((txn) async {
       await txn.delete('fuel_entries');
-      final fuelentry = List<Map<String, dynamic>>.from(
-        data['fuel_entries'] ?? [],
-      );
+      final fuelentry = List<Map<String, dynamic>>.from(data['fuel_entries'] ?? []);
       for (var fuel in fuelentry) {
         fuel.remove('id');
-        await txn.insert(
-          'fuel_entries',
-          fuel,
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await txn.insert('fuel_entries', fuel, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
   }
@@ -93,11 +94,17 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       final file = File('${downloadsDir.path}/$fileName');
       await file.writeAsString(jsonString);
       setState(() {
-        _statusMessage = context.tr(TranslationKeys.backupRestoreExportSuccessPrefix, parameters: {'fileName': fileName});
+        _statusMessage = context.tr(
+          TranslationKeys.backupRestoreExportSuccessPrefix,
+          parameters: {'fileName': fileName},
+        );
       });
     } catch (e) {
       setState(() {
-        _statusMessage = context.tr(TranslationKeys.backupRestoreErrorExport, parameters: {'error': e.toString()});
+        _statusMessage = context.tr(
+          TranslationKeys.backupRestoreErrorExport,
+          parameters: {'error': e.toString()},
+        );
       });
     } finally {
       setState(() {
@@ -126,7 +133,7 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         allowedExtensions: ['json'],
       );
 
-      if(result == null || result.files.isEmpty){
+      if (result == null || result.files.isEmpty) {
         setState(() {
           _statusMessage = context.tr(TranslationKeys.backupRestoreImportNoFileSelected);
         });
@@ -137,13 +144,16 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
       final jsonString = await file.readAsString();
       final data = jsonDecode(jsonString) as Map<String, dynamic>;
       await _insertFuelFromDb(data);
-      
+
       setState(() {
         _statusMessage = context.tr(TranslationKeys.backupRestoreImportSuccess);
       });
     } catch (e) {
       setState(() {
-        _statusMessage = context.tr(TranslationKeys.backupRestoreErrorImport, parameters: {'error': e.toString()});
+        _statusMessage = context.tr(
+          TranslationKeys.backupRestoreErrorImport,
+          parameters: {'error': e.toString()},
+        );
       });
     } finally {
       setState(() {
@@ -158,12 +168,17 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
   }
 
   Widget _buildBackupRestoreScreen(BuildContext context) {
+    final theme = Theme.of(context);
     final isDbReady = _database != null && _database!.isOpen;
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.brightness == Brightness.dark
+          ? AppTheme.backgroundColorDark
+          : AppTheme.backgroundColorLight,
       appBar: AppBar(
         title: Text(context.tr(TranslationKeys.backupRestoreAppBarTitle)),
-        backgroundColor: Colors.transparent,
+        backgroundColor: theme.brightness == Brightness.dark
+            ? AppTheme.backgroundColorDark
+            : AppTheme.backgroundColorLight,
         elevation: 0,
         centerTitle: false,
       ),
@@ -172,80 +187,24 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              color: AppTheme.cardDark,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.tr(TranslationKeys.backupRestoreExportCardTitle),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.tr(TranslationKeys.backupRestoreExportCardDescription),
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: (_isLoading || !isDbReady)
-                          ? null
-                          : _exportData,
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(context.tr(TranslationKeys.backupRestoreExportButton)),
-                    ),
-                  ],
-                ),
-              ),
+            buildCard(
+              title: context.tr(TranslationKeys.backupRestoreExportCardTitle),
+              subtitle: context.tr(TranslationKeys.backupRestoreExportCardDescription),
+              buttonText: context.tr(TranslationKeys.backupRestoreExportButton),
+              theme: theme,
+              context: context,
+              isDbReady: isDbReady,
+              onPressed: () => _exportData(),
             ),
             const SizedBox(height: 16),
-            Card(
-              color: AppTheme.cardDark,
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      context.tr(TranslationKeys.backupRestoreImportCardTitle),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      context.tr(TranslationKeys.backupRestoreImportCardDescription),
-                      style: const TextStyle(fontSize: 14, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: (_isLoading || !isDbReady)
-                          ? null
-                          : _importData,
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(context.tr(TranslationKeys.backupRestoreImportButton)),
-                    ),
-                  ],
-                ),
-              ),
+            buildCard(
+              title: context.tr(TranslationKeys.backupRestoreImportCardTitle),
+              subtitle: context.tr(TranslationKeys.backupRestoreImportCardDescription),
+              buttonText: context.tr(TranslationKeys.backupRestoreImportButton),
+              theme: theme,
+              context: context,
+              isDbReady: isDbReady,
+              onPressed: () => _importData(),
             ),
             if (_statusMessage != null) ...[
               const SizedBox(height: 16),
@@ -258,6 +217,50 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Card buildCard({
+    required String title,
+    required String subtitle,
+    required String buttonText,
+    required ThemeData theme,
+    required BuildContext context,
+    required bool isDbReady,
+    required Function() onPressed,
+  }) {
+    return Card(
+      color: theme.brightness == Brightness.dark ? AppTheme.cardDark : AppTheme.cardLight,
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: theme.brightness == Brightness.dark ? AppTheme.textLight : AppTheme.textDark,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 14, color: theme.brightness == Brightness.dark ? AppTheme.textLightGrey : AppTheme.textDarkGrey),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: (_isLoading || !isDbReady) ? null : onPressed,
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(buttonText),
+            ),
           ],
         ),
       ),

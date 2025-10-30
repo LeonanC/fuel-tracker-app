@@ -11,9 +11,14 @@ class AppTheme {
   static const Color textLight = Color(0xFFFFFFFF);
   static const Color textGrey = Color(0xFFAAAAAA);
   static const Color textDark = Color(0xFF1F1F1F);
+  static const Color textDarkGrey = Color(0xFF565656);
+  static const Color textLightGrey = Color(0xFFd3d3d3);
 
   // Cores de Ação
-  static const Color primaryFuelColor = Color(0xFF00796B);
+  static const Color primaryRadioColor = Color.fromARGB(255, 0, 0, 0);
+  static const Color backgroundColorLight = Color.fromARGB(255, 250, 250, 250);
+  static const Color backgroundColorDark = Color.fromARGB(255, 18, 18, 18);
+  static const Color primaryFuelColor = Color.fromARGB(255, 1, 163, 144);
   static const Color primaryFuelAccent = Color(0xFFFF1207);
   static const Color efficiencyGreen = Color(0xFF34A853);
 
@@ -113,6 +118,97 @@ class AppTheme {
         ),
         labelStyle: TextStyle(color: textGrey),
         hintStyle: TextStyle(color: textGrey),
+        filled: true,
+        fillColor: surfaceContainer,
+        floatingLabelStyle: const TextStyle(color: textLight),
+      ),
+    );
+  }
+  static ThemeData lightTheme([String languageCode = 'en']) {
+    final isRtlLanguage = languageCode == 'en' || languageCode == 'pt';
+    final baseTextTheme = isRtlLanguage
+        ? GoogleFonts.vazirmatnTextTheme(ThemeData.light().textTheme)
+        : GoogleFonts.poppinsTextTheme(ThemeData.light().textTheme);
+
+    final baseAppBarTextStyle = isRtlLanguage
+        ? GoogleFonts.vazirmatn(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: textDark,
+          )
+        : GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: textDark,
+          );
+    final baseButtonTextStyle = isRtlLanguage
+        ? GoogleFonts.vazirmatn(fontSize: 16, fontWeight: FontWeight.w600)
+        : GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600);
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: primaryLight,
+      primaryColor: primaryFuelColor,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryFuelColor,
+        brightness: Brightness.light,
+        primary: primaryFuelColor,
+        onPrimary: textLight,
+        secondary: primaryFuelAccent,
+        onSecondary: textLight,
+        surface: textDark,
+        surfaceContainerHighest: surfaceLightContainer,
+        error: errorRed,
+        onError: textLight,
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: secondaryLight,
+        elevation: 1,
+        centerTitle: true,
+        titleTextStyle: baseAppBarTextStyle,
+        iconTheme: const IconThemeData(color: textDark),
+        actionsIconTheme: const IconThemeData(color: textDark),
+      ),
+      cardTheme: CardThemeData(
+        color: cardLight,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shadowColor: Colors.grey.withOpacity(0.2),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryFuelColor,
+          foregroundColor: textLight,
+          elevation: 4,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          textStyle: baseButtonTextStyle,
+        ),
+      ),
+      textTheme: baseTextTheme.apply(
+        bodyColor: textDark,
+        displayColor: textDark,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: textGrey.withOpacity(0.5)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: textGrey.withOpacity(0.5)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: primaryFuelColor, width: 2),
+        ),
+        labelStyle: TextStyle(color: textGrey),
+        hintStyle: TextStyle(color: textGrey),
+        filled: true,
+        fillColor: cardLight,
+        floatingLabelStyle: const TextStyle(color: textDark),
       ),
     );
   }

@@ -11,11 +11,12 @@ class NotificationRemindersSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final provider = context.watch<ReminderProvider>();
     return Scaffold(
-      backgroundColor: AppTheme.primaryDark,
+      backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
       appBar: AppBar(
-        backgroundColor: AppTheme.primaryDark,
+        backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
         title: const Text('Noficações e Lembretes'),
         elevation: 0,
         centerTitle: false,

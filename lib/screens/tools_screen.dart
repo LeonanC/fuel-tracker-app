@@ -48,6 +48,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final fuelProvider = Provider.of<FuelEntryProvider>(context);
     final exportService = ExportService();
 
@@ -56,8 +57,13 @@ class _ToolsScreenState extends State<ToolsScreen> {
         return Directionality(
           textDirection: languageProvider.textDirection,
           child: Scaffold(
-            backgroundColor: Colors.transparent,
-            appBar: AppBar(title: Text(context.tr(TranslationKeys.toolsScreenAppBarTitle)), backgroundColor: Colors.transparent, elevation: 0, centerTitle: false),
+            backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+            appBar: AppBar(
+              title: Text(context.tr(TranslationKeys.toolsScreenAppBarTitle)),
+              backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+              elevation: 0,
+              centerTitle: false,
+            ),
             body: ListView(
               padding: const EdgeInsets.all(16.0),
               children: [
@@ -216,10 +222,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        TrHelper.versionFormat(context, update.version, isNew: true),
-                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
-                      )
+                      Text(TrHelper.versionFormat(context, update.version, isNew: true), style: TextStyle(fontSize: 14, color: Colors.grey[400])),
                     ],
                   ),
                 ),
@@ -256,7 +259,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(description, style: TextStyle(fontSize: 14, color: Colors.grey[400])),

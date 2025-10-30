@@ -10,11 +10,16 @@ import 'package:fuel_tracker_app/provider/unit_provider.dart';
 import 'package:fuel_tracker_app/screens/main_navigation_screen.dart';
 import 'package:fuel_tracker_app/services/notification_service.dart';
 import 'package:fuel_tracker_app/services/update_service.dart';
+import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:provider/provider.dart';
+
+final NotificationService notificationService = NotificationService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await notificationService.initialize();
+
   final languageProvider = LanguageProvider();
   await languageProvider.initialize();
 
@@ -30,15 +35,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final UpdateService _updateService = UpdateService();
-
-  Future<void> _checkForUpdates(BuildContext context) async {
-    await _updateService.checkAppUpdate(context);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: widget.languageProvider),
@@ -49,32 +47,22 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => ReminderProvider()),
         ChangeNotifierProvider(create: (context) => MaintenanceProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return Consumer<LanguageProvider>(
-            builder: (context, languageProvider, child) {
-              return MediaQuery(
-                data: mediaQuery.copyWith(textScaleFactor: themeProvider.fontScale),
-                child: MaterialApp(
-                  debugShowCheckedModeBanner: false,
-                  title: 'Controle de Combustível',
-                  themeMode: themeProvider.themeMode,
-                  theme: ThemeData.light(),
-                  darkTheme: ThemeData.dark(),
-                  locale: languageProvider.locale,
-                  localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
-                  supportedLocales: const [Locale('pt'), Locale('en'), Locale('es'), Locale('fr')],
-                  home: Builder(
-                    builder: (innerContext) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        _checkForUpdates(innerContext);
-                      });
-                      return const MainNavigationScreen();
-                    },
-                  ),
-                ),
-              );
-            },
+      child: Consumer2<ThemeProvider, LanguageProvider>(
+        builder: (context, themeProvider, languageProvider, child) {
+          final mediaQuery = MediaQuery.of(context);
+          return MediaQuery(
+            data: mediaQuery.copyWith(textScaleFactor: themeProvider.fontScale),
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Controle de Combustível',
+              themeMode: themeProvider.themeMode,
+              theme: AppTheme.lightTheme(),
+              darkTheme: AppTheme.darkTheme(),
+              locale: languageProvider.locale,
+              localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
+              supportedLocales: const [Locale('en'), Locale('pt'), Locale('es'), Locale('fr'), Locale('de'), Locale('it'), Locale('ru')],
+              home: const MainNavigationScreen(),
+            ),
           );
         },
       ),

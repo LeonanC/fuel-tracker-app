@@ -37,13 +37,15 @@
         "confirm_message": "Tem certeza de que deseja excluir o registro de manutenção"
     },
     "consumption_cards": {
+        "overall_cost_per_distance": "Custo por Distância Total ",
         "overall_average": "Consumo Médio Geral: ",
         "not_available_short": "N/A",
         "unit_km_l": "km/L",
-        "consumption_period": "⛽ Consumo (últ. trecho):"
+        "consumption_period": "Consumo"
     },
     "alerts": {
-        "alert_threshold_msg": "🚨 Autonomia restante: {0}. Consumo no trajeto: {1}."
+        "alert_threshold_msg_1": "Autonomia restante: ",
+        "alert_threshold_msg_2": "Consumo no trajeto: "
     },
     "empty_state": {
         "main_message": "Nenhum abastecimento registrado ainda. Clique no '+' para começar."
@@ -53,6 +55,17 @@
         "content": "Tem certeza que deseja excluir este abastecimento? Esta ação não pode ser desfeita.",
         "button_cancel": "Cancelar",
         "button_delete": "Excluir"
+    },
+    "dialog_filter": {
+        "filter_title": "Filtros Avançados",
+        "select_filters": "Selecione os filtros:",
+        "chart_structure_title": "--- Estrutura para o Gráfico de Consumo ---",
+        "chart_structure_body": "Aqui seria um widget com o histórico de consumo, por exemplo:",
+        "chart_placeholder": "Placeholder Gráfico (Exige fl_chart)",
+        "options_title": "--- Opções de Filtro ---",
+        "fuel_type_suffix": " (Filtro)",
+        "filter_clear_filter": "Limpar Filtro",
+        "filter_apply": "Aplicar"
     },
     "entry_screen": {
         "add_app_bar_title": "Adicionar Abastecimento",
@@ -65,9 +78,10 @@
         "label_liters": "Litros Abastecimentos (L)",
         "label_price_per_liter": "Preço por Litro (R$)",
         "label_total_price": "Preço Total (R$)",
-        "label_gas_station_optional": "Posto (Opcional)",
+        "label_gas_station": "Posto",
         "label_full_tank": "Tanque Cheio",
-        "info_last_odometer_prefix": "Último Hodômetro: {lastOdo} km. O valor atual deve ser maior.",
+        "info_last_odometer_prefix": "Último Hodômetro: ",
+        "info_last_odometer_prefix_2": "O valor atual deve ser maior. ",
         "receipt_add_optional": "Adicionar Comprovante (Opcional)",
         "receipt_selected": "Comprovante Selecionado",
         "receipt_path_prefix": "Caminho: {name}",
@@ -164,6 +178,14 @@
         "gasoline_aditivada": "Gasoline Aditivada",
         "etanol_alcool": "Etanol (Álcool)",
         "gasoline_premium": "Gasolina Premium",
+        "posto_66" : "Posto 66 - Ipiranga",
+        "posto_IA" : "Posto Itaipuaçu AmPm",
+        "posto_Bragas" : "Posto Bragas (BR)",
+        "posto_Petrobras" : "Posto Petrobras",
+        "posto_AMRX" : "Posto Amrx",
+        "posto_Ale" : "Posto Ale",
+        "posto_GNV" : "Auto Gas GNV",
+        "posto_Gasolina" : "Posto Gasolina",
         "other": "Outras",
         "alert_title": "!Lembretes Ativos",
         "alert_by_km": "Chegou a {0} (km!)",

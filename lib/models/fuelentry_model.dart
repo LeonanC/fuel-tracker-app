@@ -2,7 +2,7 @@ class FuelEntry {
   final int? id;
   final String tipo;
   final DateTime dataAbastecimento;
-  final String? posto;
+  final String posto;
   final double quilometragem;
   final double litros;
   final double? pricePerLiter;
@@ -14,7 +14,7 @@ class FuelEntry {
     this.id,
     required this.tipo,
     required this.dataAbastecimento,
-    this.posto,
+    required this.posto,
     required this.quilometragem,
     required this.litros,
     required this.pricePerLiter,
@@ -55,19 +55,20 @@ class FuelEntry {
 
   double calculateConsumption(FuelEntry previousEntry){
     final double distance = this.quilometragem - previousEntry.quilometragem;
+    final double liters = previousEntry.litros;
 
-    if(distance <= 0 || this.litros <= 0){
+    if(distance <= 0 || liters <= 0){
       return 0.0;
     }
     
-    return distance / this.litros;
+    return distance / litros;
   }
 
   List<dynamic> toCsvList() {
     final String tanqueCheioText = tanqueCheio == 1 ? 'Sim' : 'Não';
     return [
       '${dataAbastecimento.day.toString().padLeft(2, '0')}/${dataAbastecimento.month.toString().padLeft(2, '0')}/${dataAbastecimento.year} ${dataAbastecimento.hour.toString().padLeft(2, '0')}:${dataAbastecimento.minute.toString().padLeft(2, '0')}',
-      posto ?? '',
+      posto.toString(),
       tipo.toString(),
       quilometragem.toStringAsFixed(1),
       litros.toStringAsFixed(3),

@@ -10,10 +10,12 @@ class UnitSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
+      backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
       appBar: AppBar(
         title: Text(context.tr(TranslationKeys.unitSettingsScreenTitle)),
-        backgroundColor: AppTheme.primaryDark,
+        backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
         elevation: 0,
         centerTitle: false,
       ),
@@ -26,7 +28,7 @@ class UnitSettingsScreen extends StatelessWidget {
                 context.tr(TranslationKeys.unitSettingsScreenSubtitle),
                 style: Theme.of(
                   context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+                ).textTheme.bodyMedium?.copyWith(color: theme.brightness == Brightness.dark ? AppTheme.backgroundColorLight : AppTheme.backgroundColorDark),
               ),
               const SizedBox(height: 24),
               _buildUnitDropdown<DistanceUnit>(
@@ -100,6 +102,7 @@ class UnitSettingsScreen extends StatelessWidget {
   }
 
   Widget _buildUnitDropdown<T extends Enum>(BuildContext context, {required String title, required T value, required Map<T, String> items, required void Function(T?) onChanged}){
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -108,15 +111,15 @@ class UnitSettingsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontSize: 16, color: Colors.white70),
+              style: TextStyle(fontSize: 16, color: theme.brightness == Brightness.dark ? AppTheme.backgroundColorLight : AppTheme.backgroundColorDark),
             ),
           ),
           const SizedBox(width: 16),
           DropdownButton<T>(
             value: value,
-            dropdownColor: AppTheme.cardDark,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-            icon: const Icon(Icons.arrow_drop_down, color: AppTheme.primaryFuelColor),
+            dropdownColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+            style: TextStyle(color: theme.brightness == Brightness.dark ? AppTheme.backgroundColorLight : AppTheme.backgroundColorDark, fontSize: 16),
+            icon: Icon(Icons.arrow_drop_down, color: theme.brightness == Brightness.dark ? AppTheme.backgroundColorLight : AppTheme.backgroundColorDark),
             underline: Container(),
             items: items.entries.map<DropdownMenuItem<T>>((entry){
               return DropdownMenuItem<T>(

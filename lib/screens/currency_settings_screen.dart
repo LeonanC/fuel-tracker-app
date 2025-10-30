@@ -9,14 +9,15 @@ class CurrencySettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final currentCurrency = context.watch<CurrencyProvider>().selectedCurrency;
     final currencyProvider = context.read<CurrencyProvider>();
 
     return Scaffold(
-      backgroundColor: AppTheme.primaryDark,
+      backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
       appBar: AppBar(
         title: const Text('Configuração de Moeda'),
-        backgroundColor: AppTheme.primaryDark,
+        backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
         centerTitle: false,
         elevation: 0,
       ),

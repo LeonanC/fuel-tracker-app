@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/provider/language_provider.dart';
 import 'package:fuel_tracker_app/services/update_service.dart';
+import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -42,18 +43,17 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _checkForUpdate() async {
-    if(_isCheckingForUpdate) return;
+    if (_isCheckingForUpdate) return;
     setState(() {
       _isCheckingForUpdate = true;
     });
 
-    try{
+    try {
       await _updateService.checkAppUpdate(context);
-
-    }catch(e){
+    } catch (e) {
       debugPrint('Erro durante a checagem de atualização: $e');
-    }finally{
-      if(mounted){
+    } finally {
+      if (mounted) {
         setState(() {
           _isCheckingForUpdate = false;
         });
@@ -78,10 +78,16 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Widget _buildAboutScreen(BuildContext context) {
+    final theme = Theme.of(context);
     final versionLabel = context.tr(TranslationKeys.aboutCurrentVersion);
     final fullVersionText = '$versionLabel $_appVersion';
     return Scaffold(
-      appBar: AppBar(title: Text(context.tr(TranslationKeys.aboutTitle)), backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
+      backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+      appBar: AppBar(
+        title: Text(context.tr(TranslationKeys.aboutTitle)),
+        backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+        foregroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -112,7 +118,7 @@ class _AboutScreenState extends State<AboutScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
+                color: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
               ),
