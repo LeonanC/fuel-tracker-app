@@ -36,7 +36,6 @@ class UpdateService {
   Future<void> checkForUpdate(BuildContext context) async {
     final installedVersion = await getInstalledAppVersion();
     final latestUpdate = await fetchLatestVersion();
-    print(installedVersion);
     if (latestUpdate != null) {
       final latestVersion = latestUpdate.version;
       if (isNewerVersion(latestVersion, installedVersion)) {
