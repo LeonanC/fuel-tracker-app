@@ -8,6 +8,7 @@ import 'package:fuel_tracker_app/screens/backup_restore_screen.dart';
 import 'package:fuel_tracker_app/screens/currency_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/language_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/notificationReminders_settings_screen.dart';
+import 'package:fuel_tracker_app/screens/statistics_screen.dart';
 import 'package:fuel_tracker_app/screens/unit_settings_screen.dart';
 import 'package:fuel_tracker_app/services/export_service.dart';
 import 'package:fuel_tracker_app/services/update_service.dart';
@@ -135,11 +136,29 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 ),
                 _buildToolCard(
                   context,
+                  title: context.tr(TranslationKeys.toolsScreenStatisticsTitle),
+                  description: context.tr(TranslationKeys.toolsScreenStatisticsDescription),
+                  icon: Icons.bar_chart,
+                  onTap: (){
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StatisticsScreen()));
+                  },
+                ),
+                _buildToolCard(
+                  context,
                   title: context.tr(TranslationKeys.toolsScreenBackupCardTitle),
                   description: context.tr(TranslationKeys.toolsScreenBackupCardDescription),
                   icon: Icons.backup,
                   onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => BackupRestoreScreen()));
+                  },
+                ),
+                _buildToolCard(
+                  context,
+                  title: context.tr(TranslationKeys.toolsScreenFeedbackTitle),
+                  description: context.tr(TranslationKeys.toolsScreenFeedbackDescription),
+                  icon: Icons.feedback_outlined,
+                  onTap: (){
+                    _launchUrl('mailto:LeonanC@outlool.com.br?subject=Feedback%20Fuel%20Tracker%20App');
                   },
                 ),
                 _buildToolCard(

@@ -15,6 +15,11 @@ class FuelEntryProvider with ChangeNotifier {
   List<double> _periodConsumptions = [];
 
   List<FuelEntry> get fuelEntries => _fuelEntries;
+
+  List<FuelEntry> get allEntries {
+    return List<FuelEntry>.from(_fuelEntries);
+  }
+  
   bool get isLoading => _isLoading;
   double? get lastOdometer => _lastOdometer;
   String get errorMessage => _errorMessage;

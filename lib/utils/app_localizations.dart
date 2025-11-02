@@ -209,6 +209,7 @@ class TranslationKeys {
 
   static const String toolsScreen = 'tools_screen';
   static const String toolsScreenAppBarTitle = 'tools_screen.app_bar_title';
+  static const String toolsScreenSectionTitle = 'tools_screen.section_title';
   static const String toolsScreenAppearanceTitle = 'tools_screen.appearance_title';
   static const String toolsScreenAppearanceDescription = 'tools_screen.appearance_description';
   static const String appearanceSettingsTitle = 'tools_screen.appearance_settings_title';
@@ -235,6 +236,18 @@ class TranslationKeys {
   static const String toolsScreenClearAllDataCardDescription = 'tools_screen.clear_all_data_card_description';
   static const String toolsScreenBackupCardTitle = 'tools_screen.backup_card_title';
   static const String toolsScreenBackupCardDescription = 'tools_screen.backup_card_description';
+  static const String toolsScreenStatisticsTitle = 'tools_screen.statistics_title';
+  static const String toolsScreenStatisticsDescription = 'tools_screen.statistics_description';
+  static const String toolsScreenFeedbackTitle = 'tools_screen.feedback_title';
+  static const String toolsScreenFeedbackDescription = 'tools_screen.feedback_description';
+  static const String toolsScreenSummaryTitle = 'tools_screen.summary_title';
+  static const String toolsScreenConsumptionTitle = 'tools_screen.statistics_monthly_consumption_title';
+  static const String toolsScreenAvgPriceTitle = 'tools_screen.statistics_monthly_avg_price_title';
+  static const String toolsScreenTotalDistancia = 'tools_screen.total_distance';
+  static const String toolsScreenTotalVolume = 'tools_screen.total_volume';
+  static const String toolsScreenTotalCost = 'tools_screen.total_cost';
+  static const String toolsScreenAverageConsumption = 'tools_screen.average_consumption';
+  static const String toolsScreenAveragePricePerLiter = 'tools_screen.average_price_per_liter';
 
   static const String unitSettingsScreenTitle = 'unit_settings.title';
   static const String unitSettingsScreenSubtitle = 'unit_settings.subtitle';

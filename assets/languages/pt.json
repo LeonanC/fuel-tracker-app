@@ -122,6 +122,7 @@
     },
     "tools_screen": {
         "app_bar_title": "Ferramentas",
+        "section_title": "Configurações Gerais",
         "appearance_title": "Aparência e Tema",
         "appearance_description": "Mude o tema (Claro/Escuro) e o tamanho da fonte",
         "appearance_settings_title": "Configurações de Aparência",
@@ -147,7 +148,19 @@
         "backup_card_title": "Backup e Restauração",
         "backup_card_description": "Exporte ou Importe seu dados.",
         "clear_all_data_card_title": "Limpar Todos os Dados",
-        "clear_all_data_card_description": "Excluir permanentemente todo o histórico de abastecimento e configuraçõe."
+        "clear_all_data_card_description": "Excluir permanentemente todo o histórico de abastecimento e configuraçõe.",
+        "statistics_title": "Estatísticas Detalhadas",
+        "statistics_description": "Visualize consumo, custos e tendências.",
+        "feedback_title": "Ajuda e Feedback",
+        "feedback_description": "Entre em contato com o suporte ou envie sugestões.",
+        "summary_title": "Resumo Geral",
+        "statistics_monthly_consumption_title": "Consumo Mensal (Litros)",
+        "statistics_monthly_avg_price_title": "Preço Médio por Litro (R$)",
+        "total_distance": "Distância Total Percorrida:",
+        "total_volume": "Volume Total Abastecido:",
+        "total_cost": "Custo Total:",
+        "average_consumption": "Consumo Médio:",
+        "average_price_per_liter": "Preço Médio por Litro:"
     },
     "language_settings": {
         "title": "Configurações de Idioma",

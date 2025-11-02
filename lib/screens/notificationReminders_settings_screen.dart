@@ -61,9 +61,26 @@ class NotificationRemindersSettingsScreen extends StatelessWidget {
           ListTile(
             leading: Icon(RemixIcons.time_line),
             title: const Text('Hora de Lembrete'),
-            subtitle: const Text('Os lembretes são enviados diariamente às 18:00.'),
-            onTap: provider.isReminderEnabled ? (){
-              //
+            subtitle: Text(
+              'Os lembretes são enviados diariamente às ${provider.selectedReminderTime.format(context)}.'),
+            onTap: provider.isReminderEnabled ? () async {
+              final TimeOfDay initialTime = provider.selectedReminderTime;
+
+              final TimeOfDay? newTime = await showTimePicker(
+                context: context,
+                initialTime: initialTime,
+                builder: (context, child){
+                  return Theme(
+                    data: Theme.of(context).copyWith(),
+                    child: child!,
+                  );
+                }
+              );
+
+              if(newTime != null && newTime != initialTime){
+                provider.setReminderTime(newTime);
+              }
+
             } : null,
           ),
           ListTile(
