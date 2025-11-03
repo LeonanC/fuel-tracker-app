@@ -10,6 +10,7 @@ import 'package:fuel_tracker_app/screens/language_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/notificationReminders_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/statistics_screen.dart';
 import 'package:fuel_tracker_app/screens/unit_settings_screen.dart';
+import 'package:fuel_tracker_app/screens/vehicle_management_screen.dart';
 import 'package:fuel_tracker_app/services/export_service.dart';
 import 'package:fuel_tracker_app/services/update_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
@@ -42,7 +43,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(TrHelper.errorUrlFormat(context, url))));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(TrHelper.errorUrlFormat(context, url))));
       }
     }
   }
@@ -58,10 +61,14 @@ class _ToolsScreenState extends State<ToolsScreen> {
         return Directionality(
           textDirection: languageProvider.textDirection,
           child: Scaffold(
-            backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+            backgroundColor: theme.brightness == Brightness.dark
+                ? AppTheme.backgroundColorDark
+                : AppTheme.backgroundColorLight,
             appBar: AppBar(
               title: Text(context.tr(TranslationKeys.toolsScreenAppBarTitle)),
-              backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+              backgroundColor: theme.brightness == Brightness.dark
+                  ? AppTheme.backgroundColorDark
+                  : AppTheme.backgroundColorLight,
               elevation: 0,
               centerTitle: false,
             ),
@@ -75,7 +82,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   description: context.tr(TranslationKeys.toolsScreenAppearanceDescription),
                   icon: Icons.palette_outlined,
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => AppearanceSettingsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AppearanceSettingsScreen()),
+                    );
                   },
                 ),
                 _buildToolCard(
@@ -84,7 +94,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   description: context.tr(TranslationKeys.toolsScreenLanguageCardDescription),
                   icon: Icons.language,
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => LanguageSettingsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => LanguageSettingsScreen()),
+                    );
                   },
                 ),
                 _buildToolCard(
@@ -93,7 +106,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   description: context.tr(TranslationKeys.toolsScreenUnitCardDescription),
                   icon: Icons.straight,
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => UnitSettingsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => UnitSettingsScreen()),
+                    );
                   },
                 ),
                 _buildToolCard(
@@ -102,7 +118,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   description: context.tr(TranslationKeys.toolsScreenCurrencyCardDescription),
                   icon: Icons.monetization_on,
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => CurrencySettingsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => CurrencySettingsScreen()),
+                    );
                   },
                 ),
                 _buildToolCard(
@@ -111,7 +130,12 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   description: context.tr(TranslationKeys.toolsScreenNotificationCardDescription),
                   icon: Icons.notifications_active,
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => NotificationRemindersSettingsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NotificationRemindersSettingsScreen(),
+                      ),
+                    );
                   },
                 ),
                 _buildToolCard(
@@ -127,29 +151,58 @@ class _ToolsScreenState extends State<ToolsScreen> {
 
                     if (context.mounted) {
                       if (errorMessage != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $errorMessage'), backgroundColor: Colors.red));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erro: $errorMessage'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Relatório gerado! Escolha como compartilhar.'), backgroundColor: Colors.green));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Relatório gerado! Escolha como compartilhar.'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
                       }
                     }
                   },
                 ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenStatisticsTitle),
-                  description: context.tr(TranslationKeys.toolsScreenStatisticsDescription),
-                  icon: Icons.bar_chart,
-                  onTap: (){
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StatisticsScreen()));
-                  },
-                ),
+                if (fuelProvider.fuelEntries.isNotEmpty)
+                  _buildToolCard(
+                    context,
+                    title: context.tr(TranslationKeys.toolsScreenStatisticsTitle),
+                    description: context.tr(TranslationKeys.toolsScreenStatisticsDescription),
+                    icon: Icons.bar_chart,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const StatisticsScreen()),
+                      );
+                    },
+                  ),
+                  _buildToolCard(
+                    context,
+                    title: context.tr(TranslationKeys.vehiclesScreenTitle),
+                    description: context.tr(TranslationKeys.vehiclesScreenDescription),
+                    icon: Icons.directions_car_filled,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const VehicleManagementScreen()),
+                      );
+                    },
+                  ),
                 _buildToolCard(
                   context,
                   title: context.tr(TranslationKeys.toolsScreenBackupCardTitle),
                   description: context.tr(TranslationKeys.toolsScreenBackupCardDescription),
                   icon: Icons.backup,
                   onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => BackupRestoreScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => BackupRestoreScreen()),
+                    );
                   },
                 ),
                 _buildToolCard(
@@ -157,8 +210,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
                   title: context.tr(TranslationKeys.toolsScreenFeedbackTitle),
                   description: context.tr(TranslationKeys.toolsScreenFeedbackDescription),
                   icon: Icons.feedback_outlined,
-                  onTap: (){
-                    _launchUrl('mailto:LeonanC@outlool.com.br?subject=Feedback%20Fuel%20Tracker%20App');
+                  onTap: () {
+                    _launchUrl(
+                      'mailto:LeonanC@outlool.com.br?subject=Feedback%20Fuel%20Tracker%20App',
+                    );
                   },
                 ),
                 _buildToolCard(
@@ -201,7 +256,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 await provider.clearAllData();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(provider.errorMessage.isEmpty ? 'Todos os dados foram apagados com sucesso.' : 'Erro ao apagar dados: ${provider.errorMessage}'),
+                    content: Text(
+                      provider.errorMessage.isEmpty
+                          ? 'Todos os dados foram apagados com sucesso.'
+                          : 'Erro ao apagar dados: ${provider.errorMessage}',
+                    ),
                     backgroundColor: provider.errorMessage.isEmpty ? Colors.green : Colors.red,
                   ),
                 );
@@ -228,7 +287,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: const Icon(Icons.system_update, color: Colors.blue, size: 28),
                 ),
                 const SizedBox(width: 16),
@@ -238,10 +300,17 @@ class _ToolsScreenState extends State<ToolsScreen> {
                     children: [
                       const Text(
                         'App Update Available',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                       const SizedBox(height: 4),
-                      Text(TrHelper.versionFormat(context, update.version, isNew: true), style: TextStyle(fontSize: 14, color: Colors.grey[400])),
+                      Text(
+                        TrHelper.versionFormat(context, update.version, isNew: true),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                      ),
                     ],
                   ),
                 ),
@@ -253,10 +322,18 @@ class _ToolsScreenState extends State<ToolsScreen> {
     );
   }
 
-  Widget _buildToolCard(BuildContext context, {required String title, required String description, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildToolCard(
+    BuildContext context, {
+    required String title,
+    required String description,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16.0),
-      color: Theme.of(context).brightness == Brightness.dark ? AppTheme.cardDark : AppTheme.cardLight,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? AppTheme.cardDark
+          : AppTheme.cardLight,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -268,7 +345,10 @@ class _ToolsScreenState extends State<ToolsScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppTheme.primaryFuelColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryFuelColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(icon, color: AppTheme.primaryFuelColor, size: 28),
               ),
               const SizedBox(width: 16),
@@ -276,10 +356,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                    Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(description, style: TextStyle(fontSize: 14, color: Colors.grey[400])),
                   ],

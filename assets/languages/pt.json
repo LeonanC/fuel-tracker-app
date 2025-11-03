@@ -254,6 +254,26 @@
     },
     "errors": {
         "could_not_open_url": "Não foi possível abrir {url}"
+    },
+    "vehicles": {
+        "screen_title": "Gerenciamento de Veículos",
+        "screen_description": "Adicione, edite ou remova seus veículos.",
+        "add_new_vehicle": "Adicionar Novo Veículo",
+        "edit_vehicle": "Editar Veículo",
+        "nickname": "Apelido",
+        "make": "Fabricante",
+        "model": "Modelo",
+        "year": "Ano",
+        "fuel_type": "Tipo de Combustivel",
+        "odometer": "Hodômetro Initial {km}",
+        "image": "Foto do Veículo",
+        "select_image": "Selecionar Imagem",
+        "choose_from_gallery": "Escolher da Galeria",
+        "take_photo": "Tirar Foto",
+        "delete_confirm_message": "Tem certeza que deseja excluir este veículo?",
+        "delete": "Excluir",
+        "save": "Salvar",
+        "cancel": "Cancelar"
     }
 
 }

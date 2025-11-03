@@ -7,9 +7,9 @@ import 'package:fuel_tracker_app/provider/maintenance_provider.dart';
 import 'package:fuel_tracker_app/provider/reminder_provider.dart';
 import 'package:fuel_tracker_app/provider/theme_provider.dart';
 import 'package:fuel_tracker_app/provider/unit_provider.dart';
+import 'package:fuel_tracker_app/provider/vehicle_provider.dart';
 import 'package:fuel_tracker_app/screens/main_navigation_screen.dart';
 import 'package:fuel_tracker_app/services/notification_service.dart';
-import 'package:fuel_tracker_app/services/update_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -46,6 +46,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => CurrencyProvider()),
         ChangeNotifierProvider(create: (context) => ReminderProvider()),
         ChangeNotifierProvider(create: (context) => MaintenanceProvider()),
+        ChangeNotifierProvider(create: (context) => VehicleProvider()),
       ],
       child: Consumer2<ThemeProvider, LanguageProvider>(
         builder: (context, themeProvider, languageProvider, child) {
