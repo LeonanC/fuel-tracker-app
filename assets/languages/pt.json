@@ -274,6 +274,17 @@
         "delete": "Excluir",
         "save": "Salvar",
         "cancel": "Cancelar"
+    },
+    "onboardings": {
+        "onboarding_title_1": "Rastreie Seu Consumo",
+        "onboarding_desc_1": "Veja o desempenho do seu veículo com gráficos claros de km/L e custos.",
+        "onboarding_title_2": "Gerenciamento Completo",
+        "onboarding_desc_2": "Adicione e personalize vários veículos, de carros a motos, com fotos.",
+        "onboarding_title_3": "Histórico e Estatísticas",
+        "onboarding_desc_3": "Registre cada abastecimento e serviço para ter um controle financeiro total.",
+        "onboarding_button_start": "Começar Agora",
+        "onboarding_button_next": "Próximo",
+        "onboarding_button_skip": "Pular"
     }
 
 }

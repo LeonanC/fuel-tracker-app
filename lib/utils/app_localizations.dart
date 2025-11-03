@@ -344,6 +344,16 @@ class TranslationKeys {
   static const String vehiclesSave = 'vehicles.save';
   static const String vehiclesCancel = 'vehicles.cancel';
 
+  static const String onboardingsTitle1 = 'onboardings.onboarding_title_1';
+  static const String onboardingsDesc1 = 'onboardings.onboarding_desc_1';
+  static const String onboardingsTitle2 = 'onboardings.onboarding_title_2';
+  static const String onboardingsDesc2 = 'onboardings.onboarding_desc_2';
+  static const String onboardingsTitle3 = 'onboardings.onboarding_title_3';
+  static const String onboardingsDesc3 = 'onboardings.onboarding_desc_3';
+  static const String onboardingsButtonStart = 'onboardings.onboarding_button_start';
+  static const String onboardingsButtonNext = 'onboardings.onboarding_button_next';
+  static const String onboardingsButtonSkip = 'onboardings.onboarding_button_skip';
+
 }
 
 class TrHelper {

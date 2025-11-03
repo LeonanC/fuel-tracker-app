@@ -9,6 +9,7 @@ import 'package:fuel_tracker_app/provider/theme_provider.dart';
 import 'package:fuel_tracker_app/provider/unit_provider.dart';
 import 'package:fuel_tracker_app/provider/vehicle_provider.dart';
 import 'package:fuel_tracker_app/screens/main_navigation_screen.dart';
+import 'package:fuel_tracker_app/screens/onboarding_screen.dart';
 import 'package:fuel_tracker_app/services/notification_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:provider/provider.dart';
@@ -62,7 +63,7 @@ class _MyAppState extends State<MyApp> {
               locale: languageProvider.locale,
               localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
               supportedLocales: const [Locale('en'), Locale('pt'), Locale('es'), Locale('fr'), Locale('de'), Locale('it'), Locale('ru')],
-              home: const MainNavigationScreen(),
+              home: const OnboardingScreen(),
             ),
           );
         },
