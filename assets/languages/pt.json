@@ -12,6 +12,7 @@
     "navigation": {
         "fuel_entries": "Abastecimentos",
         "fuel_maintenance": "Manutenção",
+        "fuel_maps": "Postos Próximos",
         "fuel_tools": "Ferramentas"
     },
     "list_screen": {
@@ -21,6 +22,15 @@
         "snackbar_entry_added": "Abastecimento adicionado com sucesso!",
         "snackbar_entry_updated": "Abastecimento atualizado com sucesso!",
         "snackbar_entry_removed": "🗑️ Abastecimento removido com sucesso!"
+    },
+    "map_screen": {
+        "map_placeholder": "Aqui será exibido o mapa com postos de combustível perto de você.",
+        "map_placeholder_tip": "Você precisará habilitar os serviços de localização para usar esta função.",
+        "map_search_action": "Abrir pesquisa de postos de combustível...",
+        "map_loading_location": "A carregar a sua localização...",
+        "map_location_service_disabled": "Serviços de localização desativados. Ative o GPS para ver a sua posição.",
+        "map_permission_denied": "Permissão de localização negada. Conceda a permissão para usar esta função.",
+        "map_permission_denied_forever": "Permissão de localização negada permanentemente. Ative-a nas configurações do dispositivo."
     },
     "common_labels": {
         "type": "Tipo",
@@ -274,6 +284,27 @@
         "delete": "Excluir",
         "save": "Salvar",
         "cancel": "Cancelar"
+    },
+    "gasstation": {
+        "screen_title": "Gerenciamento de Postos",
+        "add_title": "Adicionar Posto",
+        "update_title": "Editar Posto",
+        "label_name": "Nome do Posto",
+        "label_address": "Endereço (Opcional)",
+        "label_brand": "Bandeira (Marca)",
+        "label_latitude": "Latitude",
+        "label_longitude": "Longitude",
+        "label_price_gasoline": "Preço Gasolina",
+        "label_price_ethanol": "Preço Etanol",
+        "label_convenience_store": "Possui Loja de Conveniência?",
+        "label_24hours": "Funcionamento 24 Horas?",
+        "button_save": "Salvar Posto",
+        "button_cancel": "Atualizar Posto",
+        "required_name": "O nome do posto é obrigatório.",
+        "required_brand": "A bandeira do posto é obrigatória",
+        "required_valid_latitude": "A latitude deve ser um valor válido.",
+        "required_valid_longitude": "A longitude deve ser um valor válido.",
+        "required_valid_price": "O preço deve ser um valor válido e maior que zero."
     },
     "onboardings": {
         "onboarding_title_1": "Rastreie Seu Consumo",

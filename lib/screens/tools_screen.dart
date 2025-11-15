@@ -6,6 +6,7 @@ import 'package:fuel_tracker_app/provider/language_provider.dart';
 import 'package:fuel_tracker_app/screens/Appearance_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/backup_restore_screen.dart';
 import 'package:fuel_tracker_app/screens/currency_settings_screen.dart';
+import 'package:fuel_tracker_app/screens/gas_station_management_screen.dart';
 import 'package:fuel_tracker_app/screens/language_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/notificationReminders_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/statistics_screen.dart';
@@ -16,6 +17,7 @@ import 'package:fuel_tracker_app/services/update_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:remixicon/remixicon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ToolsScreen extends StatefulWidget {
@@ -178,6 +180,18 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const StatisticsScreen()),
+                      );
+                    },
+                  ),
+                  _buildToolCard(
+                    context,
+                    title: 'Gerenciamento de Postos',
+                    description: 'Adicione, edite ou remova os postos de combustíveis.',
+                    icon: RemixIcons.gas_station_line,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const GasStationManagementScreen()),
                       );
                     },
                   ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
+import 'package:fuel_tracker_app/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/provider/currency_provider.dart';
 import 'package:fuel_tracker_app/provider/fuel_entry_provider.dart';
+import 'package:fuel_tracker_app/provider/gas_station_provider.dart';
 import 'package:fuel_tracker_app/provider/language_provider.dart';
 import 'package:fuel_tracker_app/services/application.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
@@ -25,32 +27,30 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late String _tipoFuel;
-  late String _nomePosto;
+  GasStationModel? _selectedGasStation;
   late DateTime _selectedDate;
   late TextEditingController _kmController;
   late MoneyMaskedTextController _litrosController;
   late MoneyMaskedTextController _pricePerLiterController;
   late MoneyMaskedTextController _totalPriceController;
-  
 
   bool _tanqueCheio = true;
   String? _comprovantePath;
   final ImagePicker _picker = ImagePicker();
 
   late Map<String, String> _serviceCombustivel;
-  late Map<String, String> _postoCombustivel;
+  List<GasStationModel> _availableGasStations = [];
   bool get _isEditing => widget.entry != null;
 
   @override
   void initState() {
     super.initState();
     _initializeServiceCombustivel();
-    _initializePostoCombustivel();
+    _loadGasStations();
 
     if (_isEditing) {
       final entry = widget.entry!;
       _tipoFuel = entry.tipo;
-      _nomePosto = entry.posto;
       _selectedDate = entry.dataAbastecimento;
       _kmController = TextEditingController(text: entry.quilometragem.toStringAsFixed(0));
       _litrosController = MoneyMaskedTextController(
@@ -68,12 +68,11 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
         decimalSeparator: ',',
         thousandSeparator: '.',
       );
-      
+
       _tanqueCheio = entry.tanqueCheio;
       _comprovantePath = entry.comprovantePath ?? '';
     } else {
       _tipoFuel = _serviceCombustivel.keys.first;
-      _nomePosto = _postoCombustivel.keys.first;
       _selectedDate = DateTime.now();
       _kmController = widget.lastOdometer != null
           ? TextEditingController(text: widget.lastOdometer!.toStringAsFixed(0))
@@ -102,22 +101,6 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
     }
   }
 
-  void _initializePostoCombustivel() {
-    _postoCombustivel = {
-      context.tr(TranslationKeys.postoTypePosto66): 'Posto 66 - Ipiranga',
-      context.tr(TranslationKeys.postoTypePostoIA): 'Posto Itaipuaçu AmPm',
-      context.tr(TranslationKeys.postoTypePostoBR): 'Posto Bragas (BR)',
-      context.tr(TranslationKeys.postoTypePostoPE): 'Posto Petrobras',
-      context.tr(TranslationKeys.postoTypePostoAX): 'Posto Amrx',
-      context.tr(TranslationKeys.postoTypePostoAL): 'Posto Ale',
-      context.tr(TranslationKeys.postoTypePostoGNV): 'Auto Gas GNV',
-      context.tr(TranslationKeys.postoTypePostoGA): 'Posto Gasolina',
-    };
-    if(_isEditing && !_postoCombustivel.containsKey(widget.entry!.posto)){
-      _postoCombustivel[widget.entry!.posto] = 'OTHER';
-    }
-  }
-
   @override
   void dispose() {
     _kmController.dispose();
@@ -125,6 +108,36 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
     _pricePerLiterController.dispose();
     _totalPriceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadGasStations() async {
+    final provider = GasStationProvider();
+    final stations = await provider.getAllGasStation();
+
+    if (mounted) {
+      setState(() {
+        _availableGasStations = stations;
+        if (_isEditing) {
+          _selectedGasStation = stations.firstWhereOrNull((s) => s.name == widget.entry!.posto);
+        } else if (stations.isNotEmpty) {
+          _selectedGasStation = stations.first;
+        }
+
+        if (_selectedGasStation == null && _isEditing) {
+          _selectedGasStation = GasStationModel(
+            id: -1,
+            name: widget.entry!.posto,
+            latitude: 0.0,
+            longitude: 0.0,
+            brand: 'Desconhecida',
+            priceGasoline: 0.0,
+            priceEthanol: 0.0,
+            hasConvenientStore: false,
+            is24Hours: false,
+          );
+        }
+      });
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -221,21 +234,26 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
   }
 
   void _saveEntry() {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate() || _selectedGasStation == null) {
+      if (_selectedGasStation == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Por favor, selecione um posto de combustível.')));
+      }
       return;
     }
     _formKey.currentState!.save();
     final FuelEntry newEntry = FuelEntry(
       id: widget.entry?.id,
       tipo: _tipoFuel,
-      posto: _nomePosto,
+      posto: _selectedGasStation!.name,
       dataAbastecimento: _selectedDate,
       quilometragem: _getOdometerValue()!,
       litros: _getLitersValue()!,
       pricePerLiter: _getPricePerLiterValue()!,
       totalPrice: _getTotalPriceValue()!,
       comprovantePath: _comprovantePath,
-      
+
       tanqueCheio: _tanqueCheio,
     );
     if (_isEditing) {
@@ -432,33 +450,82 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
                       onChanged: (_) => _calculatePrice(),
                     ),
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
+                    DropdownButtonFormField<GasStationModel>(
                       decoration: InputDecoration(
                         labelText: context.tr(TranslationKeys.entryScreenLabelGasStation),
                         border: OutlineInputBorder(),
                       ),
-                      value: _nomePosto,
-                      items: _postoCombustivel.keys.map((String value){
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value, style: TextStyle(color: AppTheme.textGrey)),
+                      value: _selectedGasStation,
+                      items: _availableGasStations.map((GasStationModel station) {
+                        return DropdownMenuItem<GasStationModel>(
+                          value: station,
+                          child: Text(station.name, style: TextStyle(color: AppTheme.textGrey)),
                         );
                       }).toList(),
-                      onChanged: (String? newValue){
-                        if(newValue != null){
+                      onChanged: (GasStationModel? newStation) {
+                        if (newStation != null) {
                           setState(() {
-                            _nomePosto = newValue;
+                            _selectedGasStation = newStation;
                           });
                         }
                       },
-                      validator: (value){
-                        if(value == null || value.isEmpty){
+                      validator: (value) {
+                        if (value == null) {
                           return context.tr(TranslationKeys.validationRequiredFuelType);
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
+                    if (_selectedGasStation != null && _selectedGasStation!.id != -1)
+                      Container(
+                        padding: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8.0),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.5),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Detalhes do Posto: ${_selectedGasStation!.brand}',
+                              style: theme.textTheme.titleMedium!.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildInfoRow(
+                              context,
+                              RemixIcons.oil_line,
+                              'Gasolina (R\$):',
+                              _selectedGasStation!.priceGasoline.toStringAsFixed(2),
+                            ),
+                            _buildInfoRow(
+                              context,
+                              RemixIcons.oil_line,
+                              'Etanol (R\$):',
+                              _selectedGasStation!.priceEthanol.toStringAsFixed(2),
+                            ),
+                            _buildServiceRow(
+                              context,
+                              RemixIcons.store_2_line,
+                              'Loja de Conv.:',
+                              _selectedGasStation!.hasConvenientStore,
+                            ),
+                            _buildServiceRow(
+                              context,
+                              RemixIcons.time_line,
+                              '24 Horas:',
+                              _selectedGasStation!.is24Hours,
+                            ),
+                          ],
+                        ),
+                      ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -556,5 +623,51 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
         );
       },
     );
+  }
+
+  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppTheme.textGrey),
+          const SizedBox(width: 8),
+          Text(label, style: TextStyle(color: AppTheme.textGrey)),
+          const Spacer(),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceRow(BuildContext context, IconData icon, String label, bool status) {
+    final color = status ? Colors.green.shade700 : Colors.red.shade700;
+    final text = status ? 'SIM' : 'NÃO';
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(color: AppTheme.textGrey)),
+        const Spacer(),
+        Text(
+          text,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
+    );
+  }
+}
+
+extension IterableExtension<T> on Iterable<T> {
+  T? firstWhereOrNull(bool Function(T) test) {
+    for (final element in this) {
+      if (test(element)) return element;
+    }
+    return null;
   }
 }

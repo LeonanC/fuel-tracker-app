@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fuel_tracker_app/provider/currency_provider.dart';
 import 'package:fuel_tracker_app/provider/fuel_entry_provider.dart';
+import 'package:fuel_tracker_app/provider/gas_station_provider.dart';
 import 'package:fuel_tracker_app/provider/language_provider.dart';
 import 'package:fuel_tracker_app/provider/maintenance_provider.dart';
 import 'package:fuel_tracker_app/provider/reminder_provider.dart';
@@ -48,6 +49,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (context) => ReminderProvider()),
         ChangeNotifierProvider(create: (context) => MaintenanceProvider()),
         ChangeNotifierProvider(create: (context) => VehicleProvider()),
+        ChangeNotifierProvider(create: (context) => GasStationProvider()),
       ],
       child: Consumer2<ThemeProvider, LanguageProvider>(
         builder: (context, themeProvider, languageProvider, child) {

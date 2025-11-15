@@ -22,6 +22,12 @@ class FuelEntryDb extends DatabaseHelper {
       orderBy: 'quilometragem DESC, data_abastecimento DESC');
   }
 
+  Future<List<Map<String, dynamic>>> getAllGasStation() async {
+    final db = await getDb();
+    return await db.query(
+      'gas_stations');
+  }
+
   @override
   Future<Map> getItem(dynamic where) async {
     final db = await getDb();
@@ -102,6 +108,29 @@ class FuelEntryDb extends DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
+    return (rows != 0);
+  }
+
+  Future<int> insertStation(Map<String, dynamic> values) async {
+    final db = await getDb();
+    values.remove('id');
+    int newId = await db.insert('gas_stations', values);
+    return newId;
+  }
+  Future<bool> updateStation(Map<String, dynamic> values) async {
+    if(values['id'] == null) return false;
+    final db = await getDb();
+    int rows = await db.update(
+      'gas_stations', 
+      values,
+      where: 'id = ?',
+      whereArgs: [values['id']],
+    );
+    return (rows != 0);
+  }
+  Future<bool> deleteStation(int id) async {
+    final db = await getDb();
+    int rows = await db.delete('gas_stations', where: 'id = ?', whereArgs: [id]);
     return (rows != 0);
   }
 

@@ -107,6 +107,7 @@ class TranslationKeys {
   static const String navigation = 'navigation';
   static const String navigationFuelEntries = 'navigation.fuel_entries';
   static const String navigationMaintenance = 'navigation.fuel_maintenance';
+  static const String navigationMap = 'navigation.fuel_maps';
   static const String navigationFuelTools = 'navigation.fuel_tools';
 
   // List Screen
@@ -117,6 +118,14 @@ class TranslationKeys {
   static const String listScreenSnackbarEntryAdded = 'list_screen.snackbar_entry_added';
   static const String listScreenSnackbarEntryUpdated = 'list_screen.snackbar_entry_updated';
   static const String listScreenSnackbarEntryRemoved = 'list_screen.snackbar_entry_removed';
+
+  static const String mapPlaceholder = 'map_screen.map_placeholder';
+  static const String mapPlaceholderTip = 'map_screen.map_placeholder_tip';
+  static const String mapSearchAction = 'map_screen.map_search_action';
+  static const String mapLoadingLocation = 'map_screen.map_loading_location';
+  static const String mapLocationServiceDisabled = 'map_screen.map_location_service_disabled';
+  static const String mapPermissionDenied = 'map_screen.map_permission_denied';
+  static const String mapPermissionDeniedForever = 'map_screen.map_permission_denied_forever';
 
   // Common Labels
   static const String commonLabels = 'common_labels';
@@ -343,6 +352,29 @@ class TranslationKeys {
   static const String vehiclesDelete = 'vehicles.delete';
   static const String vehiclesSave = 'vehicles.save';
   static const String vehiclesCancel = 'vehicles.cancel';
+
+  static const String gasStationScreenTitle = 'gasstation.screen_title';
+  static const String gasStationAddTitle = 'gasstation.add_title';
+  static const String gasStationUpdateTitle = 'gasstation.update_title';
+  static const String gasStationLabelName = 'gasstation.label_name';
+  static const String gasStationLabelAddress = 'gasstation.label_address';
+  static const String gasStationLabelBrand = 'gasstation.label_brand';
+  static const String gasStationLabelLatitude = 'gasstation.label_latitude';
+  static const String gasStationLabelLongitude = 'gasstation.label_longitude';
+  static const String gasStationLabelPriceGasoline = 'gasstation.label_price_gasoline';
+  static const String gasStationLabelPriceEthanol = 'gasstation.label_price_ethanol';
+  static const String gasStationLabelConvenienceStore = 'gasstation.label_convenience_store';
+  static const String gasStationLabel24Hours = 'gasstation.label_24hours';
+  static const String gasStationButtonSave = 'gasstation.button_save';
+  static const String gasStationButtonUpdate = 'gasstation.button_cancel';
+  static const String gasStationButtonCancel = 'gasstation.button_cancel';
+  static const String gasStationButtonDelete = 'gasstation.button_delete';
+  static const String gasStationButtonDeleteConfirm = 'gasstation.button_delete_confirm';
+  static const String gasStationRequiredFieldName = 'gasstation.required_name';
+  static const String gasStationRequiredFieldBrand = 'gasstation.required_brand';
+  static const String gasStationRequiredValidLatitude = 'gasstation.required_valid_latitude';
+  static const String gasStationRequiredValidLongitude = 'gasstation.required_valid_longitude';
+  static const String gasStationRequiredValidPrice = 'gasstation.required_valid_price';
 
   static const String onboardingsTitle1 = 'onboardings.onboarding_title_1';
   static const String onboardingsDesc1 = 'onboardings.onboarding_desc_1';
