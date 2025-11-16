@@ -41,7 +41,6 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeDatabaseAndLoadStations();
     _determinePositionAndLoadMap();
   }
 
@@ -71,50 +70,6 @@ class _MapScreenState extends State<MapScreen> {
       _moveMapToCurrentLocation(_currentLocation!);
     }
     _showSnackbar('Navegação cancelada.');
-  }
-
-  Future<void> _initializeDatabaseAndLoadStations() async {
-    await _dbProvider.clearAllStations();
-    await _dbProvider.insertGasStation(
-      GasStationModel(
-        name: 'Posto Estático Shell',
-        latitude: -23.561380,
-        longitude: -46.656370,
-        address: 'Av. Teste 1',
-        brand: 'Shell',
-        priceGasoline: 5.99,
-        priceEthanol: 3.99,
-        hasConvenientStore: true,
-        is24Hours: true,
-      ),
-    );
-    await _dbProvider.insertGasStation(
-      GasStationModel(
-        name: 'Posto Estático Ipiranga',
-        latitude: -23.540190,
-        longitude: -46.623410,
-        address: 'Rua Exemplo 2',
-        brand: 'Ipiranga',
-        priceGasoline: 6.09,
-        priceEthanol: 4.10,
-        hasConvenientStore: false,
-        is24Hours: false,
-      ),
-    );
-    await _dbProvider.insertGasStation(
-      GasStationModel(
-        name: 'Posto Estático BR',
-        latitude: -23.585000,
-        longitude: -46.600000,
-        address: 'Lg. Demonstração 3',
-        brand: 'BR',
-        priceGasoline: 5.85,
-        priceEthanol: 3.85,
-        hasConvenientStore: true,
-        is24Hours: true,
-      ),
-    );
-    await _loadStationsFromDB();
   }
 
   String _calculateETA(double durationSeconds){

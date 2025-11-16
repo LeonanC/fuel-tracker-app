@@ -17,10 +17,10 @@ class GasStationManagementScreen extends StatefulWidget {
 
 class _GasStationManagementScreenState extends State<GasStationManagementScreen> {
   void _navigateAndRefresh(BuildContext context, [GasStationModel? station]) async {
-    final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => GasStationEntryScreen(station: station)),
-    );
-    if(result == true){
+    final result = await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => GasStationEntryScreen(station: station)));
+    if (result == true) {
       Provider.of<GasStationProvider>(context, listen: false).loadGasStation();
     }
   }
@@ -35,9 +35,7 @@ class _GasStationManagementScreenState extends State<GasStationManagementScreen>
           actions: [
             TextButton(
               child: Text(context.tr(TranslationKeys.gasStationButtonCancel)),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
+              onPressed: () => Navigator.of(dialogContext).pop(),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -45,9 +43,24 @@ class _GasStationManagementScreenState extends State<GasStationManagementScreen>
                 foregroundColor: AppTheme.primaryFuelAccent,
               ),
               child: Text(context.tr(TranslationKeys.gasStationButtonDelete)),
-              onPressed: () {
-                // provider.deleteGasStation(station.id!);
+              onPressed: () async {
                 Navigator.of(dialogContext).pop();
+
+                try {
+                  await provider.deleteGasStation(station.id!);
+
+                  if (mounted) {
+                    // ScaffoldMessenger.of(context).showSnackBar(
+                    //   SnackBar(content: Text(context.tr(TranslationKeys.gasStationDeleteSuccess))),
+                    // );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    // ScaffoldMessenger.of(context).showSnackBar(
+                    //   SnackBar(content: Text(context.tr(TranslationKeys.gasStationDeleteError))),
+                    // );
+                  }
+                }
               },
             ),
           ],
@@ -59,8 +72,8 @@ class _GasStationManagementScreenState extends State<GasStationManagementScreen>
   @override
   void initState() {
     super.initState();
-    Future.microtask(() {
-      Provider.of<GasStationProvider>(context, listen: false).loadGasStation();
+    WidgetsBinding.instance.addPostFrameCallback((_){ 
+      context.read<GasStationProvider>().loadGasStation();
     });
   }
 
@@ -68,7 +81,9 @@ class _GasStationManagementScreenState extends State<GasStationManagementScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    final GasStationProvider gasProvider = context.watch<GasStationProvider>();
     final currencySymbol = context.watch<CurrencyProvider>().currencySymbol;
+    final allGas = gasProvider.postos;
 
     return Scaffold(
       backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
@@ -80,6 +95,10 @@ class _GasStationManagementScreenState extends State<GasStationManagementScreen>
       ),
       body: Consumer<GasStationProvider>(
         builder: (context, provider, child) {
+          if(provider.isLoading){
+            return const Center(child: CircularProgressIndicator());
+          }
+          
           if (provider.postos.isEmpty) {
             return Center(
               child: Padding(
@@ -106,6 +125,7 @@ class _GasStationManagementScreenState extends State<GasStationManagementScreen>
             itemBuilder: (context, index) {
               final gasStation = provider.postos[index];
               return PostoCard(
+                key: ValueKey(gasStation.id),
                 gasStation: gasStation,
                 onEdit: () => _navigateAndRefresh(context, gasStation),
                 onDelete: () => _confirmDelete(context, provider, gasStation),
@@ -131,6 +151,7 @@ class PostoCard extends StatelessWidget {
   final VoidCallback onDelete;
   final String currencySymbol;
   const PostoCard({
+    super.key,
     required this.gasStation,
     required this.onEdit,
     required this.onDelete,
@@ -162,11 +183,11 @@ class PostoCard extends StatelessWidget {
               children: [
                 Icon(RemixIcons.gas_station_fill, size: 16, color: AppTheme.primaryFuelColor),
                 const SizedBox(width: 4),
-                Text('G: ${formatPrice(gasStation.priceGasoline)}'),
+                Flexible(child: Text('G: ${formatPrice(gasStation.priceGasoline)}')),
                 const SizedBox(width: 12),
                 Icon(RemixIcons.flask_fill, size: 16, color: AppTheme.primaryFuelColor),
                 const SizedBox(width: 4),
-                Text('E: ${formatPrice(gasStation.priceEthanol)}'),
+                Flexible(child: Text('E: ${formatPrice(gasStation.priceEthanol)}')),
               ],
             ),
           ],

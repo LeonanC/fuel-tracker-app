@@ -1,7 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/models/onboarding_model.dart';
 import 'package:fuel_tracker_app/screens/main_navigation_screen.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
+
+final List<OnboardingModel> _onboardingPages = [
+  OnboardingModel(
+    titleKey: TranslationKeys.onboardingsTitle1,
+    descKey: TranslationKeys.onboardingsDesc1,
+    icon: Icons.trending_up,
+  ),
+  OnboardingModel(
+    titleKey: TranslationKeys.onboardingsTitle2,
+    descKey: TranslationKeys.onboardingsDesc2,
+    icon: Icons.directions_car,
+  ),
+  OnboardingModel(
+    titleKey: TranslationKeys.onboardingsTitle3,
+    descKey: TranslationKeys.onboardingsDesc3,
+    icon: Icons.receipt,
+  ),
+];
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -13,35 +32,17 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  final int _numPages = 3;
+  final int _numPages = _onboardingPages.length;
 
-  void _navigateToHomeScreen(BuildContext context){
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-    );
+  void _navigateToHomeScreen(BuildContext context) {
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (context) => const MainNavigationScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    final List<Map<String, dynamic>> onboardingPages = [
-      {
-        'titleKey': TranslationKeys.onboardingsTitle1,
-        'descKey': TranslationKeys.onboardingsDesc1,
-        'icon': Icons.trending_up,
-      },
-      {
-        'titleKey': TranslationKeys.onboardingsTitle2,
-        'descKey': TranslationKeys.onboardingsDesc2,
-        'icon': Icons.directions_car,
-      },
-      {
-        'titleKey': TranslationKeys.onboardingsTitle3,
-        'descKey': TranslationKeys.onboardingsDesc3,
-        'icon': Icons.receipt,
-      },
-    ];
 
     return Scaffold(
       backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
@@ -51,7 +52,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
-                onPressed: () {},
+                onPressed: () => _navigateToHomeScreen(context),
                 child: Text(
                   context.tr(TranslationKeys.onboardingsButtonSkip),
                   style: TextStyle(color: AppTheme.primaryFuelColor),
@@ -69,7 +70,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
                 itemBuilder: (_, index) {
                   return OnboardingPageContent(
-                    data: onboardingPages[index],
+                    data: _onboardingPages[index],
                   );
                 },
               ),
@@ -134,7 +135,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 class OnboardingPageContent extends StatelessWidget {
-  final Map<String, dynamic> data;
+  final OnboardingModel data;
   const OnboardingPageContent({required this.data});
 
   @override
@@ -144,23 +145,16 @@ class OnboardingPageContent extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            data['icon'] as IconData,
-            size: 150.0,
-            color: AppTheme.primaryFuelColor,
-          ),
+          Icon(data.icon, size: 150.0, color: AppTheme.primaryFuelColor),
           const SizedBox(height: 30.0),
           Text(
-            context.tr(data['titleKey']),
+            context.tr(data.titleKey),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 28.0,
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(fontSize: 28.0, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 15.0),
           Text(
-            context.tr(data['descKey']),
+            context.tr(data.descKey),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16.0,

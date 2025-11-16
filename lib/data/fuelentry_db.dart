@@ -25,7 +25,9 @@ class FuelEntryDb extends DatabaseHelper {
   Future<List<Map<String, dynamic>>> getAllGasStation() async {
     final db = await getDb();
     return await db.query(
-      'gas_stations');
+      'gas_stations',
+      orderBy: 'id DESC'
+    );
   }
 
   @override
