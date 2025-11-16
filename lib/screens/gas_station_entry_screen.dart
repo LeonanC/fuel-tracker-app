@@ -6,8 +6,10 @@ import 'package:fuel_tracker_app/provider/gas_station_provider.dart';
 import 'package:fuel_tracker_app/provider/language_provider.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:geolocator/geolocator.dart';
 
 class GasStationEntryScreen extends StatefulWidget {
   final GasStationModel? station;
@@ -35,6 +37,9 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
   void initState() {
     super.initState();
 
+    const int coordinatePrecision = 8;
+    const String coordinateDecimalSeparator = '.';
+
     if (_isEditing) {
       final station = widget.station!;
       _nameController = TextEditingController(text: station.name);
@@ -44,11 +49,15 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
         initialValue: station.latitude,
         decimalSeparator: '.',
         thousandSeparator: '',
+        precision: coordinatePrecision,
+        leftSymbol: '-',
       );
       _longitudeController = MoneyMaskedTextController(
         initialValue: station.longitude,
         decimalSeparator: '.',
         thousandSeparator: '',
+        precision: coordinatePrecision,
+        leftSymbol: '-',
       );
       _priceGasolineController = MoneyMaskedTextController(
         initialValue: station.priceGasoline,
@@ -66,16 +75,25 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
       _nameController = TextEditingController();
       _addressController = TextEditingController();
       _brandController = TextEditingController();
-      _latitudeController = MoneyMaskedTextController(decimalSeparator: '.', thousandSeparator: '');
+      _latitudeController = MoneyMaskedTextController(
+        decimalSeparator: '.',
+        thousandSeparator: '',
+        precision: coordinatePrecision,
+        leftSymbol: '-',
+      );
       _longitudeController = MoneyMaskedTextController(
         decimalSeparator: '.',
         thousandSeparator: '',
+        precision: coordinatePrecision,
+        leftSymbol: '-',
       );
       _priceGasolineController = MoneyMaskedTextController(
+        leftSymbol: 'R\$ ',
         decimalSeparator: ',',
         thousandSeparator: '.',
       );
       _priceEthanolController = MoneyMaskedTextController(
+        leftSymbol: 'R\$ ',
         decimalSeparator: ',',
         thousandSeparator: '.',
       );
@@ -130,6 +148,82 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
     Navigator.of(context).pop(true);
   }
 
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Serviços de localização desabilitados.')));
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Permissão de localização negada.')));
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Permissão negada permanentemente. Por favor, habilite nas configurações do app.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    try {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Obtendo sua localização...')));
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      String formattedAddress = "Endereço não encontrado.";
+      if (placemarks.isNotEmpty) {
+        final placemark = placemarks.first;
+        formattedAddress = [
+          placemark.thoroughfare,
+          placemark.subThoroughfare,
+          placemark.subLocality,
+          placemark.locality,
+        ].where((element) => element != null && element.isNotEmpty).join(', ');
+      }
+
+      setState(() {
+        _latitudeController.updateValue(position.latitude);
+        _longitudeController.updateValue(position.longitude);
+        _addressController.text = formattedAddress;
+      });
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Localização atualizada com sucesso!')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Não foi possível obter a localização: $e')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -140,6 +234,7 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
         return Directionality(
           textDirection: languageProvider.textDirection,
           child: Scaffold(
+            resizeToAvoidBottomInset: true,
             backgroundColor: isDarkMode
                 ? AppTheme.backgroundColorDark
                 : AppTheme.backgroundColorLight,
@@ -205,6 +300,11 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
                             decoration: InputDecoration(
                               labelText: context.tr(TranslationKeys.gasStationLabelLatitude),
                               hintText: '-23.56789',
+                              suffixIcon: IconButton(
+                                icon: const Icon(RemixIcons.user_location_line, size: 20),
+                                color: Theme.of(context).colorScheme.primary,
+                                onPressed: _getCurrentLocation,
+                              ),
                             ),
                             validator: (value) {
                               if (_latitudeController.numberValue == 0.0) {
@@ -332,14 +432,18 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
               size: 28,
             ),
             const SizedBox(width: 16),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: value
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).textTheme.bodyLarge?.color,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: value
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
             ),
           ],
