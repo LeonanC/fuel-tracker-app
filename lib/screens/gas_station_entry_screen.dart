@@ -37,7 +37,7 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
   void initState() {
     super.initState();
 
-    const int coordinatePrecision = 8;
+    const int coordinatePrecision = 7;
     const String coordinateDecimalSeparator = '.';
 
     if (_isEditing) {

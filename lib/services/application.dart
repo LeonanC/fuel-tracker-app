@@ -32,8 +32,8 @@ final List<String> dbCreate = <String>[
   """CREATE TABLE gas_stations(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
-    latitude DECIMAL(7,2) NOT NULL,
-    longitude DECIMAL(7,2) NOT NULL,
+    latitude REAL NOT NULL,
+    longitude REAL NOT NULL,
     address TEXT,
     brand TEXT NOT NULL,
     priceGasoline REAL NOT NULL,

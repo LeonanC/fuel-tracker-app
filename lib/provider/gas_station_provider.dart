@@ -69,8 +69,11 @@ class GasStationProvider with ChangeNotifier {
       'gas_stations',
       where: 'nome LIKE ?',
       whereArgs: ['%$query%'],
+      orderBy: 'nome ASC'
     );
-    return maps.map((map) => GasStationModel.fromMap(map)).toList();
+    return List.generate(maps.length, (i){
+      return GasStationModel.fromMap(maps[i]);
+    });
   }
 
   Future<int> clearAllStations() async {
