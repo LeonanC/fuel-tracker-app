@@ -112,29 +112,34 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
 
   Future<void> _loadGasStations() async {
     final provider = GasStationProvider();
-    final stations = await provider.getAllGasStation();
+    final List<GasStationModel> stations = await provider.getAllGasStation();
 
     if (mounted) {
       setState(() {
         _availableGasStations = stations;
         if (_isEditing) {
-          _selectedGasStation = stations.firstWhereOrNull((s) => s.name == widget.entry!.posto);
+          _selectedGasStation = stations.firstWhereOrNull((s) => s.nome == widget.entry!.posto);
+
+          if (_selectedGasStation == null) {
+            final tempStation = GasStationModel(
+              id: widget.entry!.id ?? -1,
+              nome: widget.entry!.posto,
+              latitude: 0.0,
+              longitude: 0.0,
+              brand: 'Desconhecida',
+              priceGasoline: 0.0,
+              priceEthanol: 0.0,
+              hasConvenientStore: false,
+              is24Hours: false,
+            );
+
+            _availableGasStations.add(tempStation);
+            _selectedGasStation = tempStation;
+          }
         } else if (stations.isNotEmpty) {
           _selectedGasStation = stations.first;
-        }
-
-        if (_selectedGasStation == null && _isEditing) {
-          _selectedGasStation = GasStationModel(
-            id: -1,
-            name: widget.entry!.posto,
-            latitude: 0.0,
-            longitude: 0.0,
-            brand: 'Desconhecida',
-            priceGasoline: 0.0,
-            priceEthanol: 0.0,
-            hasConvenientStore: false,
-            is24Hours: false,
-          );
+        } else {
+          _selectedGasStation = null;
         }
       });
     }
@@ -246,7 +251,7 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
     final FuelEntry newEntry = FuelEntry(
       id: widget.entry?.id,
       tipo: _tipoFuel,
-      posto: _selectedGasStation!.name,
+      posto: _selectedGasStation!.nome,
       dataAbastecimento: _selectedDate,
       quilometragem: _getOdometerValue()!,
       litros: _getLitersValue()!,
@@ -450,32 +455,32 @@ class _FuelAddEntryScreenState extends State<FuelEntryScreen> {
                       onChanged: (_) => _calculatePrice(),
                     ),
                     const SizedBox(height: 16),
-                    DropdownButtonFormField<GasStationModel>(
-                      decoration: InputDecoration(
-                        labelText: context.tr(TranslationKeys.entryScreenLabelGasStation),
-                        border: OutlineInputBorder(),
-                      ),
-                      value: _selectedGasStation,
-                      items: _availableGasStations.map((GasStationModel station) {
-                        return DropdownMenuItem<GasStationModel>(
-                          value: station,
-                          child: Text(station.name, style: TextStyle(color: AppTheme.textGrey)),
-                        );
-                      }).toList(),
-                      onChanged: (GasStationModel? newStation) {
-                        if (newStation != null) {
-                          setState(() {
-                            _selectedGasStation = newStation;
-                          });
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null) {
-                          return context.tr(TranslationKeys.validationRequiredFuelType);
-                        }
-                        return null;
-                      },
-                    ),
+                    // DropdownButtonFormField<GasStationModel>(
+                    //   decoration: InputDecoration(
+                    //     labelText: context.tr(TranslationKeys.entryScreenLabelGasStation),
+                    //     border: OutlineInputBorder(),
+                    //   ),
+                    //   value: _selectedGasStation,
+                    //   items: _availableGasStations.map((GasStationModel station) {
+                    //     return DropdownMenuItem<GasStationModel>(
+                    //       value: station,
+                    //       child: Text(station.nome, style: TextStyle(color: AppTheme.textGrey)),
+                    //     );
+                    //   }).toList(),
+                    //   onChanged: (GasStationModel? newStation) {
+                    //     if (newStation != null) {
+                    //       setState(() {
+                    //         _selectedGasStation = newStation;
+                    //       });
+                    //     }
+                    //   },
+                    //   validator: (value) {
+                    //     if (value == null) {
+                    //       return context.tr(TranslationKeys.validationRequiredFuelType);
+                    //     }
+                    //     return null;
+                    //   },
+                    // ),
                     const SizedBox(height: 16),
                     if (_selectedGasStation != null && _selectedGasStation!.id != -1)
                       Container(

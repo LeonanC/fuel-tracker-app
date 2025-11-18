@@ -42,7 +42,7 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
 
     if (_isEditing) {
       final station = widget.station!;
-      _nameController = TextEditingController(text: station.name);
+      _nameController = TextEditingController(text: station.nome);
       _addressController = TextEditingController(text: station.address ?? '');
       _brandController = TextEditingController(text: station.brand);
       _latitudeController = MoneyMaskedTextController(
@@ -122,7 +122,7 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
 
     final GasStationModel newStation = GasStationModel(
       id: widget.station?.id,
-      name: _nameController.text.trim(),
+      nome: _nameController.text.trim(),
       address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
       brand: _brandController.text.trim(),
       latitude: _latitudeController.numberValue,
@@ -138,12 +138,12 @@ class _GasStationEntryScreenState extends State<GasStationEntryScreen> {
       await provider.updateGasStation(newStation);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Posto "${newStation.name}" atualizado com sucesso!')));
+      ).showSnackBar(SnackBar(content: Text('Posto "${newStation.nome}" atualizado com sucesso!')));
     } else {
       await provider.saveGasStation(newStation);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Posto "${newStation.name}" adicionado com sucesso!')));
+      ).showSnackBar(SnackBar(content: Text('Posto "${newStation.nome}" adicionado com sucesso!')));
     }
     Navigator.of(context).pop(true);
   }

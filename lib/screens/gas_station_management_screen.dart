@@ -173,7 +173,7 @@ class PostoCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       child: ListTile(
         leading: Icon(RemixIcons.gas_station_fill, color: AppTheme.primaryFuelColor, size: 32),
-        title: Text(gasStation.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(gasStation.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

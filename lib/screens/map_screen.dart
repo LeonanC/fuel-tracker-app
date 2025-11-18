@@ -323,7 +323,7 @@ class _MapScreenState extends State<MapScreen> {
               ),
             );
 
-            final destinationName = _currentDestinationStation?.name ?? 'seu destino';
+            final destinationName = _currentDestinationStation?.nome ?? 'seu destino';
             _voiceService.speak('Início da rota. Navegação para $destinationName');
             await Future.delayed(const Duration(milliseconds: 1500));
 
@@ -420,7 +420,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Marker _createGasStationMarker(LatLng point, GasStationModel station) {
     final isDestination =
-        _destinationPoint == point && _currentDestinationStation?.name == station.name;
+        _destinationPoint == point && _currentDestinationStation?.nome == station.nome;
 
     final iconColor = isDestination
         ? Colors.red.shade700
@@ -439,7 +439,7 @@ class _MapScreenState extends State<MapScreen> {
               _clearNavigation();
             } else {
               _calculateRoute(_currentLocation!, point, station);
-              _showSnackbar('Calculando rota para ${station.name}...');
+              _showSnackbar('Calculando rota para ${station.nome}...');
             }
           } else {
             _showSnackbar('Localização indisponível. Recalcule sua posição.');
@@ -450,7 +450,7 @@ class _MapScreenState extends State<MapScreen> {
             Icon(RemixIcons.gas_station_fill, color: iconColor, size: iconSize),
             Flexible(
               child: Text(
-                station.name.split(' ').first,
+                station.nome.split(' ').first,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isDestination ? Colors.red.shade700 : AppTheme.primaryFuelColor,
@@ -614,7 +614,7 @@ class _MapScreenState extends State<MapScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _currentDestinationStation!.name,
+                            _currentDestinationStation!.nome,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,

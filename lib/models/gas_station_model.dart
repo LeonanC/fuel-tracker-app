@@ -1,6 +1,6 @@
 class GasStationModel {
   final int? id;
-  final String name;
+  final String nome;
   final double latitude;
   final double longitude;
   final String? address;
@@ -12,7 +12,7 @@ class GasStationModel {
 
   GasStationModel({
     this.id,
-    required this.name,
+    required this.nome,
     required this.latitude,
     required this.longitude,
     this.address,
@@ -26,7 +26,7 @@ class GasStationModel {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'nome': name,
+      'nome': nome,
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
@@ -41,7 +41,7 @@ class GasStationModel {
   factory GasStationModel.fromMap(Map<String, dynamic> map) {
     return GasStationModel(
       id: map['id'] as int?,
-      name: map['nome'] as String,
+      nome: map['nome'] as String,
       latitude: map['latitude'] is int
           ? (map['latitude'] as int).toDouble()
           : map['latitude'] as double,
@@ -57,4 +57,15 @@ class GasStationModel {
       is24Hours: (map['is24Hours'] as int) == 1,
     );
   }
+
+  @override
+  bool operator ==(Object other){
+    if(identical(this, other)) return true;
+
+    return other is GasStationModel &&
+      other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
