@@ -1,14 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/utils/app_localizations.dart';
+import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:fuel_tracker_app/models/app_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart' as launcher;
 import 'package:version/version.dart';
 
 class UpdateService {
+  final LanguageController languageController = Get.find<LanguageController>();
+  
   static const String updateUrl =
       'https://raw.githubusercontent.com/LeonanC/fuel-tracker-app/main/config/update.json';
 
@@ -33,97 +36,25 @@ class UpdateService {
     return packageInfo.version;
   }
 
-  Future<void> checkForUpdate(BuildContext context) async {
-    final installedVersion = await getInstalledAppVersion();
-    final latestUpdate = await fetchLatestVersion();
-    if (latestUpdate != null) {
-      final latestVersion = latestUpdate.version;
-      if (isNewerVersion(latestVersion, installedVersion)) {
-        showUpdateDialog(context, latestUpdate);
-      } else {
-        print('Versão Instalada: $installedVersion. Versão do Servidor: ${latestUpdate.version}.');
-      }
-    }
-  }
-
   bool isNewerVersion(String latest, String installed){
-    return latest.compareTo(installed) > 0;
+    try{
+      final latestVersion = Version.parse(latest);
+      final installedVersion = Version.parse(installed);
+      return latestVersion > installedVersion;
+    }catch(e){
+      debugPrint('Erro ao comparar versões. Verifique se as strings são válidas: $e');
+      return false;
+    }
   }
 
-  Future<void> _launchUrl(String url) async {
+  Future<void> launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      debugPrint('Não foi possível iniciar: $url');
-    }
-  }
-
-  void showUpdateDialog(BuildContext context, AppUpdate update) async {
-    final versionLabel = context.tr(TranslationKeys.updateServiceNewVersion);
-
-    final fullVersionText = '$versionLabel ${update.version}';
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(context.tr(TranslationKeys.updateServiceUpdateAvailable)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(fullVersionText),
-              const SizedBox(height: 8),
-              Text(update.messText, style: Theme.of(context).textTheme.bodyMedium),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(context.tr(TranslationKeys.updateServiceLater)),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _launchUrl(update.url.trim());
-              },
-              child: Text(context.tr(TranslationKeys.updateServiceDownload)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> checkAppUpdate(BuildContext context) async {
-    final versionLabel = context.tr(TranslationKeys.updateServiceCurrentVersion);
-    final PackageInfo packageInfo = await PackageInfo.fromPlatform();
-    final fullVersionText = '$versionLabel ${packageInfo.version}';
-    final AppUpdate? latestUpdate = await fetchLatestVersion();
-
-    if (latestUpdate == null) {
-      return;
-    }
-
-    final String currentVersionString = await getInstalledAppVersion();
-
-    try {
-      final currentVersion = Version.parse(currentVersionString);
-      final latestVersion = Version.parse(latestUpdate.version);
-
-      if (latestVersion > currentVersion) {
-        showUpdateDialog(context, latestUpdate);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(fullVersionText), duration: const Duration(seconds: 2)),
-        );
+    try{
+      if (!await launcher.launchUrl(uri, mode: launcher.LaunchMode.externalApplication)) {
+        throw Exception('Não foi possível iniciar: $url');
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr(TranslationKeys.updateServiceNoUpdate)),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+    }catch(e){
+      throw Exception('Falha ao tentar abrir URL: $e');
     }
   }
 }

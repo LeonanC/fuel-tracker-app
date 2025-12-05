@@ -2,14 +2,17 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:fuel_tracker_app/controllers/maintenance_controller.dart';
 import 'package:fuel_tracker_app/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/models/route_step_model.dart';
-import 'package:fuel_tracker_app/provider/gas_station_provider.dart';
+import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
 import 'package:fuel_tracker_app/services/voice_navigation_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
@@ -33,118 +36,51 @@ class _MapScreenState extends State<MapScreen> {
 
   LatLng? _destinationPoint;
 
-  double _routeDistanceKm = 0.0;
-  double _routeDurationMinutes = 0.0;
+  double _routeDistanceMeters = 0.0;
+  double _routeDurationSeconds = 0.0;
   double _currentHeading = 0.0;
 
   List<Marker> _stationMarkers = [];
   List<LatLng> _routePoints = [];
-
   List<RouteStep> _routeSteps = [];
+
   int _nextManeuverIndex = 0;
   final VoiceNavigationService _voiceService = VoiceNavigationService();
 
   GasStationModel? _currentDestinationStation;
 
-  final GasStationProvider _dbProvider = GasStationProvider();
+  final GasStationController _controller = Get.find<GasStationController>();
+  final MaintenanceController maintenanceController = Get.find<MaintenanceController>();
 
   StreamSubscription<Position>? _positionStreamSubscription;
+  StreamSubscription<List<GasStationModel>>? _stationsSubscription;
+  StreamSubscription<bool>? _loadingSubscription;
 
-  double _offRouteToleranceMeters = 50.0;
-  double _maneuverToleranceMeters = 30.0;
+  final double _offRouteToleranceMeters = 75.0;
+  final double _maneuverToleranceMeters = 30.0;
 
   @override
   void initState() {
     super.initState();
+    _setupControllerListeners();
     _determinePositionAndLoadMap();
   }
 
-  void _startLocationTracking() {
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
-      distanceFilter: 10,
-    );
-
-    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: locationSettings)
-        .listen((Position position) {
-          if (mounted) {
-            final newLocation = LatLng(position.latitude, position.longitude);
-            setState(() {
-              _currentLocation = newLocation;
-              _currentHeading = position.heading;
-            });
-
-            if (_destinationPoint != null) {
-              _checkManeuverProgress(newLocation);
-              _checkIfOffRoute(newLocation);
-
-              if (_isNavigationMode) {
-                _moveMapToNavigationMode(newLocation, _currentHeading);
-              }
-            } else {
-              _moveMapToCurrentLocation(newLocation);
-              _checkIfOffRoute(newLocation);
-            }
-          }
-        });
-  }
-
-  void _moveMapToNavigationMode(LatLng newLocation, double heading) {
-    if (mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        const double navigationZoom = 17.0;
-
-        _mapController.moveAndRotate(newLocation, navigationZoom, -heading);
-      });
-    }
-  }
-
-  String _formatDistance(double meters) {
-    final km = meters / 1000.0;
-    return '${km.toStringAsFixed(1)} km';
-  }
-
-  String _formatDuration(double seconds) {
-    final minutes = (seconds / 60).round();
-    if (minutes < 60) {
-      return '$minutes min';
-    } else {
-      final hours = (minutes / 60).floor();
-      final remainingMinutes = minutes % 60;
-      return '${hours}h ${remainingMinutes}min';
-    }
-  }
-
-  void _clearNavigation() {
-    setState(() {
-      _routePoints = [];
-      _destinationPoint = null;
-      _isNavigationMode = false;
+  void _setupControllerListeners() {
+    _stationsSubscription = _controller.stations.listen((stations) {
+      _updateStationMarkers(stations);
     });
 
-    if (_currentLocation != null) {
-      _moveMapToCurrentLocation(_currentLocation!);
-    }
-    _showSnackbar('Navegação cancelada.');
+    // _loadingSubscription = _controller.isLoading.listen((loading) {
+    //   if (mounted) {
+    //     if (loading || _isLoading) {
+    //       setState(() => _isLoading = loading);
+    //     }
+    //   }
+    // });
   }
 
-  String _calculateETA(double durationSeconds) {
-    if (durationSeconds <= 0) return 'Calculando...';
-    final etaTime = DateTime.now().add(Duration(seconds: durationSeconds.round()));
-    final hour = etaTime.hour.toString().padLeft(2, '0');
-    final minute = etaTime.minute.toString().padLeft(2, '0');
-
-    return '$hour:$minute';
-  }
-
-  Future<void> _loadStationsFromDB({String? query}) async {
-    List<GasStationModel> stations;
-    if (query != null && query.isNotEmpty) {
-      stations = await _dbProvider.searchGasStationsByName(query);
-    } else {
-      stations = await _dbProvider.getAllGasStation();
-    }
-
+  void _updateStationMarkers(List<GasStationModel> stations) {
     final List<Marker> newMarkers = stations
         .map(
           (station) =>
@@ -155,10 +91,19 @@ class _MapScreenState extends State<MapScreen> {
     if (mounted) {
       setState(() {
         _stationMarkers = newMarkers;
-        if (stations.isNotEmpty && query != null) {
-          _mapController.move(LatLng(stations.first.latitude, stations.first.longitude), 14.0);
-        }
       });
+    }
+  }
+
+  static Map<String, dynamic> _parseRouteData(String responseBody) {
+    return json.decode(responseBody);
+  }
+
+  Future<void> _initializeVoiceService() async {
+    try {
+      await _voiceService.init();
+    } catch (e) {
+      Get.snackbar('Erro', 'Erro ao iniciar serviço de voz: $e');
     }
   }
 
@@ -175,9 +120,7 @@ class _MapScreenState extends State<MapScreen> {
           _isLoading = false;
           _currentLocation = defaultCenter;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr(TranslationKeys.mapLocationServiceDisabled))),
-        );
+        Get.snackbar('Warning', context.tr(TranslationKeys.mapLocationServiceDisabled));
         await _loadStationsFromDB();
       }
       return;
@@ -192,10 +135,7 @@ class _MapScreenState extends State<MapScreen> {
             _isLoading = false;
             _currentLocation = defaultCenter;
           });
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(context.tr(TranslationKeys.mapPermissionDenied))));
-
+          Get.snackbar('Warning', context.tr(TranslationKeys.mapPermissionDenied));
           await _loadStationsFromDB();
         }
         return;
@@ -208,10 +148,7 @@ class _MapScreenState extends State<MapScreen> {
           _isLoading = false;
           _currentLocation = defaultCenter;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr(TranslationKeys.mapPermissionDeniedForever))),
-        );
-
+        Get.snackbar('Warning', context.tr(TranslationKeys.mapPermissionDeniedForever));
         await _loadStationsFromDB();
       }
       return;
@@ -241,6 +178,43 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  void _startLocationTracking() {
+    const LocationSettings locationSettings = LocationSettings(
+      accuracy: LocationAccuracy.bestForNavigation,
+      distanceFilter: 10,
+    );
+
+    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: locationSettings)
+        .listen((Position position) {
+          if (mounted) {
+            final newLocation = LatLng(position.latitude, position.longitude);
+            setState(() {
+              _currentLocation = newLocation;
+              _currentHeading = position.heading;
+            });
+
+            if (_destinationPoint != null) {
+              _checkManeuverProgress(newLocation);
+              _checkIfOffRoute(newLocation);
+
+              if (_isNavigationMode) {
+                _moveMapToNavigationMode(newLocation, _currentHeading);
+              }
+            }
+          }
+        });
+  }
+
+  void _moveMapToNavigationMode(LatLng newLocation, double heading) {
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        const double navigationZoom = 17.0;
+
+        _mapController.moveAndRotate(newLocation, navigationZoom, -heading);
+      });
+    }
+  }
+
   void _toggleNavigationMode() {
     setState(() {
       _isNavigationMode = !_isNavigationMode;
@@ -248,10 +222,59 @@ class _MapScreenState extends State<MapScreen> {
 
     if (_isNavigationMode && _currentLocation != null) {
       _moveMapToNavigationMode(_currentLocation!, _currentHeading);
-      _showSnackbar('Modo Navegação ATIVADO');
+      Get.snackbar('Sucesso', 'Modo Navegação ATIVADO');
     } else {
       _moveMapToCurrentLocation(_currentLocation ?? defaultCenter);
-      _showSnackbar('Modo Navegação DESATIVADO');
+      Get.snackbar('Erro', 'Modo Navegação DESATIVADO');
+    }
+  }
+
+  void _clearNavigation() {
+    setState(() {
+      _routePoints = [];
+      _destinationPoint = null;
+      _currentDestinationStation = null;
+      _isNavigationMode = false;
+      _routeSteps = [];
+      _nextManeuverIndex = 0;
+    });
+
+    if (_currentLocation != null) {
+      _moveMapToCurrentLocation(_currentLocation!);
+    }
+    Get.snackbar('Erro', 'Navegação cancelada.');
+  }
+
+  String _formatDistance(double meters) {
+    final km = meters / 1000.0;
+    return '${km.toStringAsFixed(1)} km';
+  }
+
+  String _formatDuration(double seconds) {
+    final minutes = (seconds / 60).round();
+    if (minutes < 60) {
+      return '$minutes min';
+    } else {
+      final hours = (minutes / 60).floor();
+      final remainingMinutes = minutes % 60;
+      return '${hours}h ${remainingMinutes}min';
+    }
+  }
+
+  String _calculateETA(double durationSeconds) {
+    if (durationSeconds <= 0) return 'Calculando...';
+    final etaTime = DateTime.now().add(Duration(seconds: durationSeconds.round()));
+    final hour = etaTime.hour.toString().padLeft(2, '0');
+    final minute = etaTime.minute.toString().padLeft(2, '0');
+
+    return '$hour:$minute';
+  }
+
+  Future<void> _loadStationsFromDB({String? query}) async {
+    if (query != null && query.isNotEmpty) {
+      await _controller.searchStations(query);
+    } else {
+      // await _controller.loadstations();
     }
   }
 
@@ -268,12 +291,12 @@ class _MapScreenState extends State<MapScreen> {
     final url =
         'https://router.project-osrm.org/route/v1/driving/'
         '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
-        '?overview=full&geometries=geojson';
+        '?overview=full&geometries=geojson&steps=true';
 
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute(_parseRouteData, response.body);
 
         if (data['code'] == 'Ok' && data['routes'] != null) {
           final route = data['routes'][0];
@@ -310,40 +333,43 @@ class _MapScreenState extends State<MapScreen> {
               _isRouting = false;
               _destinationPoint = end;
               _currentDestinationStation = station;
-              _routeDistanceKm = distanceMeters;
-              _routeDurationMinutes = durationSeconds;
+              _routeDistanceMeters = distanceMeters;
+              _routeDurationSeconds = durationSeconds;
               _routeSteps = steps;
               _nextManeuverIndex = 0;
               _isNavigationMode = true;
             });
-            _mapController.fitCamera(
-              CameraFit.bounds(
-                bounds: LatLngBounds.fromPoints(points),
-                padding: const EdgeInsets.all(50),
-              ),
-            );
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _mapController.fitCamera(
+                CameraFit.bounds(
+                  bounds: LatLngBounds.fromPoints(points),
+                  padding: const EdgeInsets.all(50),
+                ),
+              );
+            });
 
             final destinationName = _currentDestinationStation?.nome ?? 'seu destino';
             _voiceService.speak('Início da rota. Navegação para $destinationName');
             await Future.delayed(const Duration(milliseconds: 1500));
 
-            if(_routeSteps.isNotEmpty){
-              if(_routeSteps.first.distanceToNext < 15.0 && _routeSteps.length > 1){
+            if (_routeSteps.isNotEmpty) {
+              _nextManeuverIndex = 0;
+              if (_routeSteps.length > 1 && _routeSteps.first.distanceToNext < 50.0) {
                 _nextManeuverIndex = 1;
-              }else {
-                _nextManeuverIndex = 0;
               }
               _speakNextInstruction();
             }
           }
         } else {
-          _showSnackbar('Erro ao calcular a rota: ${data['message']}');
+          Get.snackbar('Erro', 'Erro ao calcular a rota: ${data['message']}');
         }
       } else {
-        _showSnackbar('Erro de comunicação com o serviço de roteamento.');
+        Get.snackbar('Erro', 'Erro de comunicação com o serviço de roteamento.');
       }
     } catch (e) {
-      _showSnackbar('Falha na requisição de rota: $e');
+      if (kDebugMode) {
+        Get.snackbar('Erro', 'Falha na requisição de rota: $e');
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -355,6 +381,14 @@ class _MapScreenState extends State<MapScreen> {
 
   void _checkManeuverProgress(LatLng userLocation) {
     if (_routeSteps.isEmpty || _nextManeuverIndex >= _routeSteps.length) {
+      if (_destinationPoint != null) {
+        final Distance distance = const Distance();
+        final distToDest = distance.distance(userLocation, _destinationPoint!);
+        if (distToDest <= _maneuverToleranceMeters * 2) {
+          _voiceService.speak('Você chegou ao seu destino.');
+          _clearNavigation();
+        }
+      }
       return;
     }
 
@@ -372,7 +406,10 @@ class _MapScreenState extends State<MapScreen> {
   void _speakNextInstruction() {
     if (_nextManeuverIndex < _routeSteps.length) {
       final nextStep = _routeSteps[_nextManeuverIndex];
-      final instruction = 'Em ${nextStep.distanceToNext.round()} metros, ${nextStep.instruction}';
+      final distanceStr = _formatDistance(
+        nextStep.distanceToNext,
+      ).replaceAll(' km', 'metros').replaceAll('.0', '');
+      final instruction = 'Em $distanceStr, ${nextStep.instruction}';
       _voiceService.speak(instruction);
     } else if (_nextManeuverIndex == _routeSteps.length) {
       _voiceService.speak('Você chegou ao seu destino.');
@@ -393,29 +430,19 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     if (closestDistance < _offRouteToleranceMeters) {
-      _showSnackbar('Desvio de rota detectado. Recalculando...');
+      Get.snackbar('Warning', 'Desvio de rota detectado. Recalculando...');
+      _voiceService.speak('Recalculando rota.');
       _calculateRoute(userLocation, _destinationPoint!, _currentDestinationStation!);
-    }
-  }
-
-  Future<void> _initializeVoiceService() async {
-    try{
-      await _voiceService.init();
-    }catch(e){
-      print('Erro ao iniciar serviço de voz: $e');
     }
   }
 
   @override
   void dispose() {
     _positionStreamSubscription?.cancel();
+    _stationsSubscription?.cancel();
+    _loadingSubscription?.cancel();
+    _voiceService.dispose();
     super.dispose();
-  }
-
-  void _showSnackbar(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-    }
   }
 
   Marker _createGasStationMarker(LatLng point, GasStationModel station) {
@@ -439,10 +466,10 @@ class _MapScreenState extends State<MapScreen> {
               _clearNavigation();
             } else {
               _calculateRoute(_currentLocation!, point, station);
-              _showSnackbar('Calculando rota para ${station.nome}...');
+              Get.snackbar('Warning', 'Calculando rota para ${station.nome}...');
             }
           } else {
-            _showSnackbar('Localização indisponível. Recalcule sua posição.');
+            Get.snackbar('Erro', 'Localização indisponível. Recalcule sua posição.');
           }
         },
         child: Column(
@@ -465,6 +492,38 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Widget _buildServiceIcon(IconData icon, String label, bool available) {
+    return Column(
+      children: [
+        Icon(icon, color: available ? Colors.greenAccent : Colors.grey.shade600, size: 24),
+        Text(
+          label,
+          style: TextStyle(color: available ? Colors.white : Colors.grey.shade600, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoTile({required IconData icon, required String label, required String value}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: AppTheme.primaryFuelColor, size: 20),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(color: Colors.white70, fontSize: 14)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -476,7 +535,9 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
         title: Text(
-          _destinationPoint != null ? 'Em Navegação' : context.tr(TranslationKeys.navigationMap),
+          _destinationPoint != null
+              ? 'Em Navegação'
+              : maintenanceController.tr(TranslationKeys.navigationMap),
         ),
         elevation: theme.appBarTheme.elevation,
         centerTitle: theme.appBarTheme.centerTitle,
@@ -485,8 +546,12 @@ class _MapScreenState extends State<MapScreen> {
             IconButton(
               icon: const Icon(RemixIcons.user_location_line, color: Colors.white),
               onPressed: () {
-                setState(() => _isLoading = true);
-                _determinePositionAndLoadMap();
+                if (_currentLocation != null) {
+                  _moveMapToCurrentLocation(_currentLocation!);
+                } else {
+                  setState(() => _isLoading = true);
+                  _determinePositionAndLoadMap();
+                }
               },
             ),
           if (_destinationPoint == null)
@@ -555,6 +620,9 @@ class _MapScreenState extends State<MapScreen> {
                     initialZoom: 15.0,
                     minZoom: 3.0,
                     maxZoom: 18.0,
+                    interactionOptions: _isNavigationMode
+                        ? const InteractionOptions(flags: InteractiveFlag.none)
+                        : const InteractionOptions(flags: InteractiveFlag.all),
                   ),
                   children: [
                     TileLayer(
@@ -595,7 +663,7 @@ class _MapScreenState extends State<MapScreen> {
                 ),
 
                 if (_destinationPoint != null &&
-                    _routeDistanceKm > 0 &&
+                    _routeDistanceMeters > 0 &&
                     _currentDestinationStation != null)
                   Positioned(
                     bottom: 100,
@@ -628,18 +696,18 @@ class _MapScreenState extends State<MapScreen> {
                               _buildInfoTile(
                                 icon: RemixIcons.road_map_line,
                                 label: 'Distância',
-                                value: _formatDistance(_routeDistanceKm),
+                                value: _formatDistance(_routeDistanceMeters),
                               ),
                               _buildInfoTile(
                                 icon: RemixIcons.timer_line,
                                 label: 'Chegada',
-                                value: _calculateETA(_routeDurationMinutes),
+                                value: _calculateETA(_routeDurationSeconds),
                               ),
                               _buildInfoTile(
                                 icon: RemixIcons.gas_station_fill,
                                 label: 'Preço (Gas.)',
                                 value:
-                                    'R\$ ${_currentDestinationStation!.priceGasoline.toStringAsFixed(2)}',
+                                    'R\$ ${_currentDestinationStation!.priceGasolineComum.toStringAsFixed(2)}',
                               ),
                             ],
                           ),
@@ -667,72 +735,106 @@ class _MapScreenState extends State<MapScreen> {
             ),
     );
   }
-
-  Widget _buildServiceIcon(IconData icon, String label, bool available) {
-    return Column(
-      children: [
-        Icon(icon, color: available ? Colors.greenAccent : Colors.grey.shade600, size: 24),
-        Text(
-          label,
-          style: TextStyle(color: available ? Colors.white : Colors.grey.shade600, fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoTile({required IconData icon, required String label, required String value}) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: AppTheme.primaryFuelColor, size: 20),
-            const SizedBox(width: 8),
-            Text(label, style: TextStyle(color: Colors.white70, fontSize: 14)),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
 }
 
 class _FuelSearchDelegate extends SearchDelegate<String> {
   final BuildContext _context;
+  final GasStationController _controller = Get.find<GasStationController>();
+
   _FuelSearchDelegate(this._context)
     : super(searchFieldLabel: _context.tr(TranslationKeys.mapSearchAction));
 
   @override
+  ThemeData appBarTheme(BuildContext context){
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return theme.copyWith(
+      scaffoldBackgroundColor: isDarkMode ? AppTheme.primaryDark : AppTheme.primaryFuelColor,
+      iconTheme: const IconThemeData(color: Colors.white),
+      inputDecorationTheme: const InputDecorationTheme(
+        hintStyle: TextStyle(color: Colors.white70),
+        focusedBorder: InputBorder.none,
+        border: InputBorder.none,
+      ),
+    );
+  }
+  
+
+  @override
   Widget buildSuggestions(BuildContext context) {
+    if(query.isEmpty){
     final List<String> commonQueries = [
       _context.tr(TranslationKeys.mapSearchAction),
       'Posto Shell',
       'Posto Ipiranga',
-      'Posto mais barato',
+      _context.tr(TranslationKeys.mapSearchCheapestGasStation),
     ];
-    final filteredResults = commonQueries
-        .where((suggestion) => suggestion.toLowerCase().contains(query.toLowerCase()))
-        .toList();
-
     return Container(
       color: AppTheme.primaryDark,
       child: ListView.builder(
-        itemCount: filteredResults.length,
+        itemCount: commonQueries.length,
         itemBuilder: (context, index) {
-          final suggestion = filteredResults[index];
+          final suggestion = commonQueries[index];
           return ListTile(
             title: Text(suggestion, style: TextStyle(color: Colors.white)),
             leading: Icon(RemixIcons.gas_station_line, color: AppTheme.primaryFuelColor),
             onTap: () {
-              close(context, suggestion);
+              query = suggestion;
+              showResults(context);
             },
           );
         },
       ),
+    );
+    }
+    return FutureBuilder<List<GasStationModel>>(
+      future: _controller.searchStations(query, returnData: true),
+      builder: (context, snapshot){
+        if(snapshot.connectionState == ConnectionState.waiting){
+          return Center(child: CircularProgressIndicator(color: AppTheme.primaryFuelColor));
+        }
+        if(snapshot.hasError){
+          return Center(
+            child: Text(
+              _context.tr(TranslationKeys.mapSearchError),
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
+
+        final List<GasStationModel> results = snapshot.data ?? [];
+
+        if(results.isEmpty){
+          return Center(
+            child: Text(
+              _context.tr(TranslationKeys.mapSearchNoResults),
+              style: const TextStyle(color: Colors.white70),
+            ),
+          );
+        }
+
+        return Container(
+          color: AppTheme.primaryDark,
+          child: ListView.builder(
+            itemCount: results.length,
+            itemBuilder: (context, index){
+              final station = results[index];
+              return ListTile(
+                title: Text(station.nome, style: const TextStyle(color: Colors.white)),
+                subtitle: Text(
+                  'R\$ ${station.priceGasolineComum.toStringAsFixed(2)} | ${station.brand}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                leading: Icon(RemixIcons.gas_station_line, color: AppTheme.primaryFuelColor),
+                onTap: (){
+                  close(context, station.nome);
+                },
+              );
+            },
+          ),
+        );
+      }
     );
   }
 

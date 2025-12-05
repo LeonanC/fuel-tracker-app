@@ -1,288 +1,189 @@
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/controllers/fuel_list_controller.dart';
+import 'package:fuel_tracker_app/controllers/update_controller.dart';
 import 'package:fuel_tracker_app/models/app_update.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/provider/fuel_entry_provider.dart';
-import 'package:fuel_tracker_app/provider/language_provider.dart';
-import 'package:fuel_tracker_app/screens/Appearance_settings_screen.dart';
-import 'package:fuel_tracker_app/screens/backup_restore_screen.dart';
-import 'package:fuel_tracker_app/screens/currency_settings_screen.dart';
+import 'package:fuel_tracker_app/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/screens/gas_station_management_screen.dart';
 import 'package:fuel_tracker_app/screens/language_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/notificationReminders_settings_screen.dart';
-import 'package:fuel_tracker_app/screens/statistics_screen.dart';
 import 'package:fuel_tracker_app/screens/unit_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/vehicle_management_screen.dart';
 import 'package:fuel_tracker_app/services/export_service.dart';
-import 'package:fuel_tracker_app/services/update_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ToolsScreen extends StatefulWidget {
-  const ToolsScreen({super.key});
+class ToolsScreen extends GetView<FuelListController> {
+  ToolsScreen({super.key});
+
+  final languageController = Get.find<LanguageController>();
+  final updateController = Get.find<UpdateController>();
+  final exportService = ExportService();
 
   @override
-  State<ToolsScreen> createState() => _ToolsScreenState();
-}
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
 
-class _ToolsScreenState extends State<ToolsScreen> {
-  AppUpdate? _update;
+    return Directionality(
+      textDirection: languageController.textDirection,
+      child: Scaffold(
+        backgroundColor: theme.brightness == Brightness.dark
+            ? AppTheme.backgroundColorDark
+            : AppTheme.backgroundColorLight,
+        appBar: AppBar(
+          title: Text(context.tr(TranslationKeys.toolsScreenAppBarTitle)),
+          backgroundColor: theme.brightness == Brightness.dark
+              ? AppTheme.backgroundColorDark
+              : AppTheme.backgroundColorLight,
+          elevation: 0,
+          centerTitle: false,
+        ),
+        body: Obx(() {
+          return ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              if (updateController.latestUpdate.value != null) 
+                _buildUpdateCard(context, updateController.latestUpdate.value!),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.toolsScreenLanguageCardTitle.tr),
+                description: context.tr(TranslationKeys.toolsScreenLanguageCardDescription.tr),
+                icon: Icons.language,
+                onTap: () => Get.to(() => LanguageSettingsScreen()),
+              ),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.toolsScreenUnitCardTitle.tr),
+                description: context.tr(TranslationKeys.toolsScreenUnitCardDescription.tr),
+                icon: Icons.straight,
+                onTap: () => Get.to(() => UnitSettingsScreen()),
+              ),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.toolsScreenNotificationCardTitle.tr),
+                description: context.tr(TranslationKeys.toolsScreenNotificationCardDescription.tr),
+                icon: Icons.notifications_active,
+                onTap: () => Get.to(() => NotificationRemindersSettingsScreen()),
+              ),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.toolsScreenExportReportCardTitle),
+                description: context.tr(TranslationKeys.toolsScreenExportReportCardDescription),
+                icon: Icons.table_chart,
+                onTap: () async {
+                  Get.closeAllSnackbars();
 
-  @override
-  void initState() {
-    super.initState();
-    _checkForUpdates();
-  }
+                  final List<FuelEntry> entries = await controller.getAllEntriesForExport();
+                  final String? errorMessage = await exportService.exportAndShareEntries(entries);
 
-  Future<void> _checkForUpdates() async {
-    final updateService = UpdateService();
-    await updateService.checkAppUpdate(context);
+                  if (errorMessage != null) {
+                    Get.snackbar(
+                      'exportErrorTitle'.tr,
+                      'exportError'.trParams({'error': errorMessage}),
+                      backgroundColor: Colors.red,
+                      colorText: Colors.white,
+                    );
+                  } else {
+                    Get.snackbar(
+                      'exportSuccessTitle'.tr,
+                      'exportSuccessShare'.tr,
+                      backgroundColor: Colors.green,
+                      colorText: Colors.white,
+                    );
+                  }
+                },
+              ),
+              _buildToolCard(
+                context,
+                title: 'Gerenciamento de Postos',
+                description: 'Adicione, edite ou remova os postos de combustíveis.',
+                icon: RemixIcons.gas_station_line,
+                onTap: () => Get.to(() => GasStationManagementScreen()),
+              ),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.vehiclesScreenTitle),
+                description: context.tr(TranslationKeys.vehiclesScreenDescription),
+                icon: Icons.directions_car_filled,
+                onTap: () => Get.to(() => VehicleManagementScreen()),
+              ),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.toolsScreenBackupCardTitle),
+                description: context.tr(TranslationKeys.toolsScreenBackupCardDescription),
+                icon: Icons.backup,
+                // onTap: () => Get.to(() => BackupRestoreScreen()),
+                onTap: (){},
+              ),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.toolsScreenFeedbackTitle),
+                description: context.tr(TranslationKeys.toolsScreenFeedbackDescription),
+                icon: Icons.feedback_outlined,
+                onTap: () {
+                  final subject = 'Feedback%20Fuel%20Tracker%20App';
+                  _launchUrl('mailto:LeonanC@outlool.com.br?subject=$subject');
+                },
+              ),
+              _buildToolCard(
+                context,
+                title: context.tr(TranslationKeys.toolsScreenClearAllDataCardTitle),
+                description: context.tr(TranslationKeys.toolsScreenClearAllDataCardDescription),
+                icon: Icons.delete_forever,
+                onTap: () => _showConfirmationDialog(controller),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
   }
 
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(TrHelper.errorUrlFormat(context, url))));
+      if (Get.context != null) {
+        Get.snackbar(
+          'error'.tr,
+          'errorUrlFormat'.trParams({'url': url}),
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
       }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final fuelProvider = Provider.of<FuelEntryProvider>(context);
-    final exportService = ExportService();
-
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
-        return Directionality(
-          textDirection: languageProvider.textDirection,
-          child: Scaffold(
-            backgroundColor: theme.brightness == Brightness.dark
-                ? AppTheme.backgroundColorDark
-                : AppTheme.backgroundColorLight,
-            appBar: AppBar(
-              title: Text(context.tr(TranslationKeys.toolsScreenAppBarTitle)),
-              backgroundColor: theme.brightness == Brightness.dark
-                  ? AppTheme.backgroundColorDark
-                  : AppTheme.backgroundColorLight,
-              elevation: 0,
-              centerTitle: false,
-            ),
-            body: ListView(
-              padding: const EdgeInsets.all(16.0),
-              children: [
-                if (_update != null) _buildUpdateCard(context, _update!),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenAppearanceTitle),
-                  description: context.tr(TranslationKeys.toolsScreenAppearanceDescription),
-                  icon: Icons.palette_outlined,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AppearanceSettingsScreen()),
-                    );
-                  },
-                ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenLanguageCardTitle),
-                  description: context.tr(TranslationKeys.toolsScreenLanguageCardDescription),
-                  icon: Icons.language,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => LanguageSettingsScreen()),
-                    );
-                  },
-                ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenUnitCardTitle),
-                  description: context.tr(TranslationKeys.toolsScreenUnitCardDescription),
-                  icon: Icons.straight,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => UnitSettingsScreen()),
-                    );
-                  },
-                ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenCurrencyCardTitle),
-                  description: context.tr(TranslationKeys.toolsScreenCurrencyCardDescription),
-                  icon: Icons.monetization_on,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => CurrencySettingsScreen()),
-                    );
-                  },
-                ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenNotificationCardTitle),
-                  description: context.tr(TranslationKeys.toolsScreenNotificationCardDescription),
-                  icon: Icons.notifications_active,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NotificationRemindersSettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenExportReportCardTitle),
-                  description: context.tr(TranslationKeys.toolsScreenExportReportCardDescription),
-                  icon: Icons.table_chart,
-                  onTap: () async {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-                    final List<FuelEntry> entries = await fuelProvider.getAllEntriesForExport();
-                    final String? errorMessage = await exportService.exportAndShareEntries(entries);
-
-                    if (context.mounted) {
-                      if (errorMessage != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Erro: $errorMessage'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Relatório gerado! Escolha como compartilhar.'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-                if (fuelProvider.fuelEntries.isNotEmpty)
-                  _buildToolCard(
-                    context,
-                    title: context.tr(TranslationKeys.toolsScreenStatisticsTitle),
-                    description: context.tr(TranslationKeys.toolsScreenStatisticsDescription),
-                    icon: Icons.bar_chart,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const StatisticsScreen()),
-                      );
-                    },
-                  ),
-                  _buildToolCard(
-                    context,
-                    title: 'Gerenciamento de Postos',
-                    description: 'Adicione, edite ou remova os postos de combustíveis.',
-                    icon: RemixIcons.gas_station_line,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const GasStationManagementScreen()),
-                      );
-                    },
-                  ),
-                  _buildToolCard(
-                    context,
-                    title: context.tr(TranslationKeys.vehiclesScreenTitle),
-                    description: context.tr(TranslationKeys.vehiclesScreenDescription),
-                    icon: Icons.directions_car_filled,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const VehicleManagementScreen()),
-                      );
-                    },
-                  ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenBackupCardTitle),
-                  description: context.tr(TranslationKeys.toolsScreenBackupCardDescription),
-                  icon: Icons.backup,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => BackupRestoreScreen()),
-                    );
-                  },
-                ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenFeedbackTitle),
-                  description: context.tr(TranslationKeys.toolsScreenFeedbackDescription),
-                  icon: Icons.feedback_outlined,
-                  onTap: () {
-                    _launchUrl(
-                      'mailto:LeonanC@outlool.com.br?subject=Feedback%20Fuel%20Tracker%20App',
-                    );
-                  },
-                ),
-                _buildToolCard(
-                  context,
-                  title: context.tr(TranslationKeys.toolsScreenClearAllDataCardTitle),
-                  description: context.tr(TranslationKeys.toolsScreenClearAllDataCardDescription),
-                  icon: Icons.delete_forever,
-                  onTap: () {
-                    _showConfirmationDialog(context);
-                  },
-                ),
-              ],
-            ),
+  void _showConfirmationDialog(FuelListController fuelController) {
+    Get.dialog(
+      AlertDialog(
+        title: Text(TranslationKeys.dialogDeleteTitle),
+        content: Text(TranslationKeys.dialogDeleteContent),
+        actions: [
+          TextButton(
+            child: Text(TranslationKeys.dialogDeleteButtonCancel),
+            onPressed: () => Get.back(),
           ),
-        );
-      },
-    );
-  }
-
-  void _showConfirmationDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(context.tr(TranslationKeys.dialogDeleteTitle)),
-          content: Text(context.tr(TranslationKeys.dialogDeleteContent)),
-          actions: [
-            TextButton(
-              child: Text(context.tr(TranslationKeys.dialogDeleteButtonCancel)),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
-              child: Text(context.tr(TranslationKeys.dialogDeleteButtonDelete)),
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                final provider = Provider.of<FuelEntryProvider>(context, listen: false);
-                await provider.clearAllData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      provider.errorMessage.isEmpty
-                          ? 'Todos os dados foram apagados com sucesso.'
-                          : 'Erro ao apagar dados: ${provider.errorMessage}',
-                    ),
-                    backgroundColor: provider.errorMessage.isEmpty ? Colors.green : Colors.red,
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
+            child: Text(TranslationKeys.dialogDeleteButtonDelete),
+            onPressed: () async {
+              Get.back();
+              await fuelController.clearAllData();
+              Get.snackbar(
+                fuelController.errorMessage.isEmpty ? 'success'.tr : 'error'.tr,
+                fuelController.errorMessage.isEmpty
+                    ? 'clearDataSuccess'.tr
+                    : 'clearDataError'.trParams({'error': fuelController.errorMessage.value}),
+                backgroundColor: fuelController.errorMessage.isEmpty ? Colors.green : Colors.red,
+              );
+            },
+          ),
+        ],
+      ),
+      barrierDismissible: true,
     );
   }
 
@@ -322,7 +223,7 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        TrHelper.versionFormat(context, update.version, isNew: true),
+                        '${TranslationKeys.updateServiceNewVersion.tr} ${update.version}',
                         style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                       ),
                     ],

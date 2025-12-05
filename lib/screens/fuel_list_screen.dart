@@ -1,660 +1,211 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_masked_text2/flutter_masked_text2.dart';
+import 'package:fuel_tracker_app/controllers/currency_controller.dart';
+import 'package:fuel_tracker_app/controllers/fuel_list_controller.dart';
+import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
+import 'package:fuel_tracker_app/controllers/unit_controller.dart';
+import 'package:fuel_tracker_app/controllers/vehicle_controller.dart';
+import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/provider/currency_provider.dart';
-import 'package:fuel_tracker_app/provider/fuel_entry_provider.dart';
-import 'package:fuel_tracker_app/provider/language_provider.dart';
-import 'package:fuel_tracker_app/provider/unit_provider.dart';
+import 'package:fuel_tracker_app/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/screens/about_screen.dart';
-import 'package:fuel_tracker_app/screens/fuel_entry_screen.dart';
-import 'package:fuel_tracker_app/services/application.dart';
-import 'package:fuel_tracker_app/services/update_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
+import 'package:fuel_tracker_app/utils/fuel_alert_card.dart';
+import 'package:fuel_tracker_app/utils/fuel_list_filter_menu.dart';
+import 'package:fuel_tracker_app/utils/overallConsumptionCard.dart';
+import 'package:fuel_tracker_app/utils/unit_nums.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:uuid/uuid.dart';
 
-class FuelListScreen extends StatefulWidget {
+class FuelListScreen extends GetView<FuelListController> {
   const FuelListScreen({super.key});
 
   @override
-  State<FuelListScreen> createState() => _FuelListScreenState();
-}
-
-class _FuelListScreenState extends State<FuelListScreen> {
-  static const double _alertThresholdKm = 100.0;
-  static const double _kmToMileFactor = 0.621371;
-  static const double _kmPerLiterToMPGFactor = 2.3521458;
-
-  String? _selectedFuelTypeFilter;
-  String? _selectedStationFilter;
-
-  final List<String> _mockStations = [
-    'Posto 66 - Ipiranga',
-    'Posto Itaipuaçu AmPm',
-    'Posto Bragas (BR)',
-    'Posto Petrobras',
-    'Posto Amrx',
-    'Posto Ale',
-    'Auto Gas GNV',
-    'Posto Gasolina'
-  ];
-
-  late final Map<String, String> _fuelTypeMap;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FuelEntryProvider>().loadFuelEntries();
-
-      UpdateService().checkForUpdate(context);
-
-      _fuelTypeMap = {
-        'Gasolina Comum': context.tr(TranslationKeys.fuelTypeGasolineComum),
-        'Gasolina Aditivada': context.tr(TranslationKeys.fuelTypeGasolineAditivada),
-        'Etanol (Álcool)': context.tr(TranslationKeys.fuelTypeEthanolAlcool),
-        'Gasolina Premium': context.tr(TranslationKeys.fuelTypeGasolinePremium),
-        'Outro': context.tr(TranslationKeys.fuelTypeOther),
-      };
-    });
-  }
-
-  void _navigateAndSaveEntry(BuildContext context) async {
-    final FuelEntryProvider provider = context.read<FuelEntryProvider>();
-    final currentOdometer = provider.lastOdometer;
-
-    final entry = await Navigator.of(context).push<FuelEntry>(
-      MaterialPageRoute(builder: (context) => FuelEntryScreen(lastOdometer: currentOdometer)),
-    );
-
-    if (entry != null) {
-      await provider.insertEntry(entry);
+  Widget build(BuildContext context) {
+    if (!Get.isRegistered<FuelListController>()) {
+      Get.put(FuelListController());
     }
-  }
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
-  double _calculateOverallTotalDistance(List<FuelEntry> entries) {
-    if (entries.length < 2) return 0.0;
-    return entries.first.quilometragem.toDouble() - entries.last.quilometragem.toDouble();
-  }
+    return Scaffold(
+      backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+      appBar: AppBar(
+        title: Text(context.tr(TranslationKeys.listScreenAppBarTitle)),
+        backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+        elevation: theme.appBarTheme.elevation,
+        centerTitle: theme.appBarTheme.centerTitle,
+        actions: [
+          IconButton(
+            icon: Icon(RemixIcons.refresh_line),
+            tooltip: context.tr(TranslationKeys.listScreenRefresh),
+            onPressed: () async {
+              controller.loadFuelEntries();
+              Get.snackbar(
+                context.tr(TranslationKeys.listScreenRefreshing),
+                '',
+                duration: const Duration(seconds: 2),
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.info_outline),
+            tooltip: context.tr(TranslationKeys.aboutTitle),
+            onPressed: () => Get.to(() => AboutScreen()),
+          ),
+          FuelListFilterMenu(),
+        ],
+      ),
+      body: Obx(() {
+        final fuel = controller.loadedEntries;
 
-  double _calculateOverallTotalCost(List<FuelEntry> entries) {
-    double totalCost = 0.0;
-    for (final entry in entries) {
-      totalCost += entry.totalPrice ?? 0.0;
-    }
-    return totalCost;
-  }
-
-  double _calculateOverallCostPerDistance(List<FuelEntry> entries) {
-    final totalDistanceKm = _calculateOverallTotalDistance(entries);
-    if (totalDistanceKm <= 0) return 0.0;
-    final totalCost = _calculateOverallTotalCost(entries);
-    return totalCost / totalDistanceKm;
-  }
-
-  String _formatConsumption(BuildContext context, double kmPerLiterValue, ConsumptionUnit unit) {
-    String unitStr;
-    double formattedValue;
-
-    switch (unit) {
-      case ConsumptionUnit.kmPerLiter:
-        unitStr = context.tr(TranslationKeys.unitSettingsScreenKmPerLiter);
-        formattedValue = kmPerLiterValue;
-        break;
-      case ConsumptionUnit.litersPer100km:
-        unitStr = context.tr(TranslationKeys.unitSettingsScreenLitersPer100km);
-        formattedValue = kmPerLiterValue > 0 ? (100 / kmPerLiterValue) : 0;
-        break;
-      case ConsumptionUnit.milesPerGallon:
-        unitStr = context.tr(TranslationKeys.unitSettingsScreenMpg);
-        formattedValue = kmPerLiterValue * _kmPerLiterToMPGFactor;
-        break;
-    }
-
-    return formattedValue.toStringAsFixed(2);
-  }
-
-  String _getConsumptionUnitString(BuildContext context, ConsumptionUnit unit) {
-    String key;
-    switch (unit) {
-      case ConsumptionUnit.kmPerLiter:
-        key = TranslationKeys.unitSettingsScreenKmPerLiter;
-        break;
-      case ConsumptionUnit.litersPer100km:
-        key = TranslationKeys.unitSettingsScreenLitersPer100km;
-        break;
-      case ConsumptionUnit.milesPerGallon:
-        key = TranslationKeys.unitSettingsScreenMpg;
-        break;
-    }
-
-    return context.tr(key).replaceAll(RegExp(r'\(.*\)'), '').trim();
-  }
-
-  Widget _buildOverallConsumptionCard(
-    BuildContext context,
-    List<FuelEntry> entries,
-    double overallConsumption,
-    double overallCostPerDistance,
-  ) {
-    final unitProvider = context.read<UnitProvider>();
-    final currencyProvider = context.read<CurrencyProvider>();
-    final isZero = overallConsumption <= 0;
-    final isCostZero = overallCostPerDistance <= 0;
-
-    final ConsumptionUnit selectedUnit = unitProvider.consumptionUnit;
-    final String formattedValue = _formatConsumption(context, overallConsumption, selectedUnit);
-    final String unitString = _getConsumptionUnitString(context, selectedUnit);
-
-    final bool isMiles = unitProvider.distanceUnit == DistanceUnit.miles;
-    final double costPerDistanceToDisplay = isMiles
-        ? (overallCostPerDistance / _kmToMileFactor)
-        : overallCostPerDistance;
-    final String distanceUnitStr = context
-        .tr(
-          isMiles
-              ? TranslationKeys.unitSettingsScreenMiles
-              : TranslationKeys.unitSettingsScreenKilometers,
-        )
-        .replaceAll(RegExp(r'\(.*\)'), '')
-        .trim();
-    final String costPerDistanceUnit =
-        '${currencyProvider.selectedCurrency.symbol}/$distanceUnitStr';
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  RemixIcons.dashboard_line,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 30,
-                ),
-                const SizedBox(width: 16),
-                Flexible(
-                  child: Text(
-                    context.tr(TranslationKeys.consumptionCardsOverallAverage),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Flexible(
-                  child: Text(
-                    isZero
-                        ? context.tr(TranslationKeys.consumptionCardsNotAvailableShort)
-                        : '$formattedValue $unitString',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isZero ? Colors.grey : Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
+        if (fuel.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                context.tr('Nenhum abastecimento registrado.').tr,
+                style: theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor),
+                textAlign: TextAlign.center,
+              ),
             ),
-            if (!isZero && !isCostZero) const Divider(height: 24),
+          );
+        }
 
-            Row(
-              children: [
-                Icon(
-                  RemixIcons.money_dollar_box_line,
-                  color: Theme.of(context).colorScheme.secondary,
-                  size: 30,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        context.tr(TranslationKeys.consumptionCardsOverallCostPerDistance),
-                        style: Theme.of(context).textTheme.titleMedium,
+        final filteredEntries = controller.filteredEntries;
+
+        return Column(
+          children: [
+            OverallConsumptionCard(),
+            FuelAlertCard(),
+            Expanded(
+              child: filteredEntries.isEmpty
+                  ? Center(
+                      child: Text(
+                        controller.selectedVehicleFilter.value != null ||
+                                controller.selectedFuelTypeFilter.value != null ||
+                                controller.selectedStationFilter.value != null
+                            ? 'Nenhum item encontrado com os filtros aplicados.'
+                            : 'Ainda não Abasteceu',
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        isCostZero
-                            ? context.tr(TranslationKeys.consumptionCardsNotAvailableShort)
-                            : '${costPerDistanceToDisplay.toStringAsFixed(3)} $costPerDistanceUnit',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    )
+                  : ListView.builder(
+                      itemCount: filteredEntries.length,
+                      itemBuilder: (context, index) {
+                        final FuelEntry currentEntry = filteredEntries[index];
+                        final FuelEntry? previousEntry = (index + 1 < filteredEntries.length)
+                            ? filteredEntries[index + 1]
+                            : null;
+
+                        double consumptionForThisPeriod = 0.0;
+
+                        if (previousEntry != null && previousEntry.tanqueCheio != 0) {
+                          consumptionForThisPeriod = currentEntry.calculateConsumption(
+                            previousEntry,
+                          );
+                        }
+
+                        return FuelCard(
+                          entry: currentEntry,
+                          consumptionForThisPeriod: consumptionForThisPeriod,
+                        );
+                      },
+                    ),
             ),
           ],
-        ),
+        );
+      }),
+
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_fuelentry_list',
+        onPressed: () => _showFuelForm(context),
+        child: Icon(RemixIcons.gas_station_line, color: Colors.white),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
+}
 
-  Widget? _buildFuelAlertCard(
-    BuildContext context,
-    List<FuelEntry> entries,
-    double overallConsumption,
-  ) {
-    final unitProvider = context.read<UnitProvider>();
+void _showFuelForm(BuildContext context, [FuelEntry? fuel]) {
+  Get.dialog(FuelForm(fuel: fuel), useSafeArea: true, barrierDismissible: true);
+}
 
-    if (entries.length < 2 || overallConsumption <= 0) {
-      return null;
-    }
+class FuelCard extends StatelessWidget {
+  final FuelEntry entry;
+  final double consumptionForThisPeriod;
+  FuelCard({super.key, required this.entry, required this.consumptionForThisPeriod});
 
-    final lastEntry = entries.first;
-    final previousEntry = entries[1];
+  final FuelListController controller = Get.find<FuelListController>();
+  final UnitController unitController = Get.find<UnitController>();
+  final CurrencyController currencyController = Get.find<CurrencyController>();
 
-    final double estimatedTankSize = 44.0;
-
-    final distanceSinceLastFill =
-        (lastEntry.quilometragem).toDouble() - (previousEntry.quilometragem).toDouble();
-    final double totalEstimatedRange = estimatedTankSize * overallConsumption;
-    final double estimatedRange = totalEstimatedRange - distanceSinceLastFill;
-
-    if (estimatedRange < _alertThresholdKm) {
-      final bool isMiles = unitProvider.distanceUnit == DistanceUnit.miles;
-      final double rangeToDisplay = isMiles ? (estimatedRange * _kmToMileFactor) : estimatedRange;
-      final String displayRange = rangeToDisplay.toStringAsFixed(0);
-
-      final String distanceUnitStr = context
-          .tr(
-            isMiles
-                ? TranslationKeys.unitSettingsScreenMiles
-                : TranslationKeys.unitSettingsScreenKilometers,
-          )
-          .replaceAll(RegExp(r'\(.*\)'), '')
-          .trim();
-
-      final double litersFilled = (lastEntry.litros).toDouble();
-      final double trajetConsumptionKmPerLiter = (litersFilled > 0 && distanceSinceLastFill >= 0)
-          ? distanceSinceLastFill / litersFilled
-          : 0.0;
-
-      final String displayTrajetConsumption = _formatConsumption(
-        context,
-        trajetConsumptionKmPerLiter,
-        unitProvider.consumptionUnit,
-      );
-      final String consumptionUnitStr = _getConsumptionUnitString(
-        context,
-        unitProvider.consumptionUnit,
-      );
-
-      final versionLabel1 = context.tr(TranslationKeys.alertsThresholdMsg1);
-      final versionLabel2 = context.tr(TranslationKeys.alertsThresholdMsg2);
-      final alertText0 = '$displayRange $distanceUnitStr';
-      final alertText1 = '$displayTrajetConsumption $consumptionUnitStr';
-
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Card(
-          color: Colors.orange[50],
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Icon(Icons.local_gas_station, color: Colors.orange[800]),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    '$versionLabel1 $alertText0 $versionLabel2 $alertText1',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.orange[900],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+  Future<bool?> _deleteConfirmation(BuildContext context) async {
+    return await Get.dialog<bool>(
+      AlertDialog(
+        title: Text(context.tr(TranslationKeys.dialogDeleteTitle)),
+        content: Text(context.tr(TranslationKeys.dialogDeleteContent)),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(context.tr(TranslationKeys.dialogDeleteButtonCancel)),
           ),
-        ),
-      );
-    }
-    return null;
+          ElevatedButton(
+            onPressed: () => Get.back(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: Text(context.tr(TranslationKeys.dialogDeleteButtonDelete)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final FuelEntryProvider fuelEntryProvider = context.watch<FuelEntryProvider>();
-    final allEntries = fuelEntryProvider.fuelEntries;
+    final isDarkMode = theme.brightness == Brightness.dark;
 
-    final filteredEntries = allEntries.where((entry) {
-      bool matchesFuelType =
-          _selectedFuelTypeFilter == null || entry.tipo == _selectedFuelTypeFilter;
-      bool matchesStation = _selectedStationFilter == null || entry.posto == _selectedStationFilter;
-      return matchesFuelType && matchesStation;
-    }).toList();
-
-    final overallConsumption = fuelEntryProvider.calculateOverallAverageConsumption(
-      entries: filteredEntries,
-    );
-    final entries = fuelEntryProvider.fuelEntries;
-    final overallCostPerDistance = _calculateOverallCostPerDistance(entries);
-
-    final fuelAlertCard = _buildFuelAlertCard(context, filteredEntries, overallConsumption);
-
-    PopupMenuItem<String> buildFuelTypeItem(String key, String value, bool isSelected) {
-      return PopupMenuItem<String>(
-        value: 'SetFuel:$key',
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              size: 20,
-              color: isSelected ? Colors.green : Colors.grey,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              value,
-              style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-            ),
-          ],
-        ),
-      );
-    }
-
-    PopupMenuItem<String> buildStationItem(String station, bool isSelected) {
-      return PopupMenuItem<String>(
-        value: 'SetStation:$station',
-        child: Row(
-          children: [
-            Icon(
-              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-              size: 20,
-              color: isSelected ? Colors.green : Colors.grey,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              station,
-              style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
-        return Directionality(
-          textDirection: languageProvider.textDirection,
-          child: Scaffold(
-            backgroundColor: theme.brightness == Brightness.dark
-                ? AppTheme.backgroundColorDark
-                : AppTheme.backgroundColorLight,
-            appBar: AppBar(
-              title: Text(context.tr(TranslationKeys.listScreenAppBarTitle)),
-              backgroundColor: theme.brightness == Brightness.dark
-                  ? AppTheme.backgroundColorDark
-                  : AppTheme.backgroundColorLight,
-              elevation: 0,
-              centerTitle: false,
-              actions: [
-                IconButton(
-                  icon: Icon(RemixIcons.refresh_line),
-                  tooltip: context.tr(TranslationKeys.listScreenTooltipRefresh),
-                  onPressed: () async {
-                    context.read<FuelEntryProvider>().loadFuelEntries();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(context.tr(TranslationKeys.listScreenSnackbarRefreshing)),
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.info_outline),
-                  tooltip: context.tr(TranslationKeys.aboutTitle),
-                  onPressed: () async {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AboutScreen()),
-                    );
-                  },
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    setState(() {
-                      if (value == 'ClearFuel') {
-                        _selectedFuelTypeFilter = null;
-                      } else if (value.startsWith('SetFuel:')) {
-                        final type = value.substring(8);
-                        _selectedFuelTypeFilter = type;
-                      } else if (value == 'ClearStation') {
-                        _selectedStationFilter = null;
-                      } else if (value.startsWith('SetStation:')) {
-                        final station = value.substring(11);
-                        _selectedStationFilter = station;
-                      }
-                    });
-                  },
-                  icon: Icon(RemixIcons.filter_line),
-                  tooltip: context.tr(TranslationKeys.dialogFilterTitle),
-                  itemBuilder: (BuildContext context) {
-                    final List<PopupMenuEntry<String>> items = [];
-
-                    items.add(
-                      PopupMenuItem<String>(
-                        enabled: false,
-                        child: Text(
-                          context.tr(TranslationKeys.dialogFilterTitle),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    );
-                    items.add(const PopupMenuDivider());
-                    items.add(
-                      PopupMenuItem<String>(
-                        enabled: false,
-                        child: Text(
-                          'Filtro por Tipo de Combustível:',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    );
-                    items.addAll(
-                      _fuelTypeMap.entries.map((entry) {
-                        return buildFuelTypeItem(
-                          entry.key,
-                          entry.value,
-                          _selectedFuelTypeFilter == entry.key,
-                        );
-                      }),
-                    );
-                    items.add(
-                      PopupMenuItem<String>(
-                        value: 'ClearFuel',
-                        child: Text('Limpar Filtro', style: const TextStyle(color: Colors.red)),
-                      ),
-                    );
-                    items.add(const PopupMenuDivider());
-                    items.add(
-                      PopupMenuItem<String>(
-                        enabled: false,
-                        child: Text(
-                          'Filtro por Posto:',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    );
-                    items.addAll(
-                      _mockStations.map((station) {
-                        return buildStationItem(station, _selectedStationFilter == station);
-                      }),
-                    );
-                    items.add(
-                      PopupMenuItem<String>(
-                        value: 'ClearStation',
-                        child: Text('Limpar Filtro', style: const TextStyle(color: Colors.red)),
-                      ),
-                    );
-                    items.add(const PopupMenuDivider());
-                    items.add(
-                      PopupMenuItem<String>(
-                        enabled: false,
-                        child: Text(
-                          'Filtro por Período: (Em Breve)',
-                          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
-                        ),
-                      ),
-                    );
-                    return items;
-                  },
-                ),
-              ],
-            ),
-            body: fuelEntryProvider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                    children: [
-                      _buildOverallConsumptionCard(
-                        context,
-                        filteredEntries,
-                        overallConsumption,
-                        overallCostPerDistance,
-                      ),
-                      if (fuelAlertCard != null) fuelAlertCard,
-                      Expanded(
-                        child: fuelEntryProvider.fuelEntries.isEmpty
-                            ? Center(
-                                child: Text(
-                                  _selectedFuelTypeFilter != null || _selectedStationFilter != null
-                                      ? 'Nenhum item encontrado com os filtros aplicados.'
-                                      : 'Ainda não Abasteceu',
-                                ),
-                              )
-                            : ListView.builder(
-                                itemCount: filteredEntries.length,
-                                itemBuilder: (context, index) {
-                                  final FuelEntry currentEntry = filteredEntries[index];
-                                  final FuelEntry? previousEntry =
-                                      (index + 1 < filteredEntries.length)
-                                      ? filteredEntries[index + 1]
-                                      : null;
-
-                                  double consumptionForThisPeriod = 0.0;
-
-                                  if (previousEntry != null && previousEntry.tanqueCheio != 0) {
-                                    consumptionForThisPeriod = currentEntry.calculateConsumption(
-                                      previousEntry,
-                                    );
-                                  }
-
-                                  return _buildFuelEntryListItem(
-                                    currentEntry,
-                                    context,
-                                    consumptionForThisPeriod,
-                                  );
-                                },
-                              ),
-                      ),
-                    ],
-                  ),
-
-            floatingActionButton: FloatingActionButton(
-              heroTag: 'fab_fuelentry_list',
-              onPressed: () => _navigateAndSaveEntry(context),
-              child: Icon(RemixIcons.gas_station_line, color: Colors.white),
-              backgroundColor: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<bool?> _deleteConfirmation(BuildContext context) async {
-    return await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(context.tr(TranslationKeys.dialogDeleteTitle)),
-          content: Text(context.tr(TranslationKeys.dialogDeleteContent)),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(context.tr(TranslationKeys.dialogDeleteButtonCancel)),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(context.tr(TranslationKeys.dialogDeleteButtonDelete)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Dismissible _buildFuelEntryListItem(
-    FuelEntry entry,
-    BuildContext context,
-    double consumptionForThisPeriod,
-  ) {
-    final unitProvider = context.read<UnitProvider>();
-    final currencySymbol = context.watch<CurrencyProvider>().selectedCurrency.symbol;
+    final overallConsumption = controller.overallConsumption;
+    final String formattedValue = controller.formatConsumption(overallConsumption.value);
+    final String unitString = controller.getConsumptionUnitString();
+    final isMiles = unitController.distanceUnit.value == DistanceUnit.miles;
 
     String getFuelType(String type) {
-      switch (type) {
-        case 'Gasolina Comum':
-          return context.tr(TranslationKeys.fuelTypeGasolineComum);
-        case 'Gasoline Aditivada':
-          return context.tr(TranslationKeys.fuelTypeGasolineAditivada);
-        case 'Etanol (Álcool)':
-          return context.tr(TranslationKeys.fuelTypeEthanolAlcool);
-        case 'Gasolina Premium':
-          return context.tr(TranslationKeys.fuelTypeGasolinePremium);
-        default:
-          return context.tr(TranslationKeys.fuelTypeOther);
-      }
+      return controller.fuelTypeMap[type] ?? context.tr(TranslationKeys.fuelTypeOther);
     }
 
-    String titleText = getFuelType(entry.tipo);
-    if (entry.posto != null && entry.posto!.isNotEmpty) {
-      titleText += ' @ ${entry.posto}';
+    final String dateOnly = DateFormat('dd/MM/yyyy').format(entry.dataAbastecimento);
+    String titleText = dateOnly;
+
+    if (entry.posto != null && entry.posto.isNotEmpty) {
+      titleText += ' - ${entry.posto}';
     }
 
-    final bool isMiles = unitProvider.distanceUnit == DistanceUnit.miles;
-
-    final String distanceUnitStr = context
-        .tr(
-          isMiles
-              ? TranslationKeys.unitSettingsScreenMiles
-              : TranslationKeys.unitSettingsScreenKilometers,
-        )
-        .replaceAll(RegExp(r'\(.*\)'), '')
-        .trim();
-
+    final String distanceUnitStr = controller.getDistanceUnitString();
     final double odometerDisplay = isMiles
-        ? entry.quilometragem * _kmToMileFactor
+        ? entry.quilometragem * controller.kmToMileFactor
         : entry.quilometragem.toDouble();
-    final String consumptionDisplay = _formatConsumption(
-      context,
-      consumptionForThisPeriod,
-      unitProvider.consumptionUnit,
-    );
-    final String consumptionUnitStr = _getConsumptionUnitString(
-      context,
-      unitProvider.consumptionUnit,
-    );
+    final String consumptionDisplay = controller.formatConsumption(consumptionForThisPeriod);
+    final String consumptionUnitStr = controller.getConsumptionUnitString();
 
-    String subtitleText =
-        '${context.tr(TranslationKeys.commonLabelsDate)}: ${DateFormat('dd/MM/yyyy').format(entry.dataAbastecimento)}\n'
-        '${context.tr(TranslationKeys.commonLabelsOdometer)}: ${odometerDisplay.toStringAsFixed(0)} $distanceUnitStr\n'
-        '${context.tr(TranslationKeys.commonLabelsLiters)}: ${entry.litros.toStringAsFixed(2)} L\n'
+    String typeText = entry.tipo;
+
+    String odoAndLiters =
+        '${context.tr(TranslationKeys.commonLabelsOdometer)}: ${odometerDisplay.toStringAsFixed(0)} $distanceUnitStr | '
+        '${context.tr(TranslationKeys.commonLabelsLiters)}: ${entry.litros.toStringAsFixed(2)} L';
+
+    final consumptionUnit =
         '${context.tr(TranslationKeys.consumptionCardsConsumptionPeriod)}: $consumptionDisplay $consumptionUnitStr';
+
+    String subtitleText = '$typeText\n$odoAndLiters\n$consumptionUnit';
 
     return Dismissible(
       key: ValueKey(entry.id),
@@ -667,20 +218,24 @@ class _FuelListScreenState extends State<FuelListScreen> {
       ),
       confirmDismiss: (direction) => _deleteConfirmation(context),
       onDismissed: (direction) async {
-        final provider = context.read<FuelEntryProvider>();
         if (entry.id != null) {
-          await provider.deleteEntry(entry.id!);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmation)),
-              duration: const Duration(seconds: 2),
-            ),
+          await controller.deleteEntry(entry.id!);
+          Get.snackbar(
+            context.tr(TranslationKeys.commonLabelsDeleteConfirmation),
+            '',
+            duration: const Duration(seconds: 2),
+            snackPosition: SnackPosition.BOTTOM,
+            colorText: Colors.white,
           );
         }
       },
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+        color: isDarkMode ? AppTheme.cardDark : AppTheme.cardLight,
+        margin: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
           leading: Icon(
             entry.tanqueCheio == 1 ? RemixIcons.gas_station_fill : RemixIcons.gas_station_line,
             color: Theme.of(context).colorScheme.secondary,
@@ -690,27 +245,699 @@ class _FuelListScreenState extends State<FuelListScreen> {
             style: Theme.of(context).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
           ),
           subtitle: Text(subtitleText),
-          trailing: Text(
-            '$currencySymbol ${entry.totalPrice!.toStringAsFixed(2)}',
-            style: Theme.of(context).textTheme.titleMedium!.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          onTap: () {
-            Navigator.of(context)
-                .push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        FuelEntryScreen(entry: entry, lastOdometer: entry.quilometragem),
-                  ),
-                )
-                .then((_) {
-                  context.read<FuelEntryProvider>().loadFuelEntries();
-                });
-          },
+          trailing: Obx(() {
+            final currencySymbol = currencyController.currencySymbol.value;
+            return Text(
+              '$currencySymbol ${entry.totalPrice!.toStringAsFixed(2)}',
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            );
+          }),
+          onTap: () => _showFuelForm(context, entry),
         ),
       ),
+    );
+  }
+}
+
+class FuelForm extends StatefulWidget {
+  final FuelEntry? fuel;
+  const FuelForm({super.key, this.fuel});
+
+  @override
+  State<FuelForm> createState() => _FuelFormState();
+}
+
+class _FuelFormState extends State<FuelForm> {
+  final FuelDb _db = FuelDb();
+  final _formKey = GlobalKey<FormState>();
+
+  late String tipoFuel = '';
+  
+  VehicleModel? selectedVeiculos;
+  GasStationModel? selectedStations;
+
+  late String veiculosName;
+  late String stationName;
+  late DateTime selectedDate;
+
+  late bool tanqueCheio = false;
+  late String comprovantePath;
+  late List<VehicleModel> availableVeiculos = [];
+  late List<GasStationModel> availableGasStations = [];
+
+  late Map<String, String> serviceCombustivel;
+  final FuelListController controller = Get.find<FuelListController>();
+  final GasStationController stationController = Get.find<GasStationController>();
+  final VehicleController vehicleController = Get.find<VehicleController>();
+  late bool isEditing = false;
+  late bool isLoading = true;
+  final ImagePicker _picker = ImagePicker();
+
+  void _initializeServiceCombustivel() {
+    serviceCombustivel = {
+      context.tr(TranslationKeys.fuelTypeGasolineComum): 'Gasolina Comum',
+      context.tr(TranslationKeys.fuelTypeGasolineAditivada): 'Gasolina Aditivada',
+      context.tr(TranslationKeys.fuelTypeEthanolAlcool): 'Etanol (Álcool)',
+      context.tr(TranslationKeys.fuelTypeGasolinePremium): 'Gasoline Premium',
+    };
+    if (isEditing) {
+      if (!serviceCombustivel.containsKey(widget.fuel!.tipo)) {
+        serviceCombustivel[widget.fuel!.tipo] = 'OTHER';
+      }
+      tipoFuel = widget.fuel!.tipo;
+    } else {
+      tipoFuel = serviceCombustivel.keys.first;
+    }
+  }
+
+  Future<void> loadVehicles() async {
+    try {
+      final vehicles = await _db.getVehicles();
+      VehicleModel? initialVehicle;
+      if (isEditing && widget.fuel != null) {
+        initialVehicle = vehicles.firstWhereOrNull((v) => v.nickname == widget.fuel?.veiculo);
+      }
+
+      setState(() {
+        availableVeiculos = vehicles;
+        selectedVeiculos = initialVehicle ?? vehicles.firstWhereOrNull((v) => true);
+      });
+    } catch (e) {
+      print('Erro ao carregar veículos do banco de dados: $e');
+      Get.snackbar(
+        'Erro',
+        'Não foi possível carregar os veículos.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  Future<void> loadStations() async {
+    try {
+      final station = await _db.getStation();
+      GasStationModel? initialStation;
+      if (isEditing && widget.fuel != null) {
+        initialStation = station.firstWhereOrNull((v) => v.nome == widget.fuel?.posto);
+      }
+
+      setState(() {
+        availableGasStations = station;
+        selectedStations = initialStation ?? station.firstWhereOrNull((v) => true);
+      });
+    } catch (e) {
+      print('Erro ao carregar veículos do banco de dados: $e');
+      Get.snackbar(
+        'Erro',
+        'Não foi possível carregar os veículos.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeServiceCombustivel();
+    loadVehicles();
+    loadStations();
+
+    final fuel = widget.fuel;
+    tipoFuel = fuel?.tipo ?? '';
+
+    stationName = fuel?.posto ?? 'Outro';
+    stationController.loadGasStationPrices(stationName);
+
+    veiculosName = fuel?.veiculo ?? 'Fit Prata';
+    vehicleController.loadNameVehicles(veiculosName);
+
+    final initialKM = fuel?.quilometragem ?? 0.0;
+    controller.kmController = MoneyMaskedTextController(initialValue: initialKM);
+
+    final initialLitros = fuel?.litros ?? 0.0;
+    controller.litrosController = MoneyMaskedTextController(initialValue: initialLitros);
+
+    final initialPrecoPorLitros = fuel?.pricePerLiter ?? 0.0;
+    controller.pricePerLiterController = MoneyMaskedTextController(
+      initialValue: initialPrecoPorLitros,
+      leftSymbol: 'R\$ ',
+    );
+
+    final initialPrecoLitro = fuel?.totalPrice ?? 0.0;
+    controller.totalPriceController = MoneyMaskedTextController(initialValue: initialPrecoLitro, leftSymbol: 'R\$ ');
+
+    selectedDate = fuel?.dataAbastecimento ?? DateTime.now();
+    tanqueCheio = fuel?.tanqueCheio ?? false;
+    comprovantePath = fuel?.comprovantePath ?? '';
+  }
+
+  @override
+  void dispose() {
+    controller.kmController.dispose();
+    controller.litrosController.dispose();
+    controller.pricePerLiterController.dispose();
+    controller.totalPriceController.dispose();
+    super.dispose();
+  }
+
+  void _submit() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      final currentOdometer = controller.getOdometerValue();
+      final litersValue = controller.getLitersValue();
+      final vehicleNome = selectedVeiculos?.nickname;
+      final stationName = selectedStations?.nome;
+
+      if (!isEditing) {
+        final lastOdometer = await _db.getLastOdometer();
+        if (lastOdometer != null) {
+          Get.snackbar(
+            'Erro de Quilometragem',
+            'A quilometragem atual (${controller.getOdometerValue()} Km) não pode ser menor que a última registrada (${lastOdometer.toStringAsFixed(2)} Km).',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.redAccent,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+          );
+          return;
+        }
+      }
+
+      final fuelId = widget.fuel?.id ?? const Uuid().v4();
+
+      final newFuel = FuelEntry(
+        id: fuelId,
+        tipo: tipoFuel,
+        dataAbastecimento: selectedDate,
+        veiculo: vehicleNome!,
+        posto: stationName!,
+        quilometragem: controller.getOdometerValue()!,
+        litros: controller.getLitersValue()!,
+        pricePerLiter: controller.getPricePerLiterValue(),
+        totalPrice: controller.getTotalPriceValue(),
+        tanqueCheio: tanqueCheio,
+        comprovantePath: comprovantePath,
+      );
+
+      try {
+        print(newFuel.toMap());
+        // await controller.saveFuel(newFuel);
+
+        Get.snackbar(
+          'Sucesso',
+          'Abastecimento em "${newFuel.posto}" adicionado com sucesso!',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        Get.back();
+      } catch (e) {
+        Get.snackbar(
+          'Erro',
+          'Falha ao salvar o abastecimento: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+        );
+
+        Get.back();
+      }
+    }
+  }
+
+  Future<void> selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: selectedDate,
+      firstDate: DateTime(2023, 1),
+      lastDate: DateTime(2030, 12),
+    );
+    if (picked != null && picked != selectedDate) {
+      selectedDate = picked;
+    }
+  }
+
+  void updateFuelType(String? newValue) {
+    if (newValue != null) {
+      tipoFuel = newValue;
+    }
+  }
+
+  void updateGasStation(GasStationModel? newStation) {
+    if (newStation != null) {
+      setState(() {
+        stationController.selectedGasStation = newStation;
+      });
+    }
+  }
+
+  void updateVeiculos(VehicleModel? newVehicle) {
+    if (newVehicle != null) {
+      setState(() {
+        selectedVeiculos = newVehicle;
+      });
+    }
+  }
+
+  void toggleFullTank(bool? newValue) {
+    setState(() {
+      tanqueCheio = newValue ?? false;
+    });
+  }
+
+  Future<void> pickComprovante() async {
+    final source = await Get.dialog<ImageSource>(
+      SimpleDialog(
+        title: Text(context.tr(TranslationKeys.entryScreenDialogReceiptTitle)),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Get.back(result: ImageSource.camera),
+            child: Text(context.tr(TranslationKeys.entryScreenDialogReceiptOptionCamera)),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Get.back(result: ImageSource.gallery),
+            child: Text(context.tr(TranslationKeys.entryScreenDialogReceiptOptionGallery)),
+          ),
+        ],
+      ),
+    );
+
+    if (source != null) {
+      try {
+        final XFile? pickedFile = await _picker.pickImage(source: source);
+        if (pickedFile != null) {
+          comprovantePath = pickedFile.path;
+
+          Get.snackbar(
+            'Comprovante Selecionado',
+            context.tr(
+              TranslationKeys.entryScreenSnackbarReceiptSelectedPrefix,
+              parameters: {'name': pickedFile.name},
+            ),
+          );
+        }
+      } catch (e) {
+        Get.snackbar(
+          'Erro',
+          context.tr(
+            TranslationKeys.entryScreenSnackbarReceiptSelectedPrefix,
+            parameters: {'error': e.toString()},
+          ),
+        );
+      }
+    }
+  }
+
+  void removeComprovante() {
+    setState(() {
+      comprovantePath != comprovantePath;
+    });
+  }
+
+  Widget _buildValueField(
+    BuildContext context,
+    TextEditingController controller,
+    String label,
+    String? Function(String?) validator,
+  ) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(labelText: label),
+      validator: validator,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.fuel != null;
+    final theme = Theme.of(context);
+
+    return AlertDialog(
+      title: Text(
+        isEditing
+            ? context.tr(TranslationKeys.entryScreenUpdateAppBarTitle)
+            : context.tr(TranslationKeys.entryScreenAddAppBarTitle),
+        textAlign: TextAlign.center,
+        style: theme.textTheme.headlineSmall,
+      ),
+      content: SizedBox(
+        width: Get.width * 0.9,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(RemixIcons.time_line, color: Theme.of(context).colorScheme.primary),
+                  title: Text(
+                    context.tr(TranslationKeys.entryScreenLabelDate),
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        DateFormat('dd/MM/yyyy').format(selectedDate),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        RemixIcons.calendar_2_fill,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ],
+                  ),
+                  onTap: () => selectDate(context),
+                ),
+
+                const SizedBox(height: 20),
+                if (controller.lastOdometer != null)
+                  Container(
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.0),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Theme.of(context).colorScheme.secondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            '${context.tr(TranslationKeys.entryScreenInfoLastOdometerPrefix)} ${controller.lastOdometer.toStringAsFixed(0)} km. ${context.tr(TranslationKeys.entryScreenInfoLastOdometerPrefix2)}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: controller.kmController,
+                  keyboardType: TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: context.tr(TranslationKeys.entryScreenLabelOdometer),
+                  ),
+                  validator: (value) {
+                    if (controller.getOdometerValue() == 0.0) {
+                      return 'Informe a quilometragem atual.';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: context.tr(TranslationKeys.entryScreenLabelFuelType),
+                    border: OutlineInputBorder(),
+                  ),
+                  value: tipoFuel.isNotEmpty && serviceCombustivel.containsKey(tipoFuel)
+                      ? tipoFuel
+                      : null,
+                  items: serviceCombustivel.keys.map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value, style: TextStyle(color: AppTheme.textGrey)),
+                    );
+                  }).toList(),
+                  onChanged: updateFuelType,
+                  validator: controller.validateFuelType,
+                ),
+                const SizedBox(height: 16),
+                _buildValueField(
+                  context,
+                  controller.litrosController,
+                  context.tr(TranslationKeys.entryScreenLabelLiters),
+                  controller.validateLiters,
+                ),
+                const SizedBox(height: 16),
+                _buildValueField(
+                  context,
+                  controller.pricePerLiterController,
+                  context.tr(TranslationKeys.entryScreenLabelPricePerLiter),
+                  controller.validatePricePerLiter,
+                ),
+                const SizedBox(height: 16),
+                _buildValueField(
+                  context,
+                  controller.totalPriceController,
+                  context.tr(TranslationKeys.entryScreenLabelTotalPrice),
+                  controller.validateTotalPrice,
+                ),
+                const SizedBox(height: 16),
+
+                DropdownButtonFormField<VehicleModel>(
+                  decoration: InputDecoration(
+                    labelText: controller.tr(TranslationKeys.entryScreenLabelVeiculos),
+                    border: OutlineInputBorder(),
+                  ),
+                  value: selectedVeiculos,
+                  items: availableVeiculos.isEmpty
+                      ? null
+                      : availableVeiculos.map((VehicleModel vehicle) {
+                          return DropdownMenuItem<VehicleModel>(
+                            value: vehicle,
+                            child: Text(
+                              vehicle.nickname,
+                              style: TextStyle(color: AppTheme.textGrey),
+                            ),
+                          );
+                        }).toList(),
+                  onChanged: availableVeiculos.isEmpty ? null : updateVeiculos,
+                  validator: (value) {
+                    if (value == null) {
+                      return controller.tr(TranslationKeys.validationRequiredVeiculos);
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+                DropdownButtonFormField<GasStationModel>(
+                  decoration: InputDecoration(
+                    labelText: controller.tr(TranslationKeys.entryScreenLabelGasStation),
+                    border: OutlineInputBorder(),
+                  ),
+                  value: stationController.selectedGasStation,
+                  items: availableGasStations.isEmpty
+                      ? null
+                      : availableGasStations.map((GasStationModel station) {
+                          return DropdownMenuItem<GasStationModel>(
+                            value: station,
+                            child: Text(station.nome, style: TextStyle(color: AppTheme.textGrey)),
+                          );
+                        }).toList(),
+                  onChanged: availableGasStations.isEmpty ? null : updateGasStation,
+                  validator: (value) {
+                    if (value == null) {
+                      return controller.tr(TranslationKeys.validationRequiredFuelType);
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                if (stationController.selectedGasStation != null && stationController.selectedGasStation!.id != -1)
+                  Container(
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8.0),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: stationController.isPriceLoading
+                        ? const Center(child: LinearProgressIndicator())
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Detalhes do Posto: ${stationController.selectedGasStation!.nome} (${stationController.selectedGasStation!.brand})',
+                                style: theme.textTheme.titleMedium!.copyWith(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _buildInfoRow(
+                                context,
+                                RemixIcons.car_line,
+                                'Veículo:',
+                                selectedVeiculos!.nickname,
+                              ),
+                              if (tipoFuel == 'Gasolina Comum')
+                                _buildInfoRow(
+                                  context,
+                                  RemixIcons.oil_line,
+                                  'Gasolina (R\$):',
+                                  stationController.selectedGasStation!.priceGasolineComum.toStringAsFixed(2),
+                                ),
+
+                              _buildInfoRow(
+                                context,
+                                RemixIcons.oil_line,
+                                'Etanol (R\$):',
+                                stationController.selectedGasStation!.priceEthanol.toStringAsFixed(2),
+                              ),
+                              _buildServiceRow(
+                                context,
+                                RemixIcons.store_2_line,
+                                'Loja de Conv.:',
+                                stationController.selectedGasStation!.hasConvenientStore,
+                              ),
+                              _buildServiceRow(
+                                context,
+                                RemixIcons.time_line,
+                                '24 Horas:',
+                                stationController.selectedGasStation!.is24Hours,
+                              ),
+                            ],
+                          ),
+                  ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          tanqueCheio ? RemixIcons.gas_station_fill : RemixIcons.gas_station_line,
+                          color: tanqueCheio
+                              ? Theme.of(context).colorScheme.primary
+                              : AppTheme.textGrey,
+                          size: 40,
+                        ),
+                        const SizedBox(width: 16),
+                        Text(
+                          context.tr(TranslationKeys.entryScreenLabelFullTank),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: tanqueCheio
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).textTheme.bodyLarge?.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    Switch(
+                      value: tanqueCheio,
+                      onChanged: toggleFullTank,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                ListTile(
+                  title: Text(
+                    comprovantePath == null
+                        ? context.tr(TranslationKeys.entryScreenReceiptAddOptional)
+                        : context.tr(TranslationKeys.entryScreenReceiptSelected),
+                    style: TextStyle(
+                      color: comprovantePath == null
+                          ? Colors.grey[700]
+                          : Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: comprovantePath != null
+                      ? Text(
+                          context.tr(
+                            TranslationKeys.entryScreenReceiptPathPrefix,
+                            parameters: {'name': comprovantePath.split('/').last},
+                          ),
+                        )
+                      : null,
+                  leading: Icon(
+                    comprovantePath == null ? Icons.camera_alt_outlined : Icons.check_circle,
+                    color: comprovantePath == null
+                        ? Colors.grey
+                        : Theme.of(context).colorScheme.primary,
+                  ),
+                  trailing: comprovantePath != null
+                      ? IconButton(icon: const Icon(Icons.close), onPressed: removeComprovante)
+                      : null,
+                  onTap: pickComprovante,
+                ),
+
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _submit,
+                  child: Text(
+                    isEditing
+                        ? context.tr(TranslationKeys.entryScreenButtonEdit)
+                        : context.tr(TranslationKeys.entryScreenButtonSave),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actionsAlignment: MainAxisAlignment.spaceAround,
+      actions: [],
+    );
+  }
+
+  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppTheme.textGrey),
+          const SizedBox(width: 8),
+          Text(label, style: TextStyle(color: AppTheme.textGrey)),
+          const Spacer(),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceRow(BuildContext context, IconData icon, String label, bool status) {
+    final color = status ? Colors.green.shade700 : Colors.red.shade700;
+    final text = status ? 'SIM' : 'NÃO';
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(color: AppTheme.textGrey)),
+        const Spacer(),
+        Text(
+          text,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.bold, color: color),
+        ),
+      ],
     );
   }
 }

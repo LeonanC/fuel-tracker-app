@@ -1,4 +1,4 @@
-import 'package:fuel_tracker_app/services/application.dart';
+import 'package:fuel_tracker_app/utils/unit_nums.dart';
 
 class ReminderOption {
   final ReminderFrequency frequency;

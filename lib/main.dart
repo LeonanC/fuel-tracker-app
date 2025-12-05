@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:fuel_tracker_app/provider/currency_provider.dart';
-import 'package:fuel_tracker_app/provider/fuel_entry_provider.dart';
-import 'package:fuel_tracker_app/provider/gas_station_provider.dart';
-import 'package:fuel_tracker_app/provider/language_provider.dart';
-import 'package:fuel_tracker_app/provider/maintenance_provider.dart';
-import 'package:fuel_tracker_app/provider/reminder_provider.dart';
-import 'package:fuel_tracker_app/provider/theme_provider.dart';
-import 'package:fuel_tracker_app/provider/unit_provider.dart';
-import 'package:fuel_tracker_app/provider/vehicle_provider.dart';
-import 'package:fuel_tracker_app/screens/main_navigation_screen.dart';
-import 'package:fuel_tracker_app/screens/onboarding_screen.dart';
+import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:fuel_tracker_app/controllers/theme_controller.dart';
+import 'package:fuel_tracker_app/routes/app_pages.dart';
+import 'package:fuel_tracker_app/routes/initial_binding.dart';
 import 'package:fuel_tracker_app/services/notification_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 
 final NotificationService notificationService = NotificationService();
 
@@ -22,14 +15,16 @@ void main() async {
 
   await notificationService.initialize();
 
-  final languageProvider = LanguageProvider();
-  await languageProvider.initialize();
+  final languageProvider = Get.put(LanguageController());
+  await languageProvider.initialize();  
+
+  Get.put(ThemeController());
 
   runApp(MyApp(languageProvider: languageProvider));
 }
 
 class MyApp extends StatefulWidget {
-  final LanguageProvider languageProvider;
+  final LanguageController languageProvider;
   const MyApp({super.key, required this.languageProvider});
 
   @override
@@ -39,37 +34,40 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider.value(value: widget.languageProvider),
-        ChangeNotifierProvider(create: (context) => FuelEntryProvider()),
-        ChangeNotifierProvider(create: (context) => ThemeProvider()),
-        ChangeNotifierProvider(create: (context) => UnitProvider()),
-        ChangeNotifierProvider(create: (context) => CurrencyProvider()),
-        ChangeNotifierProvider(create: (context) => ReminderProvider()),
-        ChangeNotifierProvider(create: (context) => MaintenanceProvider()),
-        ChangeNotifierProvider(create: (context) => VehicleProvider()),
-        ChangeNotifierProvider(create: (context) => GasStationProvider()),
-      ],
-      child: Consumer2<ThemeProvider, LanguageProvider>(
-        builder: (context, themeProvider, languageProvider, child) {
-          final mediaQuery = MediaQuery.of(context);
-          return MediaQuery(
-            data: mediaQuery.copyWith(textScaleFactor: themeProvider.fontScale),
-            child: MaterialApp(
-              debugShowCheckedModeBanner: false,
-              title: 'Controle de Combustível',
-              themeMode: themeProvider.themeMode,
-              theme: AppTheme.lightTheme(),
-              darkTheme: AppTheme.darkTheme(),
-              locale: languageProvider.locale,
-              localizationsDelegates: const [GlobalMaterialLocalizations.delegate, GlobalWidgetsLocalizations.delegate, GlobalCupertinoLocalizations.delegate],
-              supportedLocales: const [Locale('en'), Locale('pt'), Locale('es'), Locale('fr'), Locale('de'), Locale('it'), Locale('ru')],
-              home: const OnboardingScreen(),
-            ),
-          );
-        },
-      ),
-    );
+    final ThemeController themeController = Get.find<ThemeController>();
+    final LanguageController languageController = Get.find<LanguageController>();
+
+    return Obx(() {
+      final mediaQuery = MediaQuery.of(context);
+
+      return MediaQuery(
+        data: mediaQuery.copyWith(textScaleFactor: themeController.fontScale.value),
+        child: GetMaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Controle de Combustível',
+          locale: languageController.locale,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'),
+            Locale('pt'),
+            Locale('es'),
+            Locale('fr'),
+            Locale('de'),
+            Locale('it'),
+            Locale('ru'),
+          ],
+          themeMode: themeController.themeMode.value,
+          theme: AppTheme.lightTheme(),
+          darkTheme: AppTheme.darkTheme(),
+          initialRoute: AppPages.INITIAL,
+          getPages: AppPages.routes,
+          initialBinding: InitialBinding(),
+        ),
+      );
+    });
   }
 }

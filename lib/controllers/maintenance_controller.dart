@@ -1,32 +1,39 @@
-import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/data/fuelentry_db.dart';
+import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/maintenance_entry_model.dart';
+import 'package:get/get.dart';
 
-class MaintenanceProvider with ChangeNotifier {
-  final FuelEntryDb _db = FuelEntryDb();
-  List<MaintenanceEntry> _maintenanceEntries = [];
-  bool _isLoading = false;
+class MaintenanceController extends GetxController {
+  final FuelDb _db = FuelDb();
+  
+  var _maintenanceEntries = <MaintenanceEntry>[].obs;
+  var isLoading = false.obs;
+  var lastOdometerFromDb = Rxn<double>();
+  final LanguageController languageController = Get.find<LanguageController>();
 
-  double? _lastOdometer;
+  List<MaintenanceEntry> get loadedEntries => _maintenanceEntries.toList();
+  double get lastOdometer => lastOdometerFromDb.value ?? 0.0;
 
-  List<MaintenanceEntry> get maintenanceEntries => _maintenanceEntries;
-  bool get isLoading => _isLoading;
-  double? get lastOdometer => _lastOdometer;
-
-  MaintenanceProvider(){
+  @override
+  void onInit(){
     loadMaintenanceEntries();
+    super.onInit();
+  }
+
+  String tr(String key, {Map<String, String>? parameters}) {
+    return languageController.translate(key, parameters: parameters);
   }
 
   Future<void> loadMaintenanceEntries() async {
-    _isLoading = true;
-    notifyListeners();
+    isLoading.value = true;
+    
 
     final List<Map<String, dynamic>> maps = await _db.getAllMaintenanceEntries();
-    _maintenanceEntries = maps.map((map) => MaintenanceEntry.fromMap(map)).toList();
-    _lastOdometer = await _db.getLastOdometer();
-    _maintenanceEntries.sort((a, b) => b.dataServico.compareTo(a.dataServico));
-    _isLoading = false;
-    notifyListeners();
+    final List<MaintenanceEntry> loadedEntries = maps.map((map) => MaintenanceEntry.fromMap(map)).toList();
+    lastOdometerFromDb.value = await _db.getLastOdometer();
+    loadedEntries.sort((a, b) => b.dataServico.compareTo(a.dataServico));
+    _maintenanceEntries.assignAll(loadedEntries);
+    isLoading.value = false;
   }
 
   Future<void> insertEntry(MaintenanceEntry entry) async {
@@ -43,7 +50,6 @@ class MaintenanceProvider with ChangeNotifier {
   Future<void> deleteEntry(int id) async {
     if(await _db.deleteMaintenance(id)){
       _maintenanceEntries.removeWhere((entry) => entry.id == id);
-      notifyListeners();
     }
   }
 

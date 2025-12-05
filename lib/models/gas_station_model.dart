@@ -1,27 +1,61 @@
 class GasStationModel {
-  final int? id;
+  final String id;
   final String nome;
-  final double latitude;
-  final double longitude;
   final String? address;
   final String brand;
-  final double priceGasoline;
+  final double latitude;
+  final double longitude;
+  final double priceGasolineComum;
+  final double priceGasolineAditivada;
+  final double priceGasolinePremium;
   final double priceEthanol;
   final bool hasConvenientStore;
   final bool is24Hours;
 
   GasStationModel({
-    this.id,
+    required this.id,
     required this.nome,
-    required this.latitude,
-    required this.longitude,
     this.address,
     required this.brand,
-    required this.priceGasoline,
+    required this.latitude,
+    required this.longitude,
+    required this.priceGasolineComum,
+    required this.priceGasolineAditivada,
+    required this.priceGasolinePremium,
     required this.priceEthanol,
     required this.hasConvenientStore,
     required this.is24Hours,
   });
+
+  GasStationModel copyWith({
+    String? id,
+    String? nome,
+    double? latitude,
+    double? longitude,
+    String? address,
+    String? brand,
+    double? priceGasolineComum,
+    double? priceGasolineAditivada,
+    double? priceGasolinePremium,
+    double? priceEthanol,
+    bool? hasConvenientStore,
+    bool? is24Hours,
+  }) {
+    return GasStationModel(
+      id: id ?? this.id,
+      nome: nome ?? this.nome,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      address: address ?? this.address,
+      brand: brand ?? this.brand,
+      priceGasolineComum: priceGasolineComum ?? this.priceGasolineComum,
+      priceGasolineAditivada: priceGasolineAditivada ?? this.priceGasolineAditivada,
+      priceGasolinePremium: priceGasolinePremium ?? this.priceGasolinePremium,
+      priceEthanol: priceEthanol ?? this.priceEthanol,
+      hasConvenientStore: hasConvenientStore ?? this.hasConvenientStore,
+      is24Hours: is24Hours ?? this.is24Hours,
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -31,7 +65,9 @@ class GasStationModel {
       'longitude': longitude,
       'address': address,
       'brand': brand,
-      'priceGasoline': priceGasoline,
+      'priceGasolineComum': priceGasolineComum,
+      'priceGasolineAditivada': priceGasolineAditivada,
+      'priceGasolinePremium': priceGasolinePremium,
       'priceEthanol': priceEthanol,
       'hasConvenientStore': hasConvenientStore ? 1 : 0,
       'is24Hours': is24Hours ? 1 : 0,
@@ -40,7 +76,7 @@ class GasStationModel {
 
   factory GasStationModel.fromMap(Map<String, dynamic> map) {
     return GasStationModel(
-      id: map['id'] as int?,
+      id: map['id'] as String,
       nome: map['nome'] as String,
       latitude: map['latitude'] is int
           ? (map['latitude'] as int).toDouble()
@@ -49,9 +85,10 @@ class GasStationModel {
           ? (map['longitude'] as int).toDouble()
           : map['longitude'] as double,
       address: map['address'] as String?,
-
       brand: map['brand'] as String,
-      priceGasoline: map['priceGasoline'] as double,
+      priceGasolineComum: map['priceGasolineComum'] as double,
+      priceGasolineAditivada: map['priceGasolineAditivada'] as double,
+      priceGasolinePremium: map['priceGasolinePremium'] as double,
       priceEthanol: map['priceEthanol'] as double,
       hasConvenientStore: (map['hasConvenientStore'] as int) == 1,
       is24Hours: (map['is24Hours'] as int) == 1,
@@ -59,11 +96,10 @@ class GasStationModel {
   }
 
   @override
-  bool operator ==(Object other){
-    if(identical(this, other)) return true;
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
 
-    return other is GasStationModel &&
-      other.id == id;
+    return other is GasStationModel && other.id == id;
   }
 
   @override

@@ -37,4 +37,13 @@ class VoiceNavigationService {
   Future<void> stop() async {
     await flutterTts.stop();
   }
+
+  Future<void> dispose() async {
+    if(_isInitialized){
+      await flutterTts.stop();
+      // await flutterTts.shutdown();
+      _isInitialized = false;
+      print('TTS Service shutdown.');
+    }
+  }
 }

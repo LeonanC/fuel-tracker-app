@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fuel_tracker_app/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/models/maintenance_entry_model.dart';
-import 'package:fuel_tracker_app/provider/currency_provider.dart';
-import 'package:fuel_tracker_app/provider/language_provider.dart';
-import 'package:fuel_tracker_app/provider/maintenance_provider.dart';
+import 'package:fuel_tracker_app/controllers/currency_controller.dart';
+import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:fuel_tracker_app/controllers/maintenance_controller.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
+import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class MaintenanceEntryScreen extends StatefulWidget {
@@ -20,6 +21,11 @@ class MaintenanceEntryScreen extends StatefulWidget {
 }
 
 class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
+  
+  final MaintenanceController maintenanceController = Get.find<MaintenanceController>();
+  final UnitController unitController = Get.find<UnitController>();
+  final LanguageController languageController = Get.find<LanguageController>();
+
   final _formKey = GlobalKey<FormState>();
   late String _tipoServico;
   late DateTime _dataServico;
@@ -68,10 +74,10 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
 
   void _initializeServiceTypes() {
     _serviceTypes = {
-      context.tr(TranslationKeys.maintenanceServiceOilChange): 'OIL',
-      context.tr(TranslationKeys.maintenanceServiceTireRotation): 'TIRE',
-      context.tr(TranslationKeys.maintenanceServiceBrakePads): 'BRAKE',
-      context.tr(TranslationKeys.maintenanceServiceGeneralInspect): 'INSPECT',
+      maintenanceController.tr(TranslationKeys.maintenanceServiceOilChange): 'OIL',
+      maintenanceController.tr(TranslationKeys.maintenanceServiceTireRotation): 'TIRE',
+      maintenanceController.tr(TranslationKeys.maintenanceServiceBrakePads): 'BRAKE',
+      maintenanceController.tr(TranslationKeys.maintenanceServiceGeneralInspect): 'INSPECT',
     };
     if (_isEditing && !_serviceTypes.containsKey(widget.entry!.tipo)) {
       _serviceTypes[widget.entry!.tipo] = 'OTHER';
@@ -84,20 +90,20 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text(context.tr(TranslationKeys.maintenanceServiceAddNew)),
+          title: Text(maintenanceController.tr(TranslationKeys.maintenanceServiceAddNew)),
           content: TextField(
             controller: newServiceController,
             autofocus: true,
             decoration: InputDecoration(
-              labelText: context.tr(TranslationKeys.maintenanceDialogAddServiceLabel),
-              hintText: context.tr(TranslationKeys.maintenanceDialogAddServiceHint),
+              labelText: maintenanceController.tr(TranslationKeys.maintenanceDialogAddServiceLabel),
+              hintText: maintenanceController.tr(TranslationKeys.maintenanceDialogAddServiceHint),
             ),
             textCapitalization: TextCapitalization.sentences,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(null),
-              child: Text(context.tr(TranslationKeys.maintenanceDialogButtonCancel)),
+              child: Text(maintenanceController.tr(TranslationKeys.maintenanceDialogButtonCancel)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -106,7 +112,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                   Navigator.of(dialogContext).pop(name);
                 }
               },
-              child: Text(context.tr(TranslationKeys.maintenanceDialogButtonAdd)),
+              child: Text(maintenanceController.tr(TranslationKeys.maintenanceDialogButtonAdd)),
             ),
           ],
         );
@@ -171,7 +177,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
           : TextInputType.number,
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+[,.]?\d{0,2}'))],
       validator: (value) {
-        if (label.contains(context.tr(TranslationKeys.commonLabelsOdometer)) &&
+        if (label.contains(maintenanceController.tr(TranslationKeys.commonLabelsOdometer)) &&
             (value == null || value.isEmpty)) {
           return 'context.tr(TranslationKeys.formValidationRequired)';
         }
@@ -207,7 +213,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
     );
 
     if (_isEditing) {
-      context.read<MaintenanceProvider>().updateEntry(newEntry);
+      // context.read<MaintenanceProvider>().updateEntry(newEntry);
     }
 
     Navigator.of(context).pop(newEntry);
@@ -216,12 +222,11 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final currencySymbol = context.watch<CurrencyProvider>().selectedCurrency.symbol;
-    final String _addNewServiceKey = context.tr(TranslationKeys.maintenanceServiceAddNew);
-    return Consumer<LanguageProvider>(
-      builder: (context, languageProvider, child) {
+    final currencySymbol = unitController.currencyUnit.value;
+    final String _addNewServiceKey = maintenanceController.tr(TranslationKeys.maintenanceServiceAddNew);
+    return Obx(() {
         return Directionality(
-          textDirection: languageProvider.textDirection,
+          textDirection: languageController.textDirection,
           child: Scaffold(
             backgroundColor: theme.brightness == Brightness.dark ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
             appBar: AppBar(
@@ -229,14 +234,14 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
               key: ValueKey('MaintenanceEntryAppBar_${_isEditing ? 'Edit' : 'New'}'),
               title: Text(
                 _isEditing
-                    ? context.tr(TranslationKeys.maintenanceScreenTitle)
-                    : context.tr(TranslationKeys.maintenanceScreenTitle),
+                    ? maintenanceController.tr(TranslationKeys.maintenanceScreenTitle)
+                    : maintenanceController.tr(TranslationKeys.maintenanceScreenTitle),
               ),
               actions: [
                 IconButton(
                   icon: const Icon(RemixIcons.save_line),
                   onPressed: _saveForm,
-                  tooltip: context.tr(TranslationKeys.maintenanceFormSaveButton),
+                  tooltip: maintenanceController.tr(TranslationKeys.maintenanceFormSaveButton),
                 ),
               ],
             ),
@@ -290,7 +295,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                       },
                       validator: (value) {
                         if (value == null || value.isEmpty || value == _addNewServiceKey) {
-                          return context.tr(TranslationKeys.validationRequiredServiceType);
+                          return maintenanceController.tr(TranslationKeys.validationRequiredServiceType);
                         }
                         return null;
                       },
@@ -302,7 +307,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                         RemixIcons.calendar_line,
                         color: Theme.of(context).colorScheme.primary,
                       ),
-                      title: Text(context.tr(TranslationKeys.commonLabelsDate)),
+                      title: Text(maintenanceController.tr(TranslationKeys.commonLabelsDate)),
                       trailing: TextButton(
                         onPressed: () => _selectDate(context, true),
                         child: Text(
@@ -314,13 +319,13 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                     const Divider(),
                     _buildNumericField(
                       _kmController,
-                      context.tr(TranslationKeys.commonLabelsOdometer),
+                      maintenanceController.tr(TranslationKeys.commonLabelsOdometer),
                       'km',
                     ),
                     const SizedBox(height: 16),
                     _buildNumericField(
                       _custoController,
-                      context.tr(TranslationKeys.maintenanceFormCost),
+                      maintenanceController.tr(TranslationKeys.maintenanceFormCost),
                       '$currencySymbol',
                       isDecimal: true,
                     ),
@@ -328,21 +333,21 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                     TextFormField(
                       controller: _observacoesController,
                       decoration: InputDecoration(
-                        labelText: context.tr(TranslationKeys.maintenanceFormNotes),
+                        labelText: maintenanceController.tr(TranslationKeys.maintenanceFormNotes),
                         border: const OutlineInputBorder(),
                       ),
                       maxLength: 100,
                     ),
                     const SizedBox(height: 32),
                     Text(
-                      context.tr(TranslationKeys.maintenanceFormReminderSection),
+                      maintenanceController.tr(TranslationKeys.maintenanceFormReminderSection),
                       style: Theme.of(
                         context,
                       ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const Divider(),
                     CheckboxListTile(
-                      title: Text(context.tr(TranslationKeys.maintenanceFormEnableReminder)),
+                      title: Text(maintenanceController.tr(TranslationKeys.maintenanceFormEnableReminder)),
                       value: _lembreteAtivo,
                       onChanged: (bool? value) {
                         setState(() {
@@ -356,7 +361,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                       const SizedBox(height: 8),
                       _buildNumericField(
                         _lembreteKmController,
-                        context.tr(TranslationKeys.maintenanceFormReminderKm),
+                        maintenanceController.tr(TranslationKeys.maintenanceFormReminderKm),
                         'km',
                       ),
                       const SizedBox(height: 16),
@@ -366,13 +371,13 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                           RemixIcons.calendar_check_line,
                           color: Theme.of(context).colorScheme.secondary,
                         ),
-                        title: Text(context.tr(TranslationKeys.maintenanceFormReminderDate)),
+                        title: Text(maintenanceController.tr(TranslationKeys.maintenanceFormReminderDate)),
                         trailing: TextButton(
                           onPressed: () => _selectDate(context, false),
                           child: Text(
                             _lembreteData != null
                                 ? DateFormat('dd/MM/yyyy').format(_lembreteData!)
-                                : context.tr(TranslationKeys.commonLabelsSelect),
+                                : maintenanceController.tr(TranslationKeys.commonLabelsSelect),
                             style: Theme.of(context).textTheme.titleMedium,
                           ),
                         ),

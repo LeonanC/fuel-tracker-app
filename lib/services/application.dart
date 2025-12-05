@@ -6,10 +6,11 @@ int dbVersion = 1;
 final List<String> dbCreate = <String>[
   """
   CREATE TABLE fuel_entries(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     tipo_combustivel TEXT NOT NULL,
     data_abastecimento TEXT NOT NULL,
-    posto TEXT,    
+    posto TEXT, 
+    veiculo TEXT,   
     quilometragem DECIMAL(10,2),
     litros DECIMAL(10,2),
     valor_litro DECIMAL(10,2),   
@@ -18,7 +19,7 @@ final List<String> dbCreate = <String>[
     comprovante_path TEXT
   )""",
   """CREATE TABLE manutencao(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     tipo TEXT NOT NULL,
     data_servico TEXT NOT NULL,
     quilometragem DECIMAL(10,2),
@@ -29,14 +30,27 @@ final List<String> dbCreate = <String>[
     lembrete_ativo INTEGER,
     veiculo_id INTEGER
   )""",
+  """CREATE TABLE vehicles(
+    id TEXT PRIMARY KEY,
+    nickname TEXT NOT NULL,
+    make TEXT NOT NULL,
+    model TEXT NOT NULL,
+    fuel_type TEXT NOT NULL,
+    year INTEGER,
+    initial_odometer REAL,
+    imagem_url TEXT NOT NULL,
+    created_at TEXT
+  )""",
   """CREATE TABLE gas_stations(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY,
     nome TEXT NOT NULL,
     latitude REAL NOT NULL,
     longitude REAL NOT NULL,
     address TEXT,
     brand TEXT NOT NULL,
-    priceGasoline REAL NOT NULL,
+    priceGasolineComum REAL NOT NULL,
+    priceGasolineAditivada REAL NOT NULL,
+    priceGasolinePremium REAL NOT NULL,
     priceEthanol REAL NOT NULL,
     hasConvenientStore INTEGER NOT NULL,
     is24Hours INTEGER NOT NULL
@@ -67,14 +81,3 @@ String doubleToCurrency(double value, {String symbol = 'R\$'}) {
   return nf.format(value);
 }
 
-enum DistanceUnit { kilometers, miles }
-enum VolumeUnit { liters, gallons }
-enum ConsumptionUnit { kmPerLiter, litersPer100km, milesPerGallon }
-
-enum ReminderFrequency {
-  disabled,
-  daily,
-  weekly,
-  monthly,
-  onFirstEntry
-}

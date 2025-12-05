@@ -1,78 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/provider/language_provider.dart';
-import 'package:provider/provider.dart';
+import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:get/get.dart';
+
+extension TranslationExtension on BuildContext {
+  AppLocalizations get localizations {
+    try{
+      Get.find<LanguageController>();
+      return AppLocalizations();
+    }catch(e){
+      throw Exception('LanguageController não foi injetado com Get.put(). Certifique-se de que a injeção foi feita antes de chamar context.tr.');
+    }
+  }
+
+  String tr(String key, {Map<String, String>? parameters}){
+    return localizations.tr(key, parameters: parameters);
+  }
+}
 
 class AppLocalizations {
-  final LanguageProvider _languageProvider;
-  AppLocalizations(this._languageProvider);
+  final LanguageController _languageController = Get.find<LanguageController>();
 
   String translate(String key, {Map<String, String>? parameters}) {
-    return _languageProvider.translate(key, parameters: parameters);
+    return _languageController.translate(key, parameters: parameters);
   }
 
   String tr(String key, {Map<String, String>? parameters}) {
     return translate(key, parameters: parameters);
   }
 
-  String get currentLanguageCode => _languageProvider.currentLanguage.code;
-  String get currentLanguageName => _languageProvider.currentLanguage.name;
-  bool get isRtl => _languageProvider.isRtl;
-  TextDirection get textDirection => _languageProvider.textDirection;
-  Locale get locale => _languageProvider.locale;
-
-  static AppLocalizations of(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
-    return AppLocalizations(languageProvider);
-  }
-
-  static AppLocalizations watch(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: true);
-    return AppLocalizations(languageProvider);
-  }
+  String get currentLanguageCode => _languageController.currentLanguage.value.code;
+  String get currentLanguageName => _languageController.currentLanguage.value.name;
+  bool get isRtl => _languageController.isRtl;
+  TextDirection get textDirection => _languageController.textDirection;
+  Locale get locale => _languageController.locale;
 
   bool hasTranslation(String key) {
-    return _languageProvider.hasTranslation(key);
-  }
-}
-
-extension LocalizationExtension on BuildContext {
-  AppLocalizations get loc => AppLocalizations.of(this);
-  AppLocalizations get locWatch => AppLocalizations.watch(this);
-
-  String tr(String key, {Map<String, String>? parameters}) {
-    return loc.translate(key, parameters: parameters);
-  }
-
-  bool hasTranslation(String key) {
-    return loc.hasTranslation(key);
-  }
-
-  String get currentLanguageCode => loc.currentLanguageCode;
-  bool get isRtl => loc.isRtl;
-  TextDirection get textDirection => loc.textDirection;
-}
-
-extension LocalizedStateMixin<T extends StatefulWidget> on State<T> {
-  AppLocalizations get loc => AppLocalizations.of(context);
-
-  String tr(String key, {Map<String, String>? parameters}) {
-    return loc.translate(key, parameters: parameters);
-  }
-
-  bool hasTranslation(String key) {
-    return loc.hasTranslation(key);
-  }
-}
-
-mixin LocalizedStatelessMixin {
-  AppLocalizations loc(BuildContext context) => AppLocalizations.of(context);
-
-  String tr(BuildContext context, String key, {Map<String, String>? parameters}) {
-    return loc(context).translate(key, parameters: parameters);
-  }
-
-  bool hasTranslation(BuildContext context, String key) {
-    return loc(context).hasTranslation(key);
+    return _languageController.hasTranslation(key);
   }
 }
 
@@ -91,17 +54,18 @@ class TranslationKeys {
 
   // About Screen
   static const String aboutTitle = 'about.title';
-  static const String aboutCurrentVersion = 'about.current_version';
-  static const String aboutNewversion = 'about.new_version';
+  static const String aboutCurrentVersion = 'about.currentVersion';
   static const String aboutTagline = 'about.tagline';
   static const String aboutDevelopedBy = 'about.developed_by';
   static const String aboutDeveloper = 'about.developer';
   static const String aboutDescription = 'about.description';
-  static const String aboutTelegramChannel = 'about.telegram_channel';
-  static const String aboutGithubSource = 'about.github_source';
-  static const String aboutPrivacyPolicy = 'about.privacy_policy';
-  static const String aboutTermsOfService = 'about.terms_of_service';
+  static const String aboutGithubSource = 'about.githubSource';
+  static const String aboutPrivacyPolicy = 'about.privacyPolicy';
+  static const String aboutTermsOfService = 'about.termsOfService';
   static const String aboutCopyright = 'about.copyright';
+  static const String aboutUpdateService = 'about.updateServiceCheckForUpdates';
+  static const String aboutErrorTitle = 'about.errorTitle';
+  static const String aboutFailedToLaunchUrl = 'about.errorFailedToLaunchUrl';
 
   // Navigation
   static const String navigation = 'navigation';
@@ -113,8 +77,8 @@ class TranslationKeys {
   // List Screen
   static const String listScreen = 'list_screen';
   static const String listScreenAppBarTitle = 'list_screen.app_bar_title';
-  static const String listScreenTooltipRefresh = 'list_screen.tooltip_refresh';
-  static const String listScreenSnackbarRefreshing = 'list_screen.snackbar_refreshing';
+  static const String listScreenRefresh = 'list_screen.refresh';
+  static const String listScreenRefreshing = 'list_screen.refreshing';
   static const String listScreenSnackbarEntryAdded = 'list_screen.snackbar_entry_added';
   static const String listScreenSnackbarEntryUpdated = 'list_screen.snackbar_entry_updated';
   static const String listScreenSnackbarEntryRemoved = 'list_screen.snackbar_entry_removed';
@@ -123,6 +87,9 @@ class TranslationKeys {
   static const String mapPlaceholderTip = 'map_screen.map_placeholder_tip';
   static const String mapSearchAction = 'map_screen.map_search_action';
   static const String mapLoadingLocation = 'map_screen.map_loading_location';
+  static const String mapSearchError = 'map_screen.map_search_error';
+  static const String mapSearchNoResults = 'map_screen.map_search_no_results';
+  static const String mapSearchCheapestGasStation = 'map_screen.map_search_cheapest_gas_station';
   static const String mapLocationServiceDisabled = 'map_screen.map_location_service_disabled';
   static const String mapPermissionDenied = 'map_screen.map_permission_denied';
   static const String mapPermissionDeniedForever = 'map_screen.map_permission_denied_forever';
@@ -175,6 +142,7 @@ class TranslationKeys {
   static const String entryScreenLabelLiters = 'entry_screen.label_liters';
   static const String entryScreenLabelPricePerLiter = 'entry_screen.label_price_per_liter';
   static const String entryScreenLabelTotalPrice = 'entry_screen.label_total_price';
+  static const String entryScreenLabelVeiculos = 'entry_screen.label_veiculos';
   static const String entryScreenLabelGasStation = 'entry_screen.label_gas_station';
   static const String entryScreenLabelFullTank = 'entry_screen.label_full_tank';
   static const String entryScreenInfoLastOdometerPrefix = 'entry_screen.info_last_odometer_prefix';
@@ -187,10 +155,12 @@ class TranslationKeys {
   static const String entryScreenDialogReceiptTitle = 'entry_screen.dialog_receipt_title';
   static const String entryScreenDialogReceiptOptionCamera = 'entry_screen.dialog_receipt_option_camera';
   static const String entryScreenDialogReceiptOptionGallery = 'entry_screen.dialog_receipt_option_gallery';
+  static const String entryScreenValidadeOdometerMustBeGreater = 'entry_screen.validade_odometer_greater';
 
   static const String validation = 'validation';
   static const String validationRequiredOdometer = 'validation.required_odometer';
   static const String validationOdometerMustBeGreater = 'validation.odometer_must_be_greater';
+  static const String validationRequiredVeiculos = 'validation.required_veiculos';
   static const String validationRequiredFuelType = 'validation.required_fuel_type';
   static const String validationRequiredValidLiters = 'validation.required_valid_liters';
   static const String validationRequiredValidPricePerLiter = 'validation.required_valid_price_per_liter';
@@ -270,12 +240,16 @@ class TranslationKeys {
   static const String unitSettingsScreenKmPerLiter = 'unit_settings.km_per_liter';
   static const String unitSettingsScreenLitersPer100km = 'unit_settings.liters_per_100km';
   static const String unitSettingsScreenMpg = 'unit_settings.mpg';
+  static const String unitSettingsScreenBRL = 'unit_settings.brl';
+  static const String unitSettingsScreenUSD = 'unit_settings.usd';
+  static const String unitSettingsScreenEUR = 'unit_settings.eur';
 
   static const String maintenanceScreenTitle = "maintenance.title";
   static const String maintenanceAlertTitle = "maintenance.alert_title";
   static const String maintenanceAlertByKm = "maintenance.alert_by_km";
   static const String maintenanceAlertByDate = "maintenance.alert_by_date";
-  static const String maintenanceSnackbarAdded = "maintenance.snackbar_added";
+  static const String maintenanceRefresh = "maintenance.refresh";
+  static const String maintenanceRefreshing = "maintenance.refreshing";
   static const String emptyStateMaintenanceMessage = "maintenance.empty_message";
 
   static const String maintenanceFormServiceType = "maintenance.form_service_type";
@@ -321,6 +295,7 @@ class TranslationKeys {
   static const String updateServiceLater = "update_service.later";
   static const String updateServiceDownload = "update_service.download";
   static const String updateServiceNoUpdate = "update_service.service_no_update";
+  static const String updateServiceUrlError = "update_service.url_error";
   static const String updateServiceCheckFailed = "update_service.check_failed";
 
   static const String errorCouldNotOpenUrl = 'error.could_not_open_url';
@@ -336,6 +311,7 @@ class TranslationKeys {
   
   static const String vehiclesScreenTitle = 'vehicles.screen_title';
   static const String vehiclesScreenDescription = 'vehicles.screen_description';
+  static const String vehiclesEmptyList = 'vehicles.empty_list';
   static const String vehiclesAddNewVehicle = 'vehicles.add_new_vehicle';
   static const String vehiclesEditVehicle = 'vehicles.edit_vehicle';
   static const String vehiclesNickname = 'vehicles.nickname';
@@ -352,10 +328,11 @@ class TranslationKeys {
   static const String vehiclesDelete = 'vehicles.delete';
   static const String vehiclesSave = 'vehicles.save';
   static const String vehiclesCancel = 'vehicles.cancel';
+  static const String vehiclesRemovePhoto = 'vehicles.remove_photo';
 
-  static const String gasStationScreenTitle = 'gasstation.screen_title';
-  static const String gasStationAddTitle = 'gasstation.add_title';
+  static const String gasStationScreenTitle = 'gasstation.title';
   static const String gasStationUpdateTitle = 'gasstation.update_title';
+  static const String gasStationAddTitle = 'gasstation.add_title';  
   static const String gasStationLabelName = 'gasstation.label_name';
   static const String gasStationLabelAddress = 'gasstation.label_address';
   static const String gasStationLabelBrand = 'gasstation.label_brand';
@@ -365,16 +342,17 @@ class TranslationKeys {
   static const String gasStationLabelPriceEthanol = 'gasstation.label_price_ethanol';
   static const String gasStationLabelConvenienceStore = 'gasstation.label_convenience_store';
   static const String gasStationLabel24Hours = 'gasstation.label_24hours';
-  static const String gasStationButtonSave = 'gasstation.button_save';
-  static const String gasStationButtonUpdate = 'gasstation.button_cancel';
-  static const String gasStationButtonCancel = 'gasstation.button_cancel';
-  static const String gasStationButtonDelete = 'gasstation.button_delete';
-  static const String gasStationButtonDeleteConfirm = 'gasstation.button_delete_confirm';
   static const String gasStationRequiredFieldName = 'gasstation.required_name';
   static const String gasStationRequiredFieldBrand = 'gasstation.required_brand';
   static const String gasStationRequiredValidLatitude = 'gasstation.required_valid_latitude';
   static const String gasStationRequiredValidLongitude = 'gasstation.required_valid_longitude';
   static const String gasStationRequiredValidPrice = 'gasstation.required_valid_price';
+  static const String gasStationButtonDelete = 'gasstation.button_delete';
+  static const String gasStationButtonDeleteSubtitle = 'gasstation.button_delete_subtitle';
+  static const String gasStationButtonDeleteConfirm = 'gasstation.button_delete_confirm';
+  static const String gasStationButtonDeleteCancel = 'gasstation.button_delete_cancel';
+  static const String gasStationButtonCancel = 'gasstation.button_cancel';
+  static const String gasStationButtonSave = 'gasstation.button_save';
 
   static const String onboardingsTitle1 = 'onboardings.onboarding_title_1';
   static const String onboardingsDesc1 = 'onboardings.onboarding_desc_1';
@@ -389,15 +367,22 @@ class TranslationKeys {
 }
 
 class TrHelper {
-  static String errorUrlFormat(BuildContext context, String url){
-    return context.tr(
+  
+  static final LanguageController _languageController = Get.find<LanguageController>();
+
+  static String tr(String key, {Map<String, String>? parameters}){
+    return _languageController.translate(key, parameters: parameters);
+  }
+
+  static String errorUrlFormat(String url){
+    return tr(
       TranslationKeys.errorCouldNotOpenUrl,
       parameters: {'url': url},
     );
   }
 
-  static String versionFormat(BuildContext context, String version, {bool isNew = false}) {
+  static String versionFormat(String version, {bool isNew = false}) {
     final key = isNew ? 'tools_screen.new_version': 'tools_screen.current_version';
-    return context.tr(key, parameters: {'version': version});
+    return tr(key, parameters: {'version': version});
   }
 }

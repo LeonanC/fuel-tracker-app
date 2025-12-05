@@ -1,7 +1,8 @@
 class FuelEntry {
-  final int? id;
+  final String? id;
   final String tipo;
   final DateTime dataAbastecimento;
+  final String veiculo;
   final String posto;
   final double quilometragem;
   final double litros;
@@ -14,6 +15,7 @@ class FuelEntry {
     this.id,
     required this.tipo,
     required this.dataAbastecimento,
+    required this.veiculo,
     required this.posto,
     required this.quilometragem,
     required this.litros,
@@ -27,6 +29,7 @@ class FuelEntry {
     return {
       'id': id,
       'data_abastecimento': dataAbastecimento.toIso8601String(),
+      'veiculo': veiculo,
       'posto': posto,
       'tipo_combustivel': tipo,
       'quilometragem': quilometragem,
@@ -42,6 +45,7 @@ class FuelEntry {
     return FuelEntry(
       id: map['id'],
       dataAbastecimento: DateTime.parse(map['data_abastecimento']),
+      veiculo: map['veiculo'],
       posto: map['posto'],
       tipo: map['tipo_combustivel'],
       quilometragem:  (map['quilometragem'] as num).toDouble(),

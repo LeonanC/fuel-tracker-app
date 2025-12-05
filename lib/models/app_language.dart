@@ -1,56 +1,50 @@
+import 'package:intl/intl.dart';
+
 class AppLanguage {
   final String name;
   final String code;
   final String flag;
-  final String direction;
+  final bool isRtl;
+  final TextDirection direction;
 
   const AppLanguage({
     required this.name,
     required this.code,
     required this.flag,
-    required this.direction,
+    this.isRtl = false,
+    this.direction = TextDirection.LTR,
   });
 
-  bool get isRtl => direction == 'rtl';
-
-  factory AppLanguage.fromJson(Map<String, dynamic> json){
-    final language = json['language'] as Map<String, dynamic>;
-    return AppLanguage(name: language['name'] as String, code: language['code'] as String, flag: language['flag'] as String, direction: language['direction'] as String);
-  }
-
-  Map<String, dynamic> toJson(){
-    return {
-      "language": {
-        "name": name,
-        "code": code,
-        "flag": flag,
-        "direction": direction,
-      }
-    };
-  }
-
+  
   @override
-  bool operator ==(Object other){
-    if(identical(this, other)) return true;
-    return other is AppLanguage && other.code == code;
-  }
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AppLanguage && runtimeType == other.runtimeType && other.code == code;
 
   @override
   int get hashCode => code.hashCode;
 
-  @override
-  String toString(){
-    return 'AppLanguage(name: $name, code: $code, flag: $flag, direction: $direction)';
-  }
+  String get text_direction => isRtl ? 'RTL' : 'LTR';
 
-  static const List<AppLanguage> supportedLanguages = [
-    AppLanguage(name: 'English', code: 'en', flag: '🇬🇧', direction: 'ltr'),
-    AppLanguage(name: 'Português', code: 'pt', flag: '🇧🇷', direction: 'ltr'),
-    AppLanguage(name: 'Español', code: 'es', flag: '🇪🇸', direction: 'ltr'),
-    AppLanguage(name: 'Francês', code: 'fr', flag: '🇫🇷', direction: 'ltr'),
-    AppLanguage(name: 'Alemão', code: 'de', flag: '🇩🇪', direction: 'ltr'),
-    AppLanguage(name: 'Italiano', code: 'it', flag: '🇮🇹', direction: 'ltr'),
-    AppLanguage(name: 'Russo', code: 'ru', flag: '🇷🇺', direction: 'ltr'),
+  static List<AppLanguage> get supportedLanguages => [
+    const AppLanguage(
+      code: 'en',
+      name: 'English', 
+      flag: '🇬🇧', 
+      direction: TextDirection.LTR,
+    ),
+    const AppLanguage(
+      code: 'pt',
+      name: 'Português (BR)', 
+      flag: '🇧🇷', 
+      direction: TextDirection.LTR,
+    ),
+    const AppLanguage(name: 'Español', code: 'es', flag: '🇪🇸', direction: TextDirection.LTR),
+    AppLanguage(name: 'Francês', code: 'fr', flag: '🇫🇷', direction: TextDirection.LTR),
+    AppLanguage(name: 'Alemão', code: 'de', flag: '🇩🇪', direction: TextDirection.LTR),
+    AppLanguage(name: 'Italiano', code: 'it', flag: '🇮🇹', direction: TextDirection.LTR),
+    AppLanguage(name: 'Russo', code: 'ru', flag: '🇷🇺', direction: TextDirection.LTR),
+    AppLanguage(name: 'العربية (Arabic)', code: 'ar', flag: '🇦🇪', isRtl: true, direction: TextDirection.RTL),
   ];
 
   static AppLanguage getByCode(String code){

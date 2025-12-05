@@ -1,5 +1,5 @@
 {
-  "version": "6.5.0",
-  "url": "https://github.com/LeonanC/fuel-tracker-app/releases/tag/6.5.0", 
-  "message": "Adicionado Geolocator no para inserir as lat e long dos postos de combustíveis"
+  "version": "6.6.0",
+  "url": "https://github.com/LeonanC/fuel-tracker-app/releases/tag/6.6.0", 
+  "message": "Atualizado de Provider para GETX"
 }

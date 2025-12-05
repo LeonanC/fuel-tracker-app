@@ -1,4 +1,4 @@
-class Vehicle {
+class VehicleModel {
   final String id;
   final String nickname;
   final String make; // Frabricante
@@ -7,8 +7,9 @@ class Vehicle {
   final int year;
   final double initialOdometer;
   final String? imageUrl;
+  final DateTime createdAt;
 
-  Vehicle({
+  VehicleModel({
     required this.id,
     required this.nickname,
     required this.make,
@@ -17,30 +18,34 @@ class Vehicle {
     required this.year,
     required this.initialOdometer,
     this.imageUrl,
-  });
+    DateTime? createdAt,
+  }) : this.createdAt = createdAt ?? DateTime.now();
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'nickname': nickname,
       'make': make,
       'model': model,
-      'fuelType': fuelType,
+      'fuel_type': fuelType,
       'year': year,
-      'initialOdometer': initialOdometer,
-      'imageUrl': imageUrl,
+      'initial_odometer': initialOdometer,
+      'imagem_url': imageUrl,
+      'created_at': createdAt.toIso8601String(),
     };
   }
-  factory Vehicle.fromMap(Map<String, dynamic> map) {
-    return Vehicle(
-      id: map['id'] ?? '',
-      nickname: map['nickname'] ?? '',
-      make: map['make'] ?? '',
-      model: map['model'] ?? '',
-      fuelType: map['fuelType'] ?? '',
-      year: map['year'] ?? 0,
-      initialOdometer: (map['initialOdometer'] as num?)?.toDouble() ?? 0.0,
-      imageUrl: map['imageUrl'],
+
+  factory VehicleModel.fromMap(Map<String, dynamic> map) {
+    return VehicleModel(
+      id: map['id'] as String,
+      nickname: map['nickname'] as String,
+      make: map['make'] as String,
+      model: map['model'] as String,
+      fuelType: map['fuel_type'] as String,
+      year: map['year'] as int,
+      initialOdometer: (map['initial_odometer'] as num).toDouble(),
+      imageUrl: map['imagem_url'] as String? ?? '',
+      createdAt: DateTime.parse(map['created_at'] as String),
     );
   }
 }
