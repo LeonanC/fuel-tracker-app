@@ -131,9 +131,8 @@ class TranslationKeys {
 
   // ENTRY SCREEN
   static const String entryScreen = 'entry_screen';
-  static const String entryScreenAppBarTitle = 'entry_screen.app_bar_title';
-  static const String entryScreenAddAppBarTitle = 'entry_screen.add_app_bar_title';
-  static const String entryScreenUpdateAppBarTitle = 'entry_screen.update_app_bar_title';
+  static const String entryScreenTitleEdit = 'entry_screen.title_edit';
+  static const String entryScreenTitleNew = 'entry_screen.title_new';
   static const String entryScreenButtonSave = 'entry_screen.button_save';
   static const String entryScreenButtonEdit = 'entry_screen.button_edit';
   static const String entryScreenLabelDate = 'entry_screen.label_date';

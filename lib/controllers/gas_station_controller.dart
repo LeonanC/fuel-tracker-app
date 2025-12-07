@@ -23,11 +23,11 @@ class GasStationController extends GetxController {
 
   @override
   void onInit(){
-    _loadStations();
+    loadStations();
     super.onInit();
   }
 
-  Future<void> _loadStations() async {
+  Future<void> loadStations() async {
     try {
       final List<GasStationModel> loadedStations = await _db.getStation();
       stations.assignAll(loadedStations);
@@ -81,7 +81,7 @@ class GasStationController extends GetxController {
         : newStation;
 
     await _db.insertStation(newStation);
-    await _loadStations();
+    await loadStations();
     final isNew = stations.indexWhere((s) => s.id == stationToSave.id) == -1;
 
     if (isNew) {
@@ -101,7 +101,7 @@ class GasStationController extends GetxController {
 
   void deleteGasStation(String id) async {
     await _db.deleteStation(id);
-    await _loadStations();
+    await loadStations();
     Get.snackbar('Excluído', 'Posto removido com sucesso.', snackPosition: SnackPosition.BOTTOM);
   }
 }

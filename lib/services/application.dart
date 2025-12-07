@@ -7,8 +7,8 @@ final List<String> dbCreate = <String>[
   """
   CREATE TABLE fuel_entries(
     id TEXT PRIMARY KEY,
-    tipo_combustivel TEXT NOT NULL,
     data_abastecimento TEXT NOT NULL,
+    fuel_type TEXT,
     posto TEXT, 
     veiculo TEXT,   
     quilometragem DECIMAL(10,2),
@@ -35,7 +35,7 @@ final List<String> dbCreate = <String>[
     nickname TEXT NOT NULL,
     make TEXT NOT NULL,
     model TEXT NOT NULL,
-    fuel_type TEXT NOT NULL,
+    fuel_type TEXT,
     year INTEGER,
     initial_odometer REAL,
     imagem_url TEXT NOT NULL,
@@ -54,6 +54,12 @@ final List<String> dbCreate = <String>[
     priceEthanol REAL NOT NULL,
     hasConvenientStore INTEGER NOT NULL,
     is24Hours INTEGER NOT NULL
+  )""",
+  """CREATE TABLE fuel_types(
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL UNIQUE,
+    abbr TEXT,
+    octane_rating INTEGER DEFAULT 0
   )"""
 ];
 

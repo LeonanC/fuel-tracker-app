@@ -1,6 +1,7 @@
 import 'package:fuel_tracker_app/data/database_helper.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/services/application.dart';
 import 'package:sqflite/sqflite.dart';
@@ -140,6 +141,7 @@ class FuelDb extends DatabaseHelper {
     final db = await getDb();
     return await db.delete('gas_stations', where: 'id = ?', whereArgs: [id]);
   }
+  
 
   Future<List<Map<String, dynamic>>> getAllMaintenanceEntries() async {
     final db = await getDb();
@@ -169,6 +171,39 @@ class FuelDb extends DatabaseHelper {
   Future<int> deleteVehicle(String id) async {
     final db = await getDb();
     return await db.delete('vehicles', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<TypeGasModel>> getGas() async {
+    final db = await getDb();
+    final List<Map<String, dynamic>> maps = await db.query(
+      'fuel_types',
+      orderBy: 'abbr ASC'
+    );
+
+    return List.generate(maps.length, (i){
+      return TypeGasModel.fromMap(maps[i]);
+    });
+  }
+
+  Future<int> insertGas(TypeGasModel typeGas) async {
+    final db = await getDb();
+    return await db.insert('fuel_types', typeGas.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<int> deleteGas(String id) async {
+    final db = await getDb();
+    return await db.delete('fuel_types', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<List<TypeGasModel>> getNamesPerGas(String gasName) async {
+    final db = await getDb();
+    final List<Map<String, dynamic>> maps = await db.query(
+      'fuel_types',
+      where: 'nome = ?',
+      whereArgs: [gasName],
+    );
+
+    return maps.map((map) => TypeGasModel.fromMap(map)).toList();
   }
 
   

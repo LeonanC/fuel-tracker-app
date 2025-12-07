@@ -1,28 +1,30 @@
 import 'package:fuel_tracker_app/data/fuel_db.dart';
+import 'package:fuel_tracker_app/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/models/vehicle_model.dart';
 import 'package:get/get.dart';
 import 'package:uuid/uuid.dart';
 
-class VehicleController extends GetxController {
-  var vehicles = <VehicleModel>[].obs;
+class TypeGasController extends GetxController {
+  var typeGas = <TypeGasModel>[].obs;
 
   final FuelDb _db = FuelDb();
 
-  VehicleModel? selectedVehicle;
-  String vehicleName = '';
+  TypeGasModel? selectedTypeGas;
+  String gasName = '';
 
   @override
   void onInit() {
-    loadVehicles();
+    loadGas();
     super.onInit();
   }
 
-  Future<void> loadVehicles() async {
+  Future<void> loadGas() async {
     try {
-      final List<VehicleModel> loadedVehicles = await _db.getVehicles();
-      vehicles.assignAll(loadedVehicles);
+      final List<TypeGasModel> loadedGas = await _db.getGas();
+      print(loadedGas);
+      typeGas.assignAll(loadedGas);
     } catch (e) {
-      print('Erro ao carregar veículos do banco de dados: $e');
+      print('Erro ao carregar gas do banco de dados: $e');
       Get.snackbar(
         'Erro',
         'Não foi possível carregar os veículos.',
@@ -33,57 +35,56 @@ class VehicleController extends GetxController {
 
   Future<void> loadNameVehicles(String value) async {
     if (value.isEmpty) {
-      vehicleName = value;
-      selectedVehicle = null;
+      gasName = value;
+      selectedTypeGas = null;
       return;
     }
-    vehicleName = value;
+    gasName = value;
 
     try {
-      final List<VehicleModel> results = await _db.getNamesPerVehicles(value);
-      vehicles.assignAll(results);
+      final List<TypeGasModel> results = await _db.getNamesPerGas(value);
+      typeGas.assignAll(results);
     } catch (e) {
-      print('Erro ao carregar veículos do banco de dados: $e');
-      selectedVehicle = null;
+      print('Erro ao carregar gas do banco de dados: $e');
+      selectedTypeGas = null;
       Get.snackbar(
         'Erro',
-        'Não foi possível carregar os veículos.',
+        'Não foi possível carregar os gas.',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
   }
 
-  void saveVehicle(VehicleModel newVehicle) async {
-    final bool isEditing = newVehicle.id.isNotEmpty;
+  void saveGas(TypeGasModel newGas) async {
+    final bool isEditing = newGas.id.isNotEmpty;
 
-    final vehicleToSave = newVehicle.id.isEmpty
-        ? newVehicle.copyWith(id: const Uuid().v4(), createdAt: DateTime.now())
-        : newVehicle;
+    final gasToSave = newGas.id.isEmpty
+        ? newGas.copyWith(id: const Uuid().v4())
+        : newGas;
 
-    await _db.insertVehicles(vehicleToSave);
-    await loadVehicles();
-    //final isNew = vehicles.indexWhere((v) => v.id == vehicleToSave.id) == -1;
+    await _db.insertGas(gasToSave);
+    await loadGas();
 
     if (!isEditing) {
       Get.snackbar(
         'Sucesso',
-        'Veículo adicionado: ${vehicleToSave.nickname}',
+        'Gas adicionado: ${gasToSave.nome}',
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
       Get.snackbar(
         'Sucesso',
-        'Veículo atualizado: ${vehicleToSave.nickname}',
+        'Gas atualizado: ${gasToSave.nome}',
         snackPosition: SnackPosition.BOTTOM,
       );
     }
   }
 
-  void deleteVehicle(String id) async {
-    await _db.deleteVehicle(id);
-    await loadVehicles();
+  void deleteGas(String id) async {
+    await _db.deleteGas(id);
+    await loadGas();
 
-    Get.snackbar('Excluído', 'Veículo removido com sucesso.', snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('Excluído', 'Gas removido com sucesso.', snackPosition: SnackPosition.BOTTOM);
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:fuel_tracker_app/controllers/vehicle_controller.dart';
 import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/app_update.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
+import 'package:fuel_tracker_app/screens/fuel_entry_screen.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:fuel_tracker_app/utils/unit_nums.dart';
@@ -18,6 +19,8 @@ class FuelListController extends GetxController {
   final FuelDb _db = FuelDb();
 
   var loadedEntries = <FuelEntry>[].obs;
+
+  
 
   static const double _alertThresholdKm = 100.0;
   static const double _kmToMileFactor = 0.621371;
@@ -39,21 +42,36 @@ class FuelListController extends GetxController {
   var selectedVehicleFilter = Rxn<String>();
   var selectedFuelTypeFilter = Rxn<String>();
   var selectedStationFilter = Rxn<String>();
-  var vehicleTypeMap = <String, String>{}.obs; 
+  var vehicleTypeMap = <String, String>{}.obs;
   var fuelTypeMap = <String, String>{}.obs;
+
+  void navigateToAddEntry(BuildContext context, {FuelEntry? data}) async {
+    final currentOdometer = lastOdometer.value;
+    final entry = await Get.to(
+      () => FuelEntryScreen(lastOdometer: currentOdometer, entry: data),
+    );
+    if(entry != null){
+      await saveFuel(entry);
+    }
+  }
+
+  List<String> get availableVehicleNames {
+    final List<String> names = vehicleController.vehicles
+    .map((vehicle) => vehicle.nickname)
+    .toList();
+    Set<String> allVehicles = {...names};
+
+    allVehicles.removeWhere((name) => name.isEmpty);
+
+    return allVehicles.toList();
+  }
 
   List<String> get availableGasStationNames {
     final List<String> names = gasStationController.stations
         .map((station) => station.nome)
         .toList();
 
-    final List<String> uniqueEntryStations = loadedEntries
-        .where((entry) => entry.posto != null && entry.posto!.isNotEmpty)
-        .map((entry) => entry.posto!)
-        .toSet()
-        .toList();
-
-    Set<String> allStations = {...names, ...uniqueEntryStations};
+    Set<String> allStations = {...names};
 
     allStations.removeWhere((name) => name.isEmpty);
 
@@ -64,87 +82,10 @@ class FuelListController extends GetxController {
   void onInit() {
     _initializeData();
     loadFuelEntries();
+    vehicleController.loadVehicles();
+    gasStationController.loadStations();
     ever(languageController.currentLanguage, (_) => _initializeData());
     super.onInit();
-  }
-
-  Future<double?> getLastOdometerReading(String vehicleId) async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    return _lastOdometer;
-  }
-
-  
-
-  String? validateFuelType(String? value) {
-    // if(value == null || value.isEmpty){
-    //   return tr(TranslationKeys.validationRequiredFuelType);
-    // }
-    return null;
-  }
-
-  String? validateLiters(String? value) {
-    // if(_getLitersValue() == null || _getLitersValue()! <= 0){
-    //   return tr(TranslationKeys.validationRequiredValidLiters);
-    // }
-    return null;
-  }
-
-  String? validatePricePerLiter(String? value) {
-    // if(_getPricePerLiterValue() == null || _getPricePerLiterValue()! <= 0){
-    //   return tr(TranslationKeys.validationRequiredValidPricePerLiter);
-    // }
-    return null;
-  }
-
-  String? validateTotalPrice(String? value) {
-    // if(_getTotalPriceValue() == null || _getTotalPriceValue()! <= 0){
-    //   return tr(TranslationKeys.validationRequiredValidTotalPrice);
-    // }
-    return null;
-  }
-
-  String? validateOdometer(String? value) {
-    // final double? odometer = _getOdometerValue();
-    // if(odometer == null || odometer <= 0){
-    //   return tr(TranslationKeys.validationRequiredOdometer);
-    // }
-    // if(lastOdometer != null && odometer < lastOdometer!){
-    //   return tr(TranslationKeys.entryScreenValidadeOdometerMustBeGreater, parameters: {'name': lastOdometer!.toStringAsFixed(0)});
-    // }
-    // return null;
-  }
-
-  MoneyMaskedTextController litrosController = MoneyMaskedTextController();
-  MoneyMaskedTextController kmController = MoneyMaskedTextController();
-  MoneyMaskedTextController pricePerLiterController = MoneyMaskedTextController();
-  MoneyMaskedTextController totalPriceController = MoneyMaskedTextController();
-
-  double? getOdometerValue() => kmController.numberValue;
-  double? getLitersValue() => litrosController.numberValue;
-  double? getPricePerLiterValue() => pricePerLiterController.numberValue;
-  double? getTotalPriceValue() => totalPriceController.numberValue;
-
-  void calculatePrice() {
-    final double? liters = getLitersValue();
-    final double? pricePerLiter = getPricePerLiterValue();
-    final double? totalPriceEntered = getTotalPriceValue();
-
-    if (liters != null && pricePerLiter != null) {
-      final double calculatedTotal = liters * pricePerLiter;
-      totalPriceController.removeListener(calculatePrice);
-      totalPriceController.updateValue(calculatedTotal);
-      totalPriceController.addListener(calculatePrice);
-    } else if (liters != null && totalPriceEntered != null && liters > 0) {
-      final calculatedPricePerLiter = totalPriceEntered / liters;
-      pricePerLiterController.removeListener(calculatePrice);
-      pricePerLiterController.updateValue(calculatedPricePerLiter);
-      pricePerLiterController.addListener(calculatePrice);
-    } else if (pricePerLiter != null && totalPriceEntered != null && pricePerLiter > 0) {
-      final calculatedLiters = totalPriceEntered / pricePerLiter;
-      litrosController.removeListener(calculatePrice);
-      litrosController.updateValue(calculatedLiters);
-      litrosController.addListener(calculatePrice);
-    }
   }
 
   Future<void> loadFuelEntries() async {
@@ -170,20 +111,15 @@ class FuelListController extends GetxController {
   }
 
   void _initializeData() async {
-    loadFuelEntries();
+    // loadFuelEntries();
     vehicleController.loadVehicles();
-    vehicleTypeMap.value = {
-      'Suburbanona': 'Suburbanona',
-      'Fit Prata': 'Fit Prata',
-      'Cityzão': 'Cityzão',
-    };
-    fuelTypeMap.value = {
-      'Gasolina Comum': tr(TranslationKeys.fuelTypeGasolineComum),
-      'Gasolina Aditivada': tr(TranslationKeys.fuelTypeGasolineAditivada),
-      'Etanol (Álcool)': tr(TranslationKeys.fuelTypeEthanolAlcool),
-      'Gasolina Premium': tr(TranslationKeys.fuelTypeGasolinePremium),
-      'Outro': tr(TranslationKeys.fuelTypeOther),
-    };
+    // fuelTypeMap.value = {
+    //   'Gasolina Comum': tr(TranslationKeys.fuelTypeGasolineComum),
+    //   'Gasolina Aditivada': tr(TranslationKeys.fuelTypeGasolineAditivada),
+    //   'Etanol (Álcool)': tr(TranslationKeys.fuelTypeEthanolAlcool),
+    //   'Gasolina Premium': tr(TranslationKeys.fuelTypeGasolinePremium),
+    //   'Outro': tr(TranslationKeys.fuelTypeOther),
+    // };
   }
 
   Future<void> saveFuel(FuelEntry newFuel) async {
@@ -191,21 +127,6 @@ class FuelListController extends GetxController {
 
     await _db.insertFuel(fuelToSave);
     await loadFuelEntries();
-    final isNew = loadedEntries.indexWhere((f) => f.id == fuelToSave.id) == -1;
-
-    if (isNew) {
-      Get.snackbar(
-        'Sucesso',
-        'Posto adicionado: ${fuelToSave.posto}',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } else {
-      Get.snackbar(
-        'Sucesso',
-        'Posto atualizado: ${fuelToSave.posto}',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    }
   }
 
   Future<void> deleteEntry(String id) async {
@@ -261,17 +182,17 @@ class FuelListController extends GetxController {
 
   List<FuelEntry> get filteredEntries {
     return loadedEntries.where((entry) {
-      bool matchesVehicle = 
-        selectedVehicleFilter.value == null || entry.veiculo == selectedVehicleFilter.value;
+      bool matchesVehicle =
+          selectedVehicleFilter.value == null || entry.veiculo == selectedVehicleFilter.value;
       bool matchesFuelType =
           selectedFuelTypeFilter.value == null || entry.tipo == selectedFuelTypeFilter.value;
       bool matchesStation =
           selectedStationFilter.value == null || entry.posto == selectedStationFilter.value;
-      return matchesFuelType && matchesStation;
+      return matchesVehicle && matchesFuelType && matchesStation;
     }).toList();
   }
 
-  void setVeiculoFilter(String? vehicle){
+  void setVeiculoFilter(String? vehicle) {
     selectedVehicleFilter.value = vehicle;
   }
 
@@ -484,6 +405,4 @@ extension FuelEntryCopWith on FuelEntry {
       comprovantePath: comprovantePath ?? this.comprovantePath,
     );
   }
-
-  
 }

@@ -9,9 +9,9 @@ class FuelListFilterMenu extends StatelessWidget {
 
   final FuelListController controller = Get.find<FuelListController>();
 
-  PopupMenuItem<String> buildVeiculoTypeItem(String key, String value, bool isSelected) {
+  PopupMenuItem<String> buildVeiculoTypeItem(String vehicle, bool isSelected) {
     return PopupMenuItem<String>(
-      value: 'SetVeiculo:$key',
+      value: 'SetVeiculo:$vehicle',
       child: Row(
         children: [
           Icon(
@@ -21,7 +21,7 @@ class FuelListFilterMenu extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            value,
+            vehicle,
             style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
           ),
         ],
@@ -125,8 +125,11 @@ class FuelListFilterMenu extends StatelessWidget {
             ),
           );
           items.addAll(
-            controller.vehicleTypeMap.entries.map((entry){
-              return buildVeiculoTypeItem(entry.key, entry.value, selectedVehicleTypeFilter == entry.key);
+            controller.availableVehicleNames.map((vehicleName){
+              return buildVeiculoTypeItem(
+                vehicleName,
+                controller.selectedVehicleFilter.value == vehicleName,
+              );
             }),
           );
           items.add(

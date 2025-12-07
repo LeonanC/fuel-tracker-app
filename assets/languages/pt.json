@@ -50,7 +50,7 @@
         "confirm_message": "Tem certeza de que deseja excluir o registro de manutenção"
     },
     "consumption_cards": {
-        "overall_cost_per_distance": "Custo por Distância Total ",
+        "overall_cost_per_distance": "Custo por Distância Total",
         "overall_average": "Consumo Médio Geral: ",
         "not_available_short": "N/A",
         "unit_km_l": "km/L",
@@ -81,7 +81,9 @@
         "filter_apply": "Aplicar"
     },
     "entry_screen": {
-        "add_app_bar_title": "Adicionar Abastecimento",
+        "app_bar_title": "Gerenciamento Abastecimento",
+        "title_edit": "Editar Abastecimento",
+        "title_new": "Adicionar Abastecimento",
         "update_app_bar_title": "Atualizar Abastecimento",
         "button_save": "Salvar Abastecimento",
         "button_edit": "Editar Abastecimento",
