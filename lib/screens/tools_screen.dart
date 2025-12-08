@@ -4,6 +4,7 @@ import 'package:fuel_tracker_app/controllers/update_controller.dart';
 import 'package:fuel_tracker_app/models/app_update.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:fuel_tracker_app/screens/backup_restore_screen.dart';
 import 'package:fuel_tracker_app/screens/gas_station_management_screen.dart';
 import 'package:fuel_tracker_app/screens/language_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/notificationReminders_settings_screen.dart';
@@ -115,8 +116,7 @@ class ToolsScreen extends GetView<FuelListController> {
                 title: context.tr(TranslationKeys.toolsScreenBackupCardTitle),
                 description: context.tr(TranslationKeys.toolsScreenBackupCardDescription),
                 icon: Icons.backup,
-                // onTap: () => Get.to(() => BackupRestoreScreen()),
-                onTap: (){},
+                onTap: () => Get.to(() => BackupRestoreScreen()),
               ),
               _buildToolCard(
                 context,

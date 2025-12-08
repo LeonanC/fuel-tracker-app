@@ -1,5 +1,5 @@
 class MaintenanceEntry {
-  final int? id;
+  final String id;
   final String tipo;
   final DateTime dataServico;
   final double quilometragem;
@@ -13,7 +13,7 @@ class MaintenanceEntry {
   final int? veiculoId;
 
   MaintenanceEntry({
-    this.id,
+    required this.id,
     required this.tipo,
     required this.dataServico,
     required this.quilometragem,
@@ -25,13 +25,13 @@ class MaintenanceEntry {
     this.veiculoId,
   });
 
-   factory MaintenanceEntry.fromMap(Map<String, dynamic> map) {
+  factory MaintenanceEntry.fromMap(Map<String, dynamic> map) {
     return MaintenanceEntry(
       id: map['id'],
       tipo: map['tipo'],
       dataServico: DateTime.parse(map['data_servico']),
-      quilometragem:  (map['quilometragem'] as num).toDouble(),
-      custo:  (map['custo'] as num).toDouble(),
+      quilometragem: (map['quilometragem'] as num).toDouble(),
+      custo: (map['custo'] as num).toDouble(),
       observacoes: map['observacoes'],
       lembreteKm: (map['lembrete_km'] as num?)?.toDouble(),
       lembreteData: map['lembrete_data'] != null ? DateTime.parse(map['lembrete_data']) : null,
@@ -40,7 +40,7 @@ class MaintenanceEntry {
     );
   }
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'tipo': tipo,
@@ -55,7 +55,6 @@ class MaintenanceEntry {
     };
   }
 
- 
   List<dynamic> toCsvList() {
     final String lembreteAtivoText = lembreteAtivo == 1 ? 'Sim' : 'Não';
     return [
@@ -70,6 +69,32 @@ class MaintenanceEntry {
       veiculoId,
     ];
   }
+}
 
-  
+extension MaintenanceEntryCopWith on MaintenanceEntry {
+  MaintenanceEntry copyWith({
+    String? id,
+    String? tipo,
+    DateTime? dataServico,
+    double? quilometragem,
+    double? custo,
+    String? observacoes,
+    double? lembreteKm,
+    DateTime? lembreteData,
+    bool? lembreteAtivo,
+    int? veiculoId,
+  }) {
+    return MaintenanceEntry(
+      id: id ?? this.id,
+      tipo: tipo ?? this.tipo,
+      dataServico: dataServico ?? this.dataServico,
+      quilometragem: quilometragem ?? this.quilometragem,
+      custo: custo ?? this.custo,
+      observacoes: observacoes ?? this.observacoes,
+      lembreteKm: lembreteKm ?? this.lembreteKm,
+      lembreteData: lembreteData ?? this.lembreteData,
+      lembreteAtivo: lembreteAtivo ?? this.lembreteAtivo,
+      veiculoId: veiculoId ?? this.veiculoId,
+    );
+  }
 }

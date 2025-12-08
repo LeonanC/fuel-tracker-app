@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fuel_tracker_app/controllers/service_controller.dart';
 import 'package:fuel_tracker_app/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/models/maintenance_entry_model.dart';
 import 'package:fuel_tracker_app/controllers/currency_controller.dart';
@@ -23,7 +24,8 @@ class MaintenanceEntryScreen extends StatefulWidget {
 }
 
 class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
-  final MaintenanceController maintenanceController = Get.find<MaintenanceController>();
+  final ServiceController serviceController = Get.find<ServiceController>();
+  final MaintenanceController controller = Get.find<MaintenanceController>();
   final UnitController unitController = Get.find<UnitController>();
   final LanguageController languageController = Get.find<LanguageController>();
 
@@ -35,20 +37,19 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
   late TextEditingController _custoController;
   late TextEditingController _observacoesController;
 
-  late String serviceName;
-
   bool _lembreteAtivo = false;
   late TextEditingController _lembreteKmController;
   DateTime? _lembreteData;
 
   late List<ServicesTypeModel> availableServices = [];
-  bool get _isEditing => widget.entry != null;
+  late bool isEditing;
 
   @override
   void initState() {
+    isEditing = widget.entry != null;
     super.initState();
 
-    if (_isEditing) {
+    if (isEditing) {
       final entry = widget.entry!;
       _dataServico = entry.dataServico;
       _kmController = TextEditingController(text: entry.quilometragem.toStringAsFixed(0));
@@ -75,13 +76,13 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
     _loadInitialData();
   }
 
-  void _loadInitialData() {
-    availableServices = maintenanceController.serviceType;
+  Future<void> _loadInitialData() async {
+    availableServices = serviceController.serviceType;
 
-    if (_isEditing && widget.entry != null) {
+    if (isEditing && widget.entry != null) {
       selectedService = availableServices.firstWhereOrNull((s) => s.nome == widget.entry!.tipo);
 
-      maintenanceController.selectedServiceType = selectedService;
+      serviceController.selectedServiceType = selectedService;
 
       setState(() {});
     }
@@ -89,7 +90,9 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
 
   void updateServiceType(ServicesTypeModel? newService) {
     if (newService != null) {
-      selectedService = newService;
+      setState(() {
+        selectedService = newService;
+      });
     }
   }
 
@@ -151,45 +154,67 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
     );
   }
 
-  void _saveForm() {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  void _submit() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      final double km = double.tryParse(_kmController.text.replaceAll(',', '.')) ?? 0.0;
+      final double custo = double.tryParse(_custoController.text.replaceAll(',', '.')) ?? 0.0;
+      final double? lembreteKm = (_lembreteAtivo && _lembreteKmController.text.isNotEmpty)
+          ? double.tryParse(_lembreteKmController.text.replaceAll(',', '.'))
+          : null;
+      final serviceName = selectedService?.nome;
+
+      final maintenanceId = widget.entry?.id ?? const Uuid().v4();
+
+      final MaintenanceEntry newEntry = MaintenanceEntry(
+        id: maintenanceId,
+        tipo: serviceName!,
+        dataServico: _dataServico,
+        quilometragem: km,
+        custo: custo > 0 ? custo : null,
+        observacoes: _observacoesController.text.trim().isEmpty
+            ? null
+            : _observacoesController.text.trim(),
+        lembreteAtivo: _lembreteAtivo,
+        lembreteKm: lembreteKm,
+        lembreteData: _lembreteAtivo ? _lembreteData : null,
+        veiculoId: 1,
+      );
+
+      try {
+        await controller.saveMaintenance(newEntry);
+        if (!mounted) return;
+        Get.back();
+
+        Get.snackbar(
+          'Sucesso',
+          isEditing
+              ? 'Serviço atualizado: ${newEntry.tipo}'
+              : 'Serviço adicionado: ${newEntry.tipo}',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        Get.back();
+        Get.snackbar(
+          'Erro',
+          'Falha ao salvar o serviço: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+        );
+      }
     }
-    _formKey.currentState!.save();
-    final double km = double.tryParse(_kmController.text.replaceAll(',', '.')) ?? 0.0;
-    final double custo = double.tryParse(_custoController.text.replaceAll(',', '.')) ?? 0.0;
-    final double? lembreteKm = (_lembreteAtivo && _lembreteKmController.text.isNotEmpty)
-        ? double.tryParse(_lembreteKmController.text.replaceAll(',', '.'))
-        : null;
-
-    final MaintenanceEntry newEntry = MaintenanceEntry(
-      id: widget.entry?.id,
-      tipo: serviceName,
-      dataServico: _dataServico,
-      quilometragem: km,
-      custo: custo > 0 ? custo : null,
-      observacoes: _observacoesController.text.trim().isEmpty
-          ? null
-          : _observacoesController.text.trim(),
-      lembreteAtivo: _lembreteAtivo,
-      lembreteKm: lembreteKm,
-      lembreteData: _lembreteAtivo ? _lembreteData : null,
-      veiculoId: 1,
-    );
-
-    if (_isEditing) {
-      // context.read<MaintenanceProvider>().updateEntry(newEntry);
-    }
-
-    Navigator.of(context).pop(newEntry);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.entry != null;
     final theme = Theme.of(context);
-    final currencySymbol = unitController.currencyUnit.value;
+    final CurrencyController currencyController = Get.find<CurrencyController>();
     final String _addNewServiceKey = context.tr(TranslationKeys.maintenanceServiceAddNew);
     return Obx(() {
+      final currencySymbol = currencyController.currencySymbol.value;
       return Directionality(
         textDirection: languageController.textDirection,
         child: Scaffold(
@@ -200,16 +225,16 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
             backgroundColor: theme.brightness == Brightness.dark
                 ? AppTheme.backgroundColorDark
                 : AppTheme.backgroundColorLight,
-            key: ValueKey('MaintenanceEntryAppBar_${_isEditing ? 'Edit' : 'New'}'),
+            key: ValueKey('MaintenanceEntryAppBar_${isEditing ? 'Edit' : 'New'}'),
             title: Text(
-              _isEditing
+              isEditing
                   ? context.tr(TranslationKeys.maintenanceScreenTitle)
                   : context.tr(TranslationKeys.maintenanceScreenTitle),
             ),
             actions: [
               IconButton(
                 icon: const Icon(RemixIcons.save_line),
-                onPressed: _saveForm,
+                onPressed: _submit,
                 tooltip: context.tr(TranslationKeys.maintenanceFormSaveButton),
               ),
             ],
@@ -263,7 +288,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
                   _buildNumericField(
                     _custoController,
                     context.tr(TranslationKeys.maintenanceFormCost),
-                    '$currencySymbol',
+                    currencySymbol,
                     isDecimal: true,
                   ),
                   const SizedBox(height: 16),

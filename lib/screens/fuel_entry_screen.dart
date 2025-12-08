@@ -122,8 +122,12 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
 
     if (isEditing && widget.entry != null) {
       selectedGas = availableTipos.firstWhereOrNull((t) => t.nome == widget.entry!.tipo);
-      selectedVeiculos = availableVeiculos.firstWhereOrNull((v) => v.nickname == widget.entry!.veiculo);
-      selectedStations = availableGasStations.firstWhereOrNull((s) => s.nome == widget.entry!.posto);
+      selectedVeiculos = availableVeiculos.firstWhereOrNull(
+        (v) => v.nickname == widget.entry!.veiculo,
+      );
+      selectedStations = availableGasStations.firstWhereOrNull(
+        (s) => s.nome == widget.entry!.posto,
+      );
 
       typeGasController.selectedTypeGas = selectedGas;
       vehicleController.selectedVehicle = selectedVeiculos;
@@ -146,8 +150,8 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
   }
 
   void _submit() async {
-    // if (_formKey.currentState!.validate()) {
-      // _formKey.currentState!.save();
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
 
       final currentOdometer = getOdometerValue();
       final litersValue = getLitersValue();
@@ -189,18 +193,18 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
 
       try {
         await controller.saveFuel(newFuel);
-        if(!mounted) return;
-        Get.back();       
+        if (!mounted) return;
+        Get.back();
 
         Get.snackbar(
           'Sucesso',
-          isEditing ? 'Abastecimento atualizado com sucesso!' : 'Abastecimento em "${newFuel.posto}" adicionado com sucesso!',
+          isEditing
+              ? 'Abastecimento atualizado com sucesso!'
+              : 'Abastecimento em "${newFuel.posto}" adicionado com sucesso!',
           snackPosition: SnackPosition.BOTTOM,
         );
-
-        
       } catch (e) {
-        if(!mounted) return;
+        if (!mounted) return;
         Get.back();
 
         Get.snackbar(
@@ -209,10 +213,8 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.redAccent,
         );
-
-        
       }
-    // }
+    }
   }
 
   Future<void> selectDate(BuildContext context) async {
@@ -577,65 +579,61 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
                         ),
                       ),
                       child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Detalhes do Posto: ${selectedStations!.nome} (${selectedStations!.brand})',
-                                  style: theme.textTheme.titleMedium!.copyWith(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                _buildInfoRow(
-                                  context,
-                                  RemixIcons.car_line,
-                                  'Veículo:',
-                                  selectedVeiculos!.nickname,
-                                ),
-                                _buildInfoRow(
-                                  context,
-                                  RemixIcons.oil_line,
-                                  'Gasolina Comum (R\$):',
-                                  selectedStations!.priceGasolineComum
-                                      .toStringAsFixed(2),
-                                ),
-                                _buildInfoRow(
-                                  context,
-                                  RemixIcons.oil_line,
-                                  'Gasolina Aditivada (R\$):',
-                                  selectedStations!.priceGasolineAditivada
-                                      .toStringAsFixed(2),
-                                ),
-                                _buildInfoRow(
-                                  context,
-                                  RemixIcons.oil_line,
-                                  'Gasolina Premium (R\$):',
-                                  selectedStations!.priceGasolinePremium
-                                      .toStringAsFixed(2),
-                                ),
-                                _buildInfoRow(
-                                  context,
-                                  RemixIcons.oil_line,
-                                  'Etanol (R\$):',
-                                  selectedStations!.priceEthanol
-                                      .toStringAsFixed(2),
-                                ),
-                                _buildServiceRow(
-                                  context,
-                                  RemixIcons.store_2_line,
-                                  'Loja de Conv.:',
-                                  selectedStations!.hasConvenientStore,
-                                ),
-                                _buildServiceRow(
-                                  context,
-                                  RemixIcons.time_line,
-                                  '24 Horas:',
-                                  selectedStations!.is24Hours,
-                                ),
-                              ],
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Detalhes do Posto: ${selectedStations!.nome} (${selectedStations!.brand})',
+                            style: theme.textTheme.titleMedium!.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: theme.colorScheme.primary,
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildInfoRow(
+                            context,
+                            RemixIcons.car_line,
+                            'Veículo:',
+                            selectedVeiculos!.nickname,
+                          ),
+                          _buildInfoRow(
+                            context,
+                            RemixIcons.oil_line,
+                            'Gasolina Comum (R\$):',
+                            selectedStations!.priceGasolineComum.toStringAsFixed(2),
+                          ),
+                          _buildInfoRow(
+                            context,
+                            RemixIcons.oil_line,
+                            'Gasolina Aditivada (R\$):',
+                            selectedStations!.priceGasolineAditivada.toStringAsFixed(2),
+                          ),
+                          _buildInfoRow(
+                            context,
+                            RemixIcons.oil_line,
+                            'Gasolina Premium (R\$):',
+                            selectedStations!.priceGasolinePremium.toStringAsFixed(2),
+                          ),
+                          _buildInfoRow(
+                            context,
+                            RemixIcons.oil_line,
+                            'Etanol (R\$):',
+                            selectedStations!.priceEthanol.toStringAsFixed(2),
+                          ),
+                          _buildServiceRow(
+                            context,
+                            RemixIcons.store_2_line,
+                            'Loja de Conv.:',
+                            selectedStations!.hasConvenientStore,
+                          ),
+                          _buildServiceRow(
+                            context,
+                            RemixIcons.time_line,
+                            '24 Horas:',
+                            selectedStations!.is24Hours,
+                          ),
+                        ],
+                      ),
                     ),
 
                   Row(
@@ -725,6 +723,7 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
                           : context.tr(TranslationKeys.entryScreenButtonSave),
                     ),
                   ),
+                  const SizedBox(height: 27),
                 ],
               ),
             ),

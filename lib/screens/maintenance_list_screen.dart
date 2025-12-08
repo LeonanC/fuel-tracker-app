@@ -8,7 +8,6 @@ import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
 
 class MaintenanceListScreen extends GetView<MaintenanceController> {
@@ -17,37 +16,26 @@ class MaintenanceListScreen extends GetView<MaintenanceController> {
   final FuelListController fuelListController = Get.find<FuelListController>();
   final LanguageController languageController = Get.find<LanguageController>();
 
-  Future<void> _deleteEntry(BuildContext context, MaintenanceEntry entry) async {
-    final bool? confirm = await _deleteConfirmation(context);
-
-    if (confirm == true && entry.id != null) {
-      await controller.deleteEntry(entry.id!);
-    }
-  }
-
   Future<bool?> _deleteConfirmation(BuildContext context) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmation)),
-          content: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmMessage)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(context.tr(TranslationKeys.commonLabelsCancel)),
+    return await Get.dialog<bool>(
+      AlertDialog(
+        title: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmation)),
+        content: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmMessage)),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text(context.tr(TranslationKeys.commonLabelsCancel)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text(context.tr(TranslationKeys.commonLabelsDelete)),
-            ),
-          ],
-        );
-      },
+            onPressed: () => Get.back(result: true),
+            child: Text(context.tr(TranslationKeys.commonLabelsDelete)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -61,9 +49,7 @@ class MaintenanceListScreen extends GetView<MaintenanceController> {
       final List<MaintenanceEntry> entries = controller.loadedEntries;
       final bool isLoading = controller.isLoading.value;
 
-      final List<MaintenanceEntry> activeReminders = controller.getActiveReminders(
-        safeOdometer,
-      );
+      final List<MaintenanceEntry> activeReminders = controller.getActiveReminders(safeOdometer);
 
       return Scaffold(
         backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
@@ -98,11 +84,7 @@ class MaintenanceListScreen extends GetView<MaintenanceController> {
                   Expanded(
                     child: entries.isEmpty
                         ? Center(
-                            child: Text(
-                              context.tr(
-                                TranslationKeys.emptyStateMaintenanceMessage,
-                              ),
-                            ),
+                            child: Text(context.tr(TranslationKeys.emptyStateMaintenanceMessage)),
                           )
                         : ListView.builder(
                             itemCount: entries.length,
@@ -135,8 +117,17 @@ class MaintenanceListScreen extends GetView<MaintenanceController> {
         child: const Icon(RemixIcons.delete_bin_line, color: Colors.white),
       ),
       confirmDismiss: (direction) => _deleteConfirmation(context),
-      onDismissed: (direction) {
-        _deleteEntry(context, entry);
+      onDismissed: (direction) async {
+        if (entry.id != null) {
+          await controller.deleteMaintenance(entry.id!);
+          Get.snackbar(
+            context.tr(TranslationKeys.commonLabelsDelete),
+            context.tr(TranslationKeys.commonLabelsDeleteConfirmMessage),
+            duration: const Duration(seconds: 2),
+            snackPosition: SnackPosition.BOTTOM,
+            colorText: Colors.white,
+          );
+        }
       },
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
@@ -147,9 +138,7 @@ class MaintenanceListScreen extends GetView<MaintenanceController> {
             '${context.tr(TranslationKeys.commonLabelsOdometer)}: ${entry.quilometragem.toStringAsFixed(0)} km\n ${context.tr(TranslationKeys.commonLabelsDate)}: ${DateFormat('dd/MM/yyyy').format(entry.dataServico)}',
           ),
           trailing: entry.custo != null ? Text('R\$ ${entry.custo!.toStringAsFixed(2)}') : null,
-          onTap: () {
-            Get.to(() => MaintenanceEntryScreen(entry: entry, lastOdometer: entry.quilometragem));
-          },
+          onTap: () => controller.navigateToAddEntry(context, data: entry),
         ),
       ),
     );
