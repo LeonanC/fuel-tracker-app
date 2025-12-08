@@ -60,6 +60,12 @@ final List<String> dbCreate = <String>[
     nome TEXT NOT NULL UNIQUE,
     abbr TEXT,
     octane_rating INTEGER DEFAULT 0
+  )""",
+  """CREATE TABLE service_types(
+    id TEXT PRIMARY KEY,
+    nome TEXT NOT NULL UNIQUE,
+    abbr TEXT,
+    default_frequency_km INTEGER DEFAULT 0
   )"""
 ];
 

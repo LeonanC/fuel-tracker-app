@@ -537,7 +537,7 @@ class _MapScreenState extends State<MapScreen> {
         title: Text(
           _destinationPoint != null
               ? 'Em Navegação'
-              : maintenanceController.tr(TranslationKeys.navigationMap),
+              : context.tr(TranslationKeys.navigationMap),
         ),
         elevation: theme.appBarTheme.elevation,
         centerTitle: theme.appBarTheme.centerTitle,

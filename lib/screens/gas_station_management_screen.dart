@@ -31,7 +31,6 @@ class GasStationManagementScreen extends GetView<GasStationController> {
       ),
       body: Obx(() {
         final stations = controller.stations;
-        print(stations);
 
         if (stations.isEmpty) {
           return Center(
@@ -334,34 +333,43 @@ class _StationFormState extends State<StationForm> {
 
   void _submit() {
     if (formKey.currentState!.validate()) {
-      return;
+      formKey.currentState!.save();
+      final stationId = widget.station?.id ?? const Uuid().v4();
+
+      final GasStationModel newStation = GasStationModel(
+        id: stationId,
+        nome: nameController.text.trim(),
+        address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+        brand: brandController.text.trim(),
+        latitude: latitudeController.numberValue,
+        longitude: longitudeController.numberValue,
+        priceGasolineComum: priceGasolineController.numberValue,
+        priceGasolineAditivada: priceGasolineController.numberValue,
+        priceGasolinePremium: priceGasolineController.numberValue,
+        priceEthanol: priceEthanolController.numberValue,
+        hasConvenientStore: hasConvenienceStore,
+        is24Hours: is24Hours,
+      );
+
+      try {
+        controller.saveStation(newStation);
+        Get.back();
+        Get.snackbar(
+          'Sucesso',
+          'Posto "${newStation.nome}" adicionado com sucesso!',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+
+        
+      } catch (e) {
+        Get.back();
+        Get.snackbar(
+          'Erro',
+          'Posto "${newStation.nome}" adicionado com sucesso!',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     }
-    formKey.currentState!.save();
-    final stationId = widget.station?.id ?? const Uuid().v4();
-
-    final GasStationModel newStation = GasStationModel(
-      id: stationId,
-      nome: nameController.text.trim(),
-      address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
-      brand: brandController.text.trim(),
-      latitude: latitudeController.numberValue,
-      longitude: longitudeController.numberValue,
-      priceGasolineComum: priceGasolineController.numberValue,
-      priceGasolineAditivada: priceGasolineController.numberValue,
-      priceGasolinePremium: priceGasolineController.numberValue,
-      priceEthanol: priceEthanolController.numberValue,
-      hasConvenientStore: hasConvenienceStore,
-      is24Hours: is24Hours,
-    );
-
-    controller.saveStation(newStation);
-    Get.snackbar(
-      'Sucesso',
-      'Posto "${newStation.nome}" adicionado com sucesso!',
-      snackPosition: SnackPosition.BOTTOM,
-    );
-
-    Get.back(result: true);
   }
 
   @override
@@ -419,11 +427,9 @@ class _StationFormState extends State<StationForm> {
                     hintText: 'Ex: -23.6789',
                     suffixIcon: IconButton(
                       icon: isLocationLoading
-                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator())
-                      : Icon(RemixIcons.user_location_line, size: 20),
-                      onPressed: isLocationLoading
-                      ? null
-                      : () => getCurrentLocation(context),
+                          ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator())
+                          : Icon(RemixIcons.user_location_line, size: 20),
+                      onPressed: isLocationLoading ? null : () => getCurrentLocation(context),
                     ),
                   ),
                   validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
@@ -491,8 +497,7 @@ class _StationFormState extends State<StationForm> {
       actions: [
         TextButton(
           onPressed: () => Get.back(),
-          child: Text(context.tr(TranslationKeys.gasStationButtonCancel),
-          ),
+          child: Text(context.tr(TranslationKeys.gasStationButtonCancel)),
         ),
         ElevatedButton(
           onPressed: _submit,

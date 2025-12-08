@@ -1,27 +1,27 @@
-class TypeGasModel {
+class ServicesTypeModel {
   final String id;
   final String nome;
   final String? abbr;
-  final int octane;
+  final int frequency;
 
-  TypeGasModel({
+  ServicesTypeModel({
     required this.id,
     required this.nome,
     this.abbr,
-    required this.octane,
+    required this.frequency,
   });
 
-  TypeGasModel copyWith({
+  ServicesTypeModel copyWith({
     String? id,
     String? nome,
     String? abbr,
-    int? octane,
+    int? frequency,
   }) {
-    return TypeGasModel(
+    return ServicesTypeModel(
       id: id ?? this.id,
       nome: nome ?? this.nome,
       abbr: abbr ?? this.abbr,
-      octane: octane ?? this.octane,
+      frequency: frequency ?? this.frequency,
     );
   }
 
@@ -30,16 +30,16 @@ class TypeGasModel {
       'id': id,
       'nome': nome,
       'abbr': abbr,
-      'octane_rating': octane,
+      'default_frequency_km': frequency,
     };
   }
 
-  factory TypeGasModel.fromMap(Map<String, dynamic> map) {
-    return TypeGasModel(
+  factory ServicesTypeModel.fromMap(Map<String, dynamic> map) {
+    return ServicesTypeModel(
       id: map['id'] as String,
       nome: map['nome'] as String,
       abbr: map['abbr'] as String,
-      octane: map['octane_rating'] as int,
+      frequency: map['default_frequency_km'] as int,
     );
   }
 
@@ -47,7 +47,7 @@ class TypeGasModel {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
-    return other is TypeGasModel && other.id == id;
+    return other is ServicesTypeModel && other.id == id;
   }
 
   @override

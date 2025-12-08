@@ -76,15 +76,16 @@ class GasStationController extends GetxController {
   }
 
   void saveStation(GasStationModel newStation) async {
+    final bool isEditing = newStation.id.isNotEmpty;
+    
     final stationToSave = newStation.id.isEmpty
         ? newStation.copyWith(id: const Uuid().v4())
         : newStation;
 
     await _db.insertStation(newStation);
     await loadStations();
-    final isNew = stations.indexWhere((s) => s.id == stationToSave.id) == -1;
 
-    if (isNew) {
+    if (!isEditing) {
       Get.snackbar(
         'Sucesso',
         'Posto adicionado: ${stationToSave.nome}',

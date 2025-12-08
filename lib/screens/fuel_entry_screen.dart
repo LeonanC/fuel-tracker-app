@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
-import 'package:fuel_tracker_app/controllers/fuel_entry_management_controller.dart';
 import 'package:fuel_tracker_app/controllers/fuel_list_controller.dart';
 import 'package:fuel_tracker_app/controllers/type_gas_controller.dart';
 import 'package:fuel_tracker_app/controllers/unit_controller.dart';
@@ -13,13 +12,11 @@ import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
 import 'package:fuel_tracker_app/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/models/vehicle_model.dart';
-import 'package:fuel_tracker_app/services/application.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:uuid/uuid.dart';
 
@@ -57,8 +54,6 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
   late List<TypeGasModel> availableTipos = [];
   late List<VehicleModel> availableVeiculos = [];
   late List<GasStationModel> availableGasStations = [];
-
-  late Map<String, String> serviceCombustivel;
 
   late bool isEditing;
   late bool isLoading = true;
@@ -126,17 +121,9 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
     availableGasStations = gasStationController.stations;
 
     if (isEditing && widget.entry != null) {
-      selectedGas = availableTipos.firstWhereOrNull(
-        (t) => t.nome == widget.entry!.tipo,
-      );
-
-      selectedVeiculos = availableVeiculos.firstWhereOrNull(
-        (v) => v.nickname == widget.entry!.veiculo,
-      );
-
-      selectedStations = availableGasStations.firstWhereOrNull(
-        (s) => s.nome == widget.entry!.posto,
-      );
+      selectedGas = availableTipos.firstWhereOrNull((t) => t.nome == widget.entry!.tipo);
+      selectedVeiculos = availableVeiculos.firstWhereOrNull((v) => v.nickname == widget.entry!.veiculo);
+      selectedStations = availableGasStations.firstWhereOrNull((s) => s.nome == widget.entry!.posto);
 
       typeGasController.selectedTypeGas = selectedGas;
       vehicleController.selectedVehicle = selectedVeiculos;
@@ -159,8 +146,8 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
   }
 
   void _submit() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    // if (_formKey.currentState!.validate()) {
+      // _formKey.currentState!.save();
 
       final currentOdometer = getOdometerValue();
       final litersValue = getLitersValue();
@@ -170,10 +157,11 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
 
       if (!isEditing) {
         final lastOdometer = await _db.getLastOdometer();
-        if (lastOdometer != null) {
+
+        if (currentOdometer == kmController.text) {
           Get.snackbar(
             'Erro de Quilometragem',
-            'A quilometragem atual (${getOdometerValue()} Km) não pode ser menor que a última registrada (${lastOdometer.toStringAsFixed(2)} Km).',
+            'A quilometragem atual ($currentOdometer Km) não pode ser menor que a última registrada ($lastOdometer Km).',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Colors.redAccent,
             colorText: Colors.white,
@@ -192,7 +180,7 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
         veiculo: vehicleNome!,
         posto: stationName!,
         quilometragem: getOdometerValue()!,
-        litros: getLitersValue()!,
+        litros: litersValue!,
         pricePerLiter: getPricePerLiterValue(),
         totalPrice: getTotalPriceValue(),
         tanqueCheio: tanqueCheio,
@@ -201,15 +189,20 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
 
       try {
         await controller.saveFuel(newFuel);
+        if(!mounted) return;
+        Get.back();       
 
         Get.snackbar(
           'Sucesso',
-          'Abastecimento em "${newFuel.posto}" adicionado com sucesso!',
+          isEditing ? 'Abastecimento atualizado com sucesso!' : 'Abastecimento em "${newFuel.posto}" adicionado com sucesso!',
           snackPosition: SnackPosition.BOTTOM,
         );
 
-        Get.back();
+        
       } catch (e) {
+        if(!mounted) return;
+        Get.back();
+
         Get.snackbar(
           'Erro',
           'Falha ao salvar o abastecimento: $e',
@@ -217,9 +210,9 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
           backgroundColor: Colors.redAccent,
         );
 
-        Get.back();
+        
       }
-    }
+    // }
   }
 
   Future<void> selectDate(BuildContext context) async {
@@ -318,14 +311,14 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
 
   void updateFuelType(TypeGasModel? newGas) {
     if (newGas != null) {
-      typeGasController.selectedTypeGas = newGas;
+      selectedGas = newGas;
     }
   }
 
   void updateGasStation(GasStationModel? newStation) {
     if (newStation != null) {
       setState(() {
-        gasStationController.selectedGasStation = newStation;
+        selectedStations = newStation;
       });
     }
   }
@@ -552,7 +545,7 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
                       labelText: context.tr(TranslationKeys.entryScreenLabelGasStation),
                       border: OutlineInputBorder(),
                     ),
-                    value: gasStationController.selectedGasStation,
+                    value: selectedStations,
                     items: availableGasStations.isEmpty
                         ? null
                         : availableGasStations.map((GasStationModel station) {
@@ -572,8 +565,7 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
 
                   const SizedBox(height: 16),
 
-                  if (gasStationController.selectedGasStation != null &&
-                      gasStationController.selectedGasStation!.id != -1)
+                  if (selectedStations != null && selectedStations!.id != -1)
                     Container(
                       padding: const EdgeInsets.all(12.0),
                       decoration: BoxDecoration(
@@ -584,13 +576,11 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
                           width: 1,
                         ),
                       ),
-                      child: gasStationController.isPriceLoading
-                          ? const Center(child: LinearProgressIndicator())
-                          : Column(
+                      child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Detalhes do Posto: ${gasStationController.selectedGasStation!.nome} (${gasStationController.selectedGasStation!.brand})',
+                                  'Detalhes do Posto: ${selectedStations!.nome} (${selectedStations!.brand})',
                                   style: theme.textTheme.titleMedium!.copyWith(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
@@ -607,29 +597,42 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
                                 _buildInfoRow(
                                   context,
                                   RemixIcons.oil_line,
-                                  'Gasolina (R\$):',
-                                  gasStationController.selectedGasStation!.priceGasolineComum
+                                  'Gasolina Comum (R\$):',
+                                  selectedStations!.priceGasolineComum
                                       .toStringAsFixed(2),
                                 ),
-
+                                _buildInfoRow(
+                                  context,
+                                  RemixIcons.oil_line,
+                                  'Gasolina Aditivada (R\$):',
+                                  selectedStations!.priceGasolineAditivada
+                                      .toStringAsFixed(2),
+                                ),
+                                _buildInfoRow(
+                                  context,
+                                  RemixIcons.oil_line,
+                                  'Gasolina Premium (R\$):',
+                                  selectedStations!.priceGasolinePremium
+                                      .toStringAsFixed(2),
+                                ),
                                 _buildInfoRow(
                                   context,
                                   RemixIcons.oil_line,
                                   'Etanol (R\$):',
-                                  gasStationController.selectedGasStation!.priceEthanol
+                                  selectedStations!.priceEthanol
                                       .toStringAsFixed(2),
                                 ),
                                 _buildServiceRow(
                                   context,
                                   RemixIcons.store_2_line,
                                   'Loja de Conv.:',
-                                  gasStationController.selectedGasStation!.hasConvenientStore,
+                                  selectedStations!.hasConvenientStore,
                                 ),
                                 _buildServiceRow(
                                   context,
                                   RemixIcons.time_line,
                                   '24 Horas:',
-                                  gasStationController.selectedGasStation!.is24Hours,
+                                  selectedStations!.is24Hours,
                                 ),
                               ],
                             ),

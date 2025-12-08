@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/controllers/fuel_list_controller.dart';
-import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
 import 'package:fuel_tracker_app/controllers/unit_controller.dart';
-import 'package:fuel_tracker_app/controllers/vehicle_controller.dart';
-import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/models/gas_station_model.dart';
-import 'package:fuel_tracker_app/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/screens/about_screen.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
@@ -17,10 +11,8 @@ import 'package:fuel_tracker_app/utils/fuel_list_filter_menu.dart';
 import 'package:fuel_tracker_app/utils/overallConsumptionCard.dart';
 import 'package:fuel_tracker_app/utils/unit_nums.dart';
 import 'package:get/get.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
-import 'package:uuid/uuid.dart';
 
 class FuelListScreen extends GetView<FuelListController> {
   const FuelListScreen({super.key});
@@ -169,14 +161,7 @@ class FuelCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    final overallConsumption = controller.overallConsumption;
-    final String formattedValue = controller.formatConsumption(overallConsumption.value);
-    final String unitString = controller.getConsumptionUnitString();
     final isMiles = unitController.distanceUnit.value == DistanceUnit.miles;
-
-    String getFuelType(String type) {
-      return controller.fuelTypeMap[type] ?? context.tr(TranslationKeys.fuelTypeOther);
-    }
 
     final String dateOnly = DateFormat('dd/MM/yyyy').format(entry.dataAbastecimento);
     String titleText = dateOnly;

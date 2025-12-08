@@ -11,30 +11,17 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:remixicon/remixicon.dart';
 
-class MaintenanceListScreen extends StatelessWidget {
+class MaintenanceListScreen extends GetView<MaintenanceController> {
   MaintenanceListScreen({super.key});
 
-  final FuelListController controller = Get.find<FuelListController>();
+  final FuelListController fuelListController = Get.find<FuelListController>();
   final LanguageController languageController = Get.find<LanguageController>();
-  final MaintenanceController maintenanceController = Get.find<MaintenanceController>();
-
-  // void _navigateToAddEntry(BuildContext context) async {
-  //   final currentOdometer = fuelEntryController.lastOdometer.value;
-
-  //   final entry = await Get.to<MaintenanceEntry>(
-  //     () => MaintenanceEntryScreen(lastOdometer: currentOdometer),
-  //   );
-
-  //   if (entry != null) {
-  //     await maintenanceController.insertEntry(entry);
-  //   }
-  // }
 
   Future<void> _deleteEntry(BuildContext context, MaintenanceEntry entry) async {
     final bool? confirm = await _deleteConfirmation(context);
 
     if (confirm == true && entry.id != null) {
-      await maintenanceController.deleteEntry(entry.id!);
+      await controller.deleteEntry(entry.id!);
     }
   }
 
@@ -43,12 +30,12 @@ class MaintenanceListScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(maintenanceController.tr(TranslationKeys.commonLabelsDeleteConfirmation)),
-          content: Text(maintenanceController.tr(TranslationKeys.commonLabelsDeleteConfirmMessage)),
+          title: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmation)),
+          content: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmMessage)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text(maintenanceController.tr(TranslationKeys.commonLabelsCancel)),
+              child: Text(context.tr(TranslationKeys.commonLabelsCancel)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -56,7 +43,7 @@ class MaintenanceListScreen extends StatelessWidget {
                 foregroundColor: Colors.white,
               ),
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text(maintenanceController.tr(TranslationKeys.commonLabelsDelete)),
+              child: Text(context.tr(TranslationKeys.commonLabelsDelete)),
             ),
           ],
         );
@@ -67,41 +54,40 @@ class MaintenanceListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     return Obx(() {
-      final double safeOdometer = controller.lastOdometer.value ?? 0.0;
-      final List<MaintenanceEntry> entries = maintenanceController.loadedEntries;
-      final bool isLoading = maintenanceController.isLoading.value;
+      final double safeOdometer = fuelListController.lastOdometer.value ?? 0.0;
+      final List<MaintenanceEntry> entries = controller.loadedEntries;
+      final bool isLoading = controller.isLoading.value;
 
-      final List<MaintenanceEntry> activeReminders = maintenanceController.getActiveReminders(
+      final List<MaintenanceEntry> activeReminders = controller.getActiveReminders(
         safeOdometer,
       );
 
       return Scaffold(
-        backgroundColor: theme.brightness == Brightness.dark
-            ? AppTheme.backgroundColorDark
-            : AppTheme.backgroundColorLight,
+        backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
         appBar: AppBar(
-          title: Text(maintenanceController.tr(TranslationKeys.maintenanceScreenTitle)),
-          backgroundColor: theme.brightness == Brightness.dark
+          title: Text(context.tr(TranslationKeys.maintenanceScreenTitle)),
+          backgroundColor: isDarkMode
               ? AppTheme.backgroundColorDark
               : AppTheme.backgroundColorLight,
           elevation: 0,
           centerTitle: false,
           actions: [
             IconButton(
-            icon: Icon(RemixIcons.refresh_line),
-            tooltip: maintenanceController.tr(TranslationKeys.maintenanceRefresh),
-            onPressed: () async {
-              maintenanceController.loadMaintenanceEntries();
-              Get.snackbar(
-                maintenanceController.tr(TranslationKeys.maintenanceRefreshing),
-                '',
-                duration: const Duration(seconds: 2),
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-          ),
+              icon: Icon(RemixIcons.refresh_line),
+              tooltip: context.tr(TranslationKeys.maintenanceRefresh),
+              onPressed: () async {
+                controller.loadMaintenanceEntries();
+                Get.snackbar(
+                  context.tr(TranslationKeys.maintenanceRefreshing),
+                  '',
+                  duration: const Duration(seconds: 2),
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
+            ),
           ],
         ),
         body: isLoading
@@ -113,7 +99,7 @@ class MaintenanceListScreen extends StatelessWidget {
                     child: entries.isEmpty
                         ? Center(
                             child: Text(
-                              maintenanceController.tr(
+                              context.tr(
                                 TranslationKeys.emptyStateMaintenanceMessage,
                               ),
                             ),
@@ -128,12 +114,12 @@ class MaintenanceListScreen extends StatelessWidget {
                   ),
                 ],
               ),
-        // floatingActionButton: FloatingActionButton(
-        //   heroTag: 'fab_maintenance_list',
-        //   onPressed: () => _navigateToAddEntry(context),
-        //   child: const Icon(RemixIcons.tools_fill, color: Colors.white),
-        //   backgroundColor: Theme.of(context).colorScheme.secondary,
-        // ),
+        floatingActionButton: FloatingActionButton(
+          heroTag: 'fab_maintenance_list',
+          onPressed: () => controller.navigateToAddEntry(context),
+          child: const Icon(RemixIcons.tools_fill, color: Colors.white),
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+        ),
       );
     });
   }
@@ -158,7 +144,7 @@ class MaintenanceListScreen extends StatelessWidget {
           leading: const Icon(RemixIcons.tools_line),
           title: Text(entry.tipo, style: Theme.of(context).textTheme.titleMedium),
           subtitle: Text(
-            '${maintenanceController.tr(TranslationKeys.commonLabelsOdometer)}: ${entry.quilometragem.toStringAsFixed(0)} km\n ${maintenanceController.tr(TranslationKeys.commonLabelsDate)}: ${DateFormat('dd/MM/yyyy').format(entry.dataServico)}',
+            '${context.tr(TranslationKeys.commonLabelsOdometer)}: ${entry.quilometragem.toStringAsFixed(0)} km\n ${context.tr(TranslationKeys.commonLabelsDate)}: ${DateFormat('dd/MM/yyyy').format(entry.dataServico)}',
           ),
           trailing: entry.custo != null ? Text('R\$ ${entry.custo!.toStringAsFixed(2)}') : null,
           onTap: () {
@@ -182,7 +168,7 @@ class MaintenanceListScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              maintenanceController.tr(TranslationKeys.maintenanceAlertTitle),
+              context.tr(TranslationKeys.maintenanceAlertTitle),
               style: Theme.of(
                 context,
               ).textTheme.titleLarge?.copyWith(color: Colors.red[800], fontWeight: FontWeight.bold),
@@ -191,12 +177,12 @@ class MaintenanceListScreen extends StatelessWidget {
             ...reminders.map((remider) {
               String trigger = '';
               if (remider.lembreteKm != null) {
-                trigger = maintenanceController.tr(
+                trigger = context.tr(
                   TranslationKeys.maintenanceAlertByKm,
                   parameters: {'0': remider.lembreteKm!.toStringAsFixed(0)},
                 );
               } else if (remider.lembreteData != null) {
-                trigger = maintenanceController.tr(
+                trigger = context.tr(
                   TranslationKeys.maintenanceAlertByDate,
                   parameters: {'0': DateFormat('dd/MM/yyyy').format(remider.lembreteData!)},
                 );

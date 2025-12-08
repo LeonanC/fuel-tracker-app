@@ -21,7 +21,6 @@ class TypeGasController extends GetxController {
   Future<void> loadGas() async {
     try {
       final List<TypeGasModel> loadedGas = await _db.getGas();
-      print(loadedGas);
       typeGas.assignAll(loadedGas);
     } catch (e) {
       print('Erro ao carregar gas do banco de dados: $e');

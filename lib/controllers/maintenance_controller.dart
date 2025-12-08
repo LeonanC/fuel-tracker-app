@@ -1,17 +1,21 @@
-import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/maintenance_entry_model.dart';
+import 'package:fuel_tracker_app/models/services_type_model.dart';
+import 'package:fuel_tracker_app/screens/maintenance_entry_screen.dart';
 import 'package:get/get.dart';
 
 class MaintenanceController extends GetxController {
   final FuelDb _db = FuelDb();
   
-  var _maintenanceEntries = <MaintenanceEntry>[].obs;
+  var maintenanceEntries = <MaintenanceEntry>[].obs;
+  var serviceType = <ServicesTypeModel>[].obs;
   var isLoading = false.obs;
   var lastOdometerFromDb = Rxn<double>();
-  final LanguageController languageController = Get.find<LanguageController>();
-
-  List<MaintenanceEntry> get loadedEntries => _maintenanceEntries.toList();
+  
+  ServicesTypeModel? selectedServiceType;
+  String serviceName = '';
+  List<MaintenanceEntry> get loadedEntries => maintenanceEntries.toList();
   double get lastOdometer => lastOdometerFromDb.value ?? 0.0;
 
   @override
@@ -20,8 +24,17 @@ class MaintenanceController extends GetxController {
     super.onInit();
   }
 
-  String tr(String key, {Map<String, String>? parameters}) {
-    return languageController.translate(key, parameters: parameters);
+  
+  void navigateToAddEntry(BuildContext context, {MaintenanceEntry? data}) async {
+    final currentOdometer = lastOdometer;
+
+    final entry = await Get.to<MaintenanceEntry>(
+      () => MaintenanceEntryScreen(lastOdometer: currentOdometer, entry: data),
+    );
+
+    if (entry != null) {
+      await insertEntry(entry);
+    }
   }
 
   Future<void> loadMaintenanceEntries() async {
@@ -32,7 +45,7 @@ class MaintenanceController extends GetxController {
     final List<MaintenanceEntry> loadedEntries = maps.map((map) => MaintenanceEntry.fromMap(map)).toList();
     lastOdometerFromDb.value = await _db.getLastOdometer();
     loadedEntries.sort((a, b) => b.dataServico.compareTo(a.dataServico));
-    _maintenanceEntries.assignAll(loadedEntries);
+    maintenanceEntries.assignAll(loadedEntries);
     isLoading.value = false;
   }
 
@@ -49,12 +62,12 @@ class MaintenanceController extends GetxController {
 
   Future<void> deleteEntry(int id) async {
     if(await _db.deleteMaintenance(id)){
-      _maintenanceEntries.removeWhere((entry) => entry.id == id);
+      maintenanceEntries.removeWhere((entry) => entry.id == id);
     }
   }
 
   List<MaintenanceEntry> getActiveReminders(double currentOdometer){
-    return _maintenanceEntries.where((entry){
+    return maintenanceEntries.where((entry){
       if(!entry.lembreteAtivo){
         return false;
       }

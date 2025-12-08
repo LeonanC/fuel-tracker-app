@@ -3,6 +3,7 @@ import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
 import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:fuel_tracker_app/controllers/type_gas_controller.dart';
 import 'package:fuel_tracker_app/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/controllers/vehicle_controller.dart';
 import 'package:fuel_tracker_app/data/fuel_db.dart';
@@ -20,14 +21,15 @@ class FuelListController extends GetxController {
 
   var loadedEntries = <FuelEntry>[].obs;
 
-  
-
   static const double _alertThresholdKm = 100.0;
   static const double _kmToMileFactor = 0.621371;
   static const double _kmPerLiterToMPGFactor = 2.3521458;
   static const double _lastOdometer = 0.0;
+  final Rx<DateTime?> _startDate = Rx<DateTime?>(null);
+  final Rx<DateTime?> _endDate = Rx<DateTime?>(null);
 
   final GasStationController gasStationController = Get.find<GasStationController>();
+  final TypeGasController typeGasController = Get.find<TypeGasController>();
   final VehicleController vehicleController = Get.find<VehicleController>();
   final UnitController unitController = Get.find<UnitController>();
   final CurrencyController currencyController = Get.find<CurrencyController>();
@@ -44,26 +46,59 @@ class FuelListController extends GetxController {
   var selectedStationFilter = Rxn<String>();
   var vehicleTypeMap = <String, String>{}.obs;
   var fuelTypeMap = <String, String>{}.obs;
+  DateTime? get startDate => _startDate.value;
+  DateTime? get endDate => _endDate.value;
+
+  bool get isDateFilterActive => _startDate.value != null && _endDate.value != null;
+
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String get formattedDateRange {
+    if(isDateFilterActive){
+      return '${_formatDate(_startDate.value!)} - ${_formatDate(_endDate.value!)}';
+    }
+    return '';
+  }
+
+  void applyDateFilter(DateTime start, DateTime end){
+    _startDate.value = start;
+    _endDate.value = end;
+    update();
+  }
+
+  void clearDateFilter(){
+    _startDate.value = null;
+    _endDate.value = null;
+    update();
+  }
 
   void navigateToAddEntry(BuildContext context, {FuelEntry? data}) async {
     final currentOdometer = lastOdometer.value;
-    final entry = await Get.to(
-      () => FuelEntryScreen(lastOdometer: currentOdometer, entry: data),
-    );
-    if(entry != null){
+    final entry = await Get.to(() => FuelEntryScreen(lastOdometer: currentOdometer, entry: data));
+    if (entry != null) {
       await saveFuel(entry);
     }
   }
 
   List<String> get availableVehicleNames {
     final List<String> names = vehicleController.vehicles
-    .map((vehicle) => vehicle.nickname)
-    .toList();
+        .map((vehicle) => vehicle.nickname)
+        .toList();
     Set<String> allVehicles = {...names};
 
     allVehicles.removeWhere((name) => name.isEmpty);
 
     return allVehicles.toList();
+  }
+
+  List<String> get availableTypeGasNames {
+    final List<String> names = typeGasController.typeGas.map((gas) => gas.nome).toList();
+    Set<String> allGas = {...names};
+    allGas.removeWhere((name) => name.isEmpty);
+    return allGas.toList();
   }
 
   List<String> get availableGasStationNames {
