@@ -39,7 +39,7 @@ class UpdateController extends GetxController {
 
     Get.dialog(
       AlertDialog(
-        title: Text(TranslationKeys.updateServiceUpdateAvailable.tr),
+        title: Text('Atualização Disponível!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
