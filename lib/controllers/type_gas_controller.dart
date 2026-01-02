@@ -55,31 +55,11 @@ class TypeGasController extends GetxController {
   }
 
   void saveGas(TypeGasModel newGas) async {
-    final bool isEditing = newGas.id.isNotEmpty;
-
-    final gasToSave = newGas.id.isEmpty
-        ? newGas.copyWith(id: const Uuid().v4())
-        : newGas;
-
-    await _db.insertGas(gasToSave);
+    await _db.insertGas(newGas);
     await loadGas();
-
-    if (!isEditing) {
-      Get.snackbar(
-        'Sucesso',
-        'Gas adicionado: ${gasToSave.nome}',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } else {
-      Get.snackbar(
-        'Sucesso',
-        'Gas atualizado: ${gasToSave.nome}',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    }
   }
 
-  void deleteGas(String id) async {
+  void deleteGas(int id) async {
     await _db.deleteGas(id);
     await loadGas();
 
@@ -87,28 +67,4 @@ class TypeGasController extends GetxController {
   }
 }
 
-extension VehicleCopyWith on VehicleModel {
-  VehicleModel copyWith({
-    String? id,
-    String? nickname,
-    String? make,
-    String? model,
-    String? fuelType,
-    int? year,
-    double? initialOdometer,
-    String? imageUrl,
-    DateTime? createdAt,
-  }) {
-    return VehicleModel(
-      id: id ?? this.id,
-      nickname: nickname ?? this.nickname,
-      make: make ?? this.make,
-      model: model ?? this.model,
-      fuelType: fuelType ?? this.fuelType,
-      year: year ?? this.year,
-      initialOdometer: initialOdometer ?? this.initialOdometer,
-      imageUrl: imageUrl ?? this.imageUrl,
-      createdAt: createdAt ?? this.createdAt,
-    );
-  }
-}
+

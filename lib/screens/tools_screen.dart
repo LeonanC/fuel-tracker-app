@@ -71,34 +71,6 @@ class ToolsScreen extends GetView<FuelListController> {
               ),
               _buildToolCard(
                 context,
-                title: context.tr(TranslationKeys.toolsScreenExportReportCardTitle),
-                description: context.tr(TranslationKeys.toolsScreenExportReportCardDescription),
-                icon: Icons.table_chart,
-                onTap: () async {
-                  Get.closeAllSnackbars();
-
-                  final List<FuelEntry> entries = await controller.getAllEntriesForExport();
-                  final String? errorMessage = await exportService.exportAndShareEntries(entries);
-
-                  if (errorMessage != null) {
-                    Get.snackbar(
-                      'exportErrorTitle'.tr,
-                      'exportError'.trParams({'error': errorMessage}),
-                      backgroundColor: Colors.red,
-                      colorText: Colors.white,
-                    );
-                  } else {
-                    Get.snackbar(
-                      'exportSuccessTitle'.tr,
-                      'exportSuccessShare'.tr,
-                      backgroundColor: Colors.green,
-                      colorText: Colors.white,
-                    );
-                  }
-                },
-              ),
-              _buildToolCard(
-                context,
                 title: 'Gerenciamento de Postos',
                 description: 'Adicione, edite ou remova os postos de combustíveis.',
                 icon: RemixIcons.gas_station_line,
@@ -128,13 +100,6 @@ class ToolsScreen extends GetView<FuelListController> {
                   _launchUrl('mailto:LeonanC@outlool.com.br?subject=$subject');
                 },
               ),
-              _buildToolCard(
-                context,
-                title: context.tr(TranslationKeys.toolsScreenClearAllDataCardTitle),
-                description: context.tr(TranslationKeys.toolsScreenClearAllDataCardDescription),
-                icon: Icons.delete_forever,
-                onTap: () => _showConfirmationDialog(controller),
-              ),
             ],
           );
         }),
@@ -154,37 +119,6 @@ class ToolsScreen extends GetView<FuelListController> {
         );
       }
     }
-  }
-
-  void _showConfirmationDialog(FuelListController fuelController) {
-    Get.dialog(
-      AlertDialog(
-        title: Text(TranslationKeys.dialogDeleteTitle),
-        content: Text(TranslationKeys.dialogDeleteContent),
-        actions: [
-          TextButton(
-            child: Text(TranslationKeys.dialogDeleteButtonCancel),
-            onPressed: () => Get.back(),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(foregroundColor: Colors.white),
-            child: Text(TranslationKeys.dialogDeleteButtonDelete),
-            onPressed: () async {
-              Get.back();
-              await fuelController.clearAllData();
-              Get.snackbar(
-                fuelController.errorMessage.isEmpty ? 'success'.tr : 'error'.tr,
-                fuelController.errorMessage.isEmpty
-                    ? 'clearDataSuccess'.tr
-                    : 'clearDataError'.trParams({'error': fuelController.errorMessage.value}),
-                backgroundColor: fuelController.errorMessage.isEmpty ? Colors.green : Colors.red,
-              );
-            },
-          ),
-        ],
-      ),
-      barrierDismissible: true,
-    );
   }
 
   Widget _buildUpdateCard(BuildContext context, AppUpdate update) {

@@ -6,71 +6,76 @@ import 'package:get/get.dart';
 class LanguageController extends GetxController {
   final LanguageService _languageService = LanguageService();
 
-  var currentLanguage = AppLanguage.getByCode('pt').obs;
-  var translations = <String, dynamic>{}.obs;
-  var isInitialized = false.obs;
-  var isLoading = false.obs;
+  var _currentLanguage = AppLanguage.getByCode('pt').obs;
+  var _translations = <String, dynamic>{}.obs;
+  var _isInitialized = false.obs;
+  var _isLoading = false.obs;
 
-  Locale get locale => Locale(currentLanguage.value.code);
-  bool get isRtl => currentLanguage.value.isRtl;
-  TextDirection get textDirection =>
-      currentLanguage.value.isRtl ? TextDirection.rtl : TextDirection.ltr;
-  List<AppLanguage> get supportedLanguages => AppLanguage.supportedLanguages;
+AppLanguage get currentLanguage => _currentLanguage.value;
+Map<String, dynamic> get translations => _translations;
+bool get isInitialized => _isInitialized.value;
+bool get isLoading => _isLoading.value;
+List<AppLanguage> get supportedLanguages => AppLanguage.supportedLanguages;
+TextDirection get textDirection => _currentLanguage.value.isRtl ? TextDirection.rtl : TextDirection.ltr;
+Locale get locale => Locale(_currentLanguage.value.code);
+bool get isRtl => _currentLanguage.value.isRtl;
 
   @override
   void onInit() {
     super.onInit();
+    initialize();
   }
 
   Future<void> initialize() async {
-    if (isInitialized.value) return;
-    isLoading.value = true;
+    if (_isInitialized.value) return;
+    _isLoading.value = true;
 
     try {
-      final initialLang = await _languageService.initializeLanguage();
-      currentLanguage.value = initialLang;
-      await _loadTranslations(initialLang.code);
-      isInitialized.value = true;
+      final lang = await _languageService.initializeLanguage();
+      _currentLanguage.value = lang;
+      await _loadTranslations(lang.code);
+      _isInitialized.value = true;
     } catch (e) {
-      currentLanguage.value = AppLanguage.getByCode('en');
+      _currentLanguage.value = AppLanguage.getByCode('en');
       await _loadTranslations('en');
-      isInitialized.value = true;
+      _isInitialized.value = true;
     }
-    isLoading.value = false;
+    _isLoading.value = false;
   }
 
   Future<bool> changeLanguage(AppLanguage language) async {
-    if (currentLanguage.value == language) return true;
-    isLoading.value = true;
+    if (_currentLanguage.value == language) return true;
+    _isLoading.value = true;
 
     try {
       final saved = await _languageService.saveLanguage(language);
       if (!saved) {
-        isLoading.value = false;
-
+        _isLoading.value = false;
         return false;
       }
 
       await _loadTranslations(language.code);
 
-      currentLanguage.value = language;
-      isLoading.value = false;
+      _currentLanguage.value = language;
+      Get.updateLocale(Locale(language.code));
 
       return true;
     } catch (e) {
-      isLoading.value = false;
+      _isLoading.value = false;
       return false;
     }
   }
 
   Future<void> _loadTranslations(String languageCode) async {
     try {
-      translations.value = await _languageService.loadTranslations(languageCode);
+      final maps = await _languageService.loadTranslations(languageCode);
+      _translations.assignAll(maps);
     } catch (e) {
       if (languageCode != 'en') {
-        translations.value = await _languageService.loadTranslations('en');
+        final enMaps = await _languageService.loadTranslations('en');
+        _translations.assignAll(enMaps);
       } else {
-        translations.value = {};
+        _translations.clear();
       }
     }
   }
@@ -81,7 +86,8 @@ class LanguageController extends GetxController {
 
   String _getNestedTranslation(String key, Map<String, String>? parameters) {
     final keys = key.split('.');
-    dynamic current = translations.value;
+    dynamic current = _translations;
+
     for (final k in keys) {
       if (current is Map<String, dynamic> && current.containsKey(k)) {
         current = current[k];
@@ -102,7 +108,7 @@ class LanguageController extends GetxController {
 
   bool hasTranslation(String key) {
     final keys = key.split('.');
-    dynamic current = translations.value;
+    dynamic current = _translations;
 
     for (final k in keys) {
       if (current is Map<String, dynamic> && current.containsKey(k)) {
@@ -116,9 +122,9 @@ class LanguageController extends GetxController {
   }
 
   Future<void> reloadTranslations() async {
-    isLoading.value = true;
-    await _loadTranslations(currentLanguage.value.code);
-    isLoading.value = false;
+    _isLoading.value = true;
+    await _loadTranslations(_currentLanguage.value.code);
+    _isLoading.value = false;
   }
 
   Future<bool> resetToDeviceLanguage() async {

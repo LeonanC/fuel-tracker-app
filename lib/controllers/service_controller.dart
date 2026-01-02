@@ -27,23 +27,19 @@ class ServiceController extends GetxController {
   Future<void> loadServices() async {
     try {
       final List<ServicesTypeModel> loadedServices = await _db.getServices();
-      lastOdometer.value = await _db.getLastOdometer();
+      // lastOdometer.value = await _db.getLastOdometer();
       serviceType.assignAll(loadedServices);
     } catch (e) {
-      Get.snackbar(
-        'Erro',
-        'Não foi possível carregar os serviços.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // Get.snackbar(
+      //   'Erro',
+      //   'Não foi possível carregar os serviços.',
+      //   snackPosition: SnackPosition.BOTTOM,
+      // );
     }
   }
 
   void saveService(ServicesTypeModel newService) async {
-    final serviceToSave = newService.id.isEmpty
-        ? newService.copyWith(id: const Uuid().v4())
-        : newService;
-
-    await _db.insertServices(serviceToSave);
+    await _db.insertServices(newService);
     await loadServices();
   }
 }

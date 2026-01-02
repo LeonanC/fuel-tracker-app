@@ -2,41 +2,78 @@ import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/controllers/language_controller.dart';
 import 'package:get/get.dart';
 
-extension TranslationExtension on BuildContext {
-  AppLocalizations get localizations {
-    try{
-      Get.find<LanguageController>();
-      return AppLocalizations();
-    }catch(e){
-      throw Exception('LanguageController não foi injetado com Get.put(). Certifique-se de que a injeção foi feita antes de chamar context.tr.');
-    }
-  }
-
-  String tr(String key, {Map<String, String>? parameters}){
-    return localizations.tr(key, parameters: parameters);
-  }
-}
-
 class AppLocalizations {
-  final LanguageController _languageController = Get.find<LanguageController>();
+  static LanguageController get _controller => Get.find<LanguageController>();
 
-  String translate(String key, {Map<String, String>? parameters}) {
-    return _languageController.translate(key, parameters: parameters);
+  static String translate(String key, {Map<String, String>? parameters}) {
+    return _controller.translate(key, parameters: parameters);
   }
 
-  String tr(String key, {Map<String, String>? parameters}) {
+  static String tr(String key, {Map<String, String>? parameters}) {
     return translate(key, parameters: parameters);
   }
 
-  String get currentLanguageCode => _languageController.currentLanguage.value.code;
-  String get currentLanguageName => _languageController.currentLanguage.value.name;
-  bool get isRtl => _languageController.isRtl;
-  TextDirection get textDirection => _languageController.textDirection;
-  Locale get locale => _languageController.locale;
+  static String get currentLanguageCode => _controller.currentLanguage.code;
+  static String get currentLanguageName => _controller.currentLanguage.name;
+  static bool get isRtl => _controller.isRtl;
+  static TextDirection get textDirection => _controller.textDirection;
+  static Locale get locale => _controller.locale;
+
+  static AppLocalizations of(BuildContext? context) {
+    return AppLocalizations();
+  }
+
+  static bool hasTranslation(String key) {
+    return _controller.hasTranslation(key);
+  }
+}
+
+extension LocalizationExtension on BuildContext {
+  AppLocalizations get loc => AppLocalizations.of(this);
+
+  String tr(String key, {Map<String, String>? parameters}) {
+    return AppLocalizations.tr(key, parameters: parameters);
+  }
 
   bool hasTranslation(String key) {
-    return _languageController.hasTranslation(key);
+    return AppLocalizations.hasTranslation(key);
   }
+
+  String get currentLanguageCode => AppLocalizations.currentLanguageCode;
+  bool get isRtl => AppLocalizations.isRtl;
+  TextDirection get textDirection => AppLocalizations.textDirection;
+}
+
+extension LocalizedStateMixin<T extends StatefulWidget> on State<T> {
+  AppLocalizations get loc => AppLocalizations.of(context);
+
+  String tr(String key, {Map<String, String>? parameters}) {
+    return AppLocalizations.tr(key, parameters: parameters);
+  }
+
+  bool hasTranslation(String key) {
+    return AppLocalizations.hasTranslation(key);
+  }
+
+  String get currentLanguageCode => AppLocalizations.currentLanguageCode;
+  bool get isRtl => AppLocalizations.isRtl;
+  TextDirection get textDirection => AppLocalizations.textDirection;
+}
+
+mixin LocalizedStatelessMixin {
+  AppLocalizations loc(BuildContext? context) => AppLocalizations.of(context);
+
+  String tr(String key, {Map<String, String>? parameters}) {
+    return AppLocalizations.tr(key, parameters: parameters);
+  }
+
+  bool hasTranslation(String key) {
+    return AppLocalizations.hasTranslation(key);
+  }
+
+  String get currentLanguageCode => AppLocalizations.currentLanguageCode;
+  bool get isRtl => AppLocalizations.isRtl;
+  TextDirection get textDirection => AppLocalizations.textDirection;
 }
 
 class TranslationKeys {
@@ -110,7 +147,8 @@ class TranslationKeys {
   static const String commonLabelsDeleteConfirmMessage = "common_labels.confirm_message";
 
   static const String consumptionCards = 'consumption_cards';
-  static const String consumptionCardsOverallCostPerDistance = 'consumption_cards.overall_cost_per_distance';
+  static const String consumptionCardsOverallCostPerDistance =
+      'consumption_cards.overall_cost_per_distance';
   static const String consumptionCardsOverallAverage = 'consumption_cards.overall_average';
   static const String consumptionCardsNotAvailableShort = 'consumption_cards.not_available_short';
   static const String consumptionCardsUnitKmPerLiter = 'consumption_cards.unit_km_l';
@@ -145,16 +183,24 @@ class TranslationKeys {
   static const String entryScreenLabelGasStation = 'entry_screen.label_gas_station';
   static const String entryScreenLabelFullTank = 'entry_screen.label_full_tank';
   static const String entryScreenInfoLastOdometerPrefix = 'entry_screen.info_last_odometer_prefix';
-  static const String entryScreenInfoLastOdometerPrefix2 = 'entry_screen.info_last_odometer_prefix_2';
+  static const String entryScreenInfoLastOdometerPrefix2 =
+      'entry_screen.info_last_odometer_prefix_2';
   static const String entryScreenReceiptAddOptional = 'entry_screen.receipt_add_optional';
   static const String entryScreenReceiptSelected = 'entry_screen.receipt_selected';
   static const String entryScreenReceiptPathPrefix = 'entry_screen.receipt_path_prefix';
-  static const String entryScreenSnackbarReceiptSelectedPrefix = 'entry_screen.snackbar_receipt_selected_prefix';
-  static const String entryScreenSnackbarReceiptErrorPrefix = 'entry_screen.snackbar_receipt_error_prefix';
+  static const String entryScreenSnackbarReceiptSelectedPrefix =
+      'entry_screen.snackbar_receipt_selected_prefix';
+  static const String entryScreenSnackbarReceiptErrorPrefix =
+      'entry_screen.snackbar_receipt_error_prefix';
   static const String entryScreenDialogReceiptTitle = 'entry_screen.dialog_receipt_title';
-  static const String entryScreenDialogReceiptOptionCamera = 'entry_screen.dialog_receipt_option_camera';
-  static const String entryScreenDialogReceiptOptionGallery = 'entry_screen.dialog_receipt_option_gallery';
-  static const String entryScreenValidadeOdometerMustBeGreater = 'entry_screen.validade_odometer_greater';
+  static const String entryScreenDialogReceiptOptionCamera =
+      'entry_screen.dialog_receipt_option_camera';
+  static const String entryScreenDialogReceiptOptionGallery =
+      'entry_screen.dialog_receipt_option_gallery';
+  static const String entryScreenValidadeOdometerMustBeGreater =
+      'entry_screen.validade_odometer_greater';
+  static const String entryScreenErrorOdometerTitle = 'entry_screen.error_odometer_title';
+  static const String entryScreenErrorOdometerMessage = 'entry_screen.error_odometer_message';
 
   static const String validation = 'validation';
   static const String validationRequiredOdometer = 'validation.required_odometer';
@@ -162,28 +208,10 @@ class TranslationKeys {
   static const String validationRequiredVeiculos = 'validation.required_veiculos';
   static const String validationRequiredFuelType = 'validation.required_fuel_type';
   static const String validationRequiredValidLiters = 'validation.required_valid_liters';
-  static const String validationRequiredValidPricePerLiter = 'validation.required_valid_price_per_liter';
+  static const String validationRequiredValidPricePerLiter =
+      'validation.required_valid_price_per_liter';
   static const String validationRequiredValidTotalPrice = 'validation.required_valid_total_price';
   static const String validationPriceInconsistencyAlert = 'validation.price_inconsistency_alert';
-
-  static const String backupRestoreAppBarTitle = 'backup_restore.app_bar_title';
-  static const String backupRestoreErrorDbNotOpen = 'backup_restore.error_db_not_error';
-  static const String backupRestoreErrorDbNotInitialized = 'backup_restore.error_db_not_initialized';
-  static const String backupRestoreExportCardTitle = 'backup_restore.export_card_title';
-  static const String backupRestoreExportCardDescription = 'backup_restore.export_card_description';
-  static const String backupRestoreExportButton = 'backup_restore.export_button';
-  static const String backupRestoreExportSuccessPrefix = 'backup_restore.export_success_prefix';
-  static const String backupRestoreErrorExport = 'backup_restore.error_export';
-  static const String backupRestoreImportCardTitle = 'backup_restore.import_card_title';
-  static const String backupRestoreImportCardDescription = 'backup_restore.import_card_description';
-  static const String backupRestoreImportButton = 'backup_restore.import_button';
-  static const String backupRestoreImportNoFileSelected = 'backup_restore.import_no_file_selected';
-  static const String backupRestoreImportSuccess = 'backup_restore.import_success';
-  static const String backupRestoreErrorImport = 'backup_restore.error_import';
-  static const String backupRestoreLoadingExport = 'backup_restore.loading_export';
-  static const String backupRestoreLoadingImport = 'backup_restore.loading_import';
-  static const String backupRestoreDbNotReady = 'backup_restore.db_not_ready';
-  static const String backupRestoreErrorInitializeDb = 'backup_restore.error_initialize_db';
 
   static const String toolsScreen = 'tools_screen';
   static const String toolsScreenAppBarTitle = 'tools_screen.app_bar_title';
@@ -207,11 +235,14 @@ class TranslationKeys {
   static const String toolsScreenCurrencyCardTitle = 'tools_screen.currency_card_title';
   static const String toolsScreenCurrencyCardDescription = 'tools_screen.currency_card_description';
   static const String toolsScreenNotificationCardTitle = 'tools_screen.notification_card_title';
-  static const String toolsScreenNotificationCardDescription = 'tools_screen.notification_card_description';
+  static const String toolsScreenNotificationCardDescription =
+      'tools_screen.notification_card_description';
   static const String toolsScreenExportReportCardTitle = 'tools_screen.export_report_card_title';
-  static const String toolsScreenExportReportCardDescription = 'tools_screen.export_report_card_description';
+  static const String toolsScreenExportReportCardDescription =
+      'tools_screen.export_report_card_description';
   static const String toolsScreenClearAllDataCardTitle = 'tools_screen.clear_all_data_card_title';
-  static const String toolsScreenClearAllDataCardDescription = 'tools_screen.clear_all_data_card_description';
+  static const String toolsScreenClearAllDataCardDescription =
+      'tools_screen.clear_all_data_card_description';
   static const String toolsScreenBackupCardTitle = 'tools_screen.backup_card_title';
   static const String toolsScreenBackupCardDescription = 'tools_screen.backup_card_description';
   static const String toolsScreenStatisticsTitle = 'tools_screen.statistics_title';
@@ -219,7 +250,8 @@ class TranslationKeys {
   static const String toolsScreenFeedbackTitle = 'tools_screen.feedback_title';
   static const String toolsScreenFeedbackDescription = 'tools_screen.feedback_description';
   static const String toolsScreenSummaryTitle = 'tools_screen.summary_title';
-  static const String toolsScreenConsumptionTitle = 'tools_screen.statistics_monthly_consumption_title';
+  static const String toolsScreenConsumptionTitle =
+      'tools_screen.statistics_monthly_consumption_title';
   static const String toolsScreenAvgPriceTitle = 'tools_screen.statistics_monthly_avg_price_title';
   static const String toolsScreenTotalDistancia = 'tools_screen.total_distance';
   static const String toolsScreenTotalVolume = 'tools_screen.total_volume';
@@ -307,7 +339,7 @@ class TranslationKeys {
   static const String dialogFilterFuelTypeSuffix = "dialog_filter.fuel_type_suffix";
   static const String dialogFilterFilterClearFilter = "dialog_filter.filter_clear_filter";
   static const String dialogFilterFilterApply = "dialog_filter.filter_apply";
-  
+
   static const String vehiclesScreenTitle = 'vehicles.screen_title';
   static const String vehiclesScreenDescription = 'vehicles.screen_description';
   static const String vehiclesEmptyList = 'vehicles.empty_list';
@@ -330,8 +362,8 @@ class TranslationKeys {
   static const String vehiclesRemovePhoto = 'vehicles.remove_photo';
 
   static const String gasStationScreenTitle = 'gasstation.title';
-  static const String gasStationUpdateTitle = 'gasstation.update_title';
-  static const String gasStationAddTitle = 'gasstation.add_title';  
+  static const String gasStationUpdateTitle = 'gasstation.title_edit';
+  static const String gasStationAddTitle = 'gasstation.title_new';
   static const String gasStationLabelName = 'gasstation.label_name';
   static const String gasStationLabelAddress = 'gasstation.label_address';
   static const String gasStationLabelBrand = 'gasstation.label_brand';
@@ -362,26 +394,21 @@ class TranslationKeys {
   static const String onboardingsButtonStart = 'onboardings.onboarding_button_start';
   static const String onboardingsButtonNext = 'onboardings.onboarding_button_next';
   static const String onboardingsButtonSkip = 'onboardings.onboarding_button_skip';
-
 }
 
 class TrHelper {
-  
   static final LanguageController _languageController = Get.find<LanguageController>();
 
-  static String tr(String key, {Map<String, String>? parameters}){
+  static String tr(String key, {Map<String, String>? parameters}) {
     return _languageController.translate(key, parameters: parameters);
   }
 
-  static String errorUrlFormat(String url){
-    return tr(
-      TranslationKeys.errorCouldNotOpenUrl,
-      parameters: {'url': url},
-    );
+  static String errorUrlFormat(String url) {
+    return tr(TranslationKeys.errorCouldNotOpenUrl, parameters: {'url': url});
   }
 
   static String versionFormat(String version, {bool isNew = false}) {
-    final key = isNew ? 'tools_screen.new_version': 'tools_screen.current_version';
+    final key = isNew ? 'tools_screen.new_version' : 'tools_screen.current_version';
     return tr(key, parameters: {'version': version});
   }
 }

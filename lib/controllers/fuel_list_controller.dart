@@ -1,39 +1,49 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/controllers/currency_controller.dart';
-import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
 import 'package:fuel_tracker_app/controllers/language_controller.dart';
-import 'package:fuel_tracker_app/controllers/type_gas_controller.dart';
 import 'package:fuel_tracker_app/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/controllers/vehicle_controller.dart';
 import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/app_update.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
+import 'package:fuel_tracker_app/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/models/type_gas_model.dart';
+import 'package:fuel_tracker_app/models/vehicle_model.dart';
+import 'package:fuel_tracker_app/repository/fuel_repository.dart';
 import 'package:fuel_tracker_app/screens/fuel_entry_screen.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:fuel_tracker_app/utils/unit_nums.dart';
 import 'package:get/get.dart';
-import 'package:uuid/uuid.dart';
 
 class FuelListController extends GetxController {
-  final FuelDb _db = FuelDb();
+  var fuelEntries = <FuelEntryModel>[].obs;
+  var fuelTypeEntries = <TypeGasModel>[].obs;
+  var vehicleEntries = <VehicleModel>[].obs;
+  var gasStationEntries = <GasStationModel>[].obs;
 
-  var loadedEntries = <FuelEntry>[].obs;
+  final FuelDb _db = FuelDb();
+  final FuelRepository _repository = FuelRepository();
+
+  final int vehicleId = 0;
+  String fuelTypeName = '';
+  String vehicleName = '';
+  String stationName = '';
 
   static const double _alertThresholdKm = 100.0;
   static const double _kmToMileFactor = 0.621371;
   static const double _kmPerLiterToMPGFactor = 2.3521458;
-  static const double _lastOdometer = 0.0;
-  final Rx<DateTime?> _startDate = Rx<DateTime?>(null);
-  final Rx<DateTime?> _endDate = Rx<DateTime?>(null);
 
-  final GasStationController gasStationController = Get.find<GasStationController>();
-  final TypeGasController typeGasController = Get.find<TypeGasController>();
-  final VehicleController vehicleController = Get.find<VehicleController>();
   final UnitController unitController = Get.find<UnitController>();
+  final VehicleController vehicleController = Get.find();
   final CurrencyController currencyController = Get.find<CurrencyController>();
   final LanguageController languageController = Get.find<LanguageController>();
+
+  final _isLoading = false.obs;
+  final _errorMessage = ''.obs;
+  final _sucessoMessage = ''.obs;
 
   var errorMessage = ''.obs;
   var isLoading = false.obs;
@@ -46,36 +56,8 @@ class FuelListController extends GetxController {
   var selectedStationFilter = Rxn<String>();
   var vehicleTypeMap = <String, String>{}.obs;
   var fuelTypeMap = <String, String>{}.obs;
-  DateTime? get startDate => _startDate.value;
-  DateTime? get endDate => _endDate.value;
 
-  bool get isDateFilterActive => _startDate.value != null && _endDate.value != null;
-
-
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
-  String get formattedDateRange {
-    if(isDateFilterActive){
-      return '${_formatDate(_startDate.value!)} - ${_formatDate(_endDate.value!)}';
-    }
-    return '';
-  }
-
-  void applyDateFilter(DateTime start, DateTime end){
-    _startDate.value = start;
-    _endDate.value = end;
-    update();
-  }
-
-  void clearDateFilter(){
-    _startDate.value = null;
-    _endDate.value = null;
-    update();
-  }
-
-  void navigateToAddEntry(BuildContext context, {FuelEntry? data}) async {
+  void navigateToAddEntry(BuildContext context, {FuelEntryModel? data}) async {
     final currentOdometer = lastOdometer.value;
     final entry = await Get.to(() => FuelEntryScreen(lastOdometer: currentOdometer, entry: data));
     if (entry != null) {
@@ -83,97 +65,101 @@ class FuelListController extends GetxController {
     }
   }
 
-  List<String> get availableVehicleNames {
-    final List<String> names = vehicleController.vehicles
-        .map((vehicle) => vehicle.nickname)
-        .toList();
-    Set<String> allVehicles = {...names};
-
-    allVehicles.removeWhere((name) => name.isEmpty);
-
-    return allVehicles.toList();
-  }
-
-  List<String> get availableTypeGasNames {
-    final List<String> names = typeGasController.typeGas.map((gas) => gas.nome).toList();
-    Set<String> allGas = {...names};
-    allGas.removeWhere((name) => name.isEmpty);
-    return allGas.toList();
-  }
-
-  List<String> get availableGasStationNames {
-    final List<String> names = gasStationController.stations
-        .map((station) => station.nome)
-        .toList();
-
-    Set<String> allStations = {...names};
-
-    allStations.removeWhere((name) => name.isEmpty);
-
-    return allStations.toList();
-  }
-
   @override
   void onInit() {
-    _initializeData();
-    loadFuelEntries();
-    vehicleController.loadVehicles();
-    gasStationController.loadStations();
-    ever(languageController.currentLanguage, (_) => _initializeData());
+    loadFuel();
+    loadTypeFuel();
+    loadVehicle();
+    loadStation();
     super.onInit();
   }
 
-  Future<void> loadFuelEntries() async {
-    isLoading.value = true;
-    errorMessage.value = '';
+  void _setLoading(bool loading) {
+    _isLoading.value = loading;
+  }
 
+  void _setError(String error) {
+    _errorMessage.value = error;
+  }
+
+  void _setSucesso(String sucesso) {
+    _sucessoMessage.value = sucesso;
+  }
+
+  Future<void> loadFuel() async {
     try {
-      final List<Map<String, dynamic>> maps = await _db.getAllFuelEntries();
-      final List<FuelEntry> entries = maps.map((map) => FuelEntry.fromMap(map)).toList();
-      entries.sort((a, b) => b.dataAbastecimento.compareTo(a.dataAbastecimento));
-      loadedEntries.assignAll(entries);
+      _setLoading(true);
+      _setError('');
+
+      final List<FuelEntryModel> entries = await _db.getFuel();
+     final double odometerValue = await _db.getLastOdometer();
+
+      entries.sort((a, b) => b.entryDate.compareTo(a.entryDate));
+      fuelEntries.assignAll(entries);
 
       final Map<String, dynamic> consumptionData = calculateOverallAverageConsumption(
         entries: entries,
       );
+
       overallConsumption.value = consumptionData['overall'] as double;
-      lastOdometer.value = await _db.getLastOdometer();
+
+      lastOdometer.value = odometerValue;
     } catch (e) {
-      errorMessage.value = 'Falha ao carregar registros: $e';
+      _setError('Não foi possível carregar os dados. Verifique sua conexão.');
+
+      Get.snackbar(
+        'Erro de Carregamento',
+        errorMessage.value,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
     } finally {
-      isLoading.value = false;
+      _setLoading(false);
     }
   }
 
-  void _initializeData() async {
-    // loadFuelEntries();
-    vehicleController.loadVehicles();
-    // fuelTypeMap.value = {
-    //   'Gasolina Comum': tr(TranslationKeys.fuelTypeGasolineComum),
-    //   'Gasolina Aditivada': tr(TranslationKeys.fuelTypeGasolineAditivada),
-    //   'Etanol (Álcool)': tr(TranslationKeys.fuelTypeEthanolAlcool),
-    //   'Gasolina Premium': tr(TranslationKeys.fuelTypeGasolinePremium),
-    //   'Outro': tr(TranslationKeys.fuelTypeOther),
-    // };
+  Future<void> loadTypeFuel() async {
+    final List<TypeGasModel> data = await _db.getGas();
+    fuelTypeEntries.assignAll(data);
   }
 
-  Future<void> saveFuel(FuelEntry newFuel) async {
-    final fuelToSave = newFuel.id!.isEmpty ? newFuel.copyWith(id: const Uuid().v4()) : newFuel;
-
-    await _db.insertFuel(fuelToSave);
-    await loadFuelEntries();
+  Future<void> loadVehicle() async {
+    final List<VehicleModel> data = await _db.getVehicles();
+    vehicleEntries.assignAll(data);
   }
 
-  Future<void> deleteEntry(String id) async {
+  Future<void> loadStation() async {
+    final List<GasStationModel> data = await _db.getStation();
+    gasStationEntries.assignAll(data);
+  }
+
+  Future<void> saveFuel(Map<String, dynamic> data) async {
+    final db = await _db.getDb();
+    if(data['pk_fuel'] == null){
+      await db.insert('fuel_entries', data);  
+      await loadFuel();    
+    }else{
+      await db.update(
+        'fuel_entries', 
+        data,
+        where: 'pk_fuel = ?',
+        whereArgs: [data['pk_fuel']]
+      );
+      await loadFuel();
+    }
+  }
+
+  Future<void> deleteEntry(int id) async {
     await _db.deleteFuelEntrie(id);
-    await loadFuelEntries();
+    await loadFuel();
   }
 
   Future<String> backupEntries() async {
-    if (loadedEntries.isEmpty) {
-      await loadFuelEntries();
+    if (fuelEntries.isEmpty) {
+      await loadFuel();
     }
-    if (loadedEntries.isEmpty) {
+    if (fuelEntries.isEmpty) {
       return 'Nenhum registro para backup.';
     }
 
@@ -184,45 +170,18 @@ class FuelListController extends GetxController {
     return sb.toString();
   }
 
-  Future<List<FuelEntry>> getAllEntriesForExport() async {
-    if (loadedEntries.isEmpty && !isLoading.value) {
-      await loadFuelEntries();
-    }
-
-    final List<FuelEntry> sortedMaps = List.from(loadedEntries);
-    sortedMaps.sort((a, b) => b.dataAbastecimento.compareTo(a.dataAbastecimento));
-
-    await Future.delayed(const Duration(milliseconds: 10));
-
-    return sortedMaps;
-  }
-
-  Future<void> clearAllData() async {
-    isLoading.value = true;
-    errorMessage.value = '';
-    try {
-      final int deletedCount = await _db.deleteAll();
-      await loadFuelEntries();
-      print('Total de $deletedCount registros apagados.');
-    } catch (e) {
-      errorMessage.value = 'Falha ao limpar todos os dados: $e';
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
   String tr(String key, {Map<String, String>? parameters}) {
     return languageController.translate(key, parameters: parameters);
   }
 
-  List<FuelEntry> get filteredEntries {
-    return loadedEntries.where((entry) {
+  List<FuelEntryModel> get filteredEntries {
+    return fuelEntries.where((entry) {
       bool matchesVehicle =
-          selectedVehicleFilter.value == null || entry.veiculo == selectedVehicleFilter.value;
+          selectedVehicleFilter.value == null || entry.vehicleName == selectedVehicleFilter.value;
       bool matchesFuelType =
-          selectedFuelTypeFilter.value == null || entry.tipo == selectedFuelTypeFilter.value;
+          selectedFuelTypeFilter.value == null || entry.fuelTypeName == selectedFuelTypeFilter.value;
       bool matchesStation =
-          selectedStationFilter.value == null || entry.posto == selectedStationFilter.value;
+          selectedStationFilter.value == null || entry.stationName == selectedStationFilter.value;
       return matchesVehicle && matchesFuelType && matchesStation;
     }).toList();
   }
@@ -247,18 +206,19 @@ class FuelListController extends GetxController {
   }
 
   double get overallTotalDistance {
-    final entries = loadedEntries;
+    final entries = fuelEntries;
     if (entries.length < 2) return 0.0;
-    final double latestKm = entries.first.quilometragem.toDouble();
-    final double oldestKm = entries.last.quilometragem.toDouble();
+
+    final double latestKm = entries.first.odometerKm;
+    final double oldestKm = entries.last.odometerKm;
 
     return latestKm > oldestKm ? latestKm - oldestKm : 0.0;
   }
 
   double get overallTotalCost {
     double totalCost = 0.0;
-    for (final entry in loadedEntries) {
-      totalCost += entry.totalPrice ?? 0.0;
+    for (final entry in fuelEntries) {
+      totalCost += entry.totalCost;
     }
     return totalCost;
   }
@@ -331,7 +291,7 @@ class FuelListController extends GetxController {
     final double estimatedTankSize = 44.0;
 
     final distanceSinceLastFill =
-        (lastEntry.quilometragem).toDouble() - (previousEntry.quilometragem).toDouble();
+        (lastEntry.odometerKm).toDouble() - (previousEntry.odometerKm).toDouble();
     final double overallConsumptionValue = overallConsumption.value;
 
     final double totalEstimatedRange = estimatedTankSize * overallConsumptionValue;
@@ -344,7 +304,7 @@ class FuelListController extends GetxController {
 
       final String distanceUnitStr = getDistanceUnitString();
 
-      final double litersFilled = (lastEntry.litros).toDouble();
+      final double litersFilled = (lastEntry.volumeLiters).toDouble();
       final double trajetConsumptionKmPerLiter = (litersFilled > 0 && distanceSinceLastFill >= 0)
           ? distanceSinceLastFill / litersFilled
           : 0.0;
@@ -368,8 +328,8 @@ class FuelListController extends GetxController {
     return null;
   }
 
-  Map<String, dynamic> calculateOverallAverageConsumption({required List<FuelEntry> entries}) {
-    if (loadedEntries.length < 2) {
+  Map<String, dynamic> calculateOverallAverageConsumption({required List<FuelEntryModel> entries}) {
+    if (fuelEntries.length < 2) {
       return {'overall': 0.0, 'periods': <double>[]};
     }
 
@@ -377,26 +337,26 @@ class FuelListController extends GetxController {
     double totalLiters = 0.0;
     List<double> periodConsumptions = [];
 
-    final List<FuelEntry> sortedEntries = List<FuelEntry>.from(loadedEntries);
+    final List<FuelEntryModel> sortedEntries = List<FuelEntryModel>.from(fuelEntries);
     sortedEntries.sort((a, b) {
-      return a.quilometragem.compareTo(b.quilometragem);
+      return a.odometerKm.compareTo(b.odometerKm);
     });
 
     for (int i = 1; i < sortedEntries.length; i++) {
-      final FuelEntry currentEntry = sortedEntries[i];
-      final FuelEntry previousEntry = sortedEntries[i - 1];
+      final FuelEntryModel currentEntry = sortedEntries[i];
+      final FuelEntryModel previousEntry = sortedEntries[i - 1];
 
-      final double currentOdometer = currentEntry.quilometragem;
-      final double previousOdometer = previousEntry.quilometragem;
+      final double currentOdometer = currentEntry.odometerKm;
+      final double previousOdometer = previousEntry.odometerKm;
 
-      final double previousLiters = previousEntry.litros;
-      final double currentLiters = currentEntry.litros;
+      final double previousLiters = previousEntry.volumeLiters;
+      final double currentLiters = currentEntry.volumeLiters;
 
       final double distance = currentOdometer - previousOdometer;
 
       double consumptionForThisPeriod = 0.0;
 
-      if (distance > 0 && previousLiters > 0 && previousEntry.tanqueCheio == 1) {
+      if (distance > 0 && previousLiters > 0 && previousEntry.tankFull == 1) {
         consumptionForThisPeriod = distance / previousLiters;
       }
 
@@ -409,35 +369,5 @@ class FuelListController extends GetxController {
     double overall = (totalLiters <= 0) ? 0.0 : (totalDistance / totalLiters);
 
     return {'overall': overall, 'periods': calculateOverallAverageConsumption};
-  }
-}
-
-extension FuelEntryCopWith on FuelEntry {
-  FuelEntry copyWith({
-    String? id,
-    String? tipo,
-    DateTime? dataAbastecimento,
-    String? veiculo,
-    String? posto,
-    double? quilometragem,
-    double? litros,
-    double? pricePerLiter,
-    double? totalPrice,
-    bool? tanqueCheio,
-    String? comprovantePath,
-  }) {
-    return FuelEntry(
-      id: id ?? this.id,
-      tipo: tipo ?? this.tipo,
-      dataAbastecimento: dataAbastecimento ?? this.dataAbastecimento,
-      veiculo: veiculo ?? this.veiculo,
-      posto: posto ?? this.posto,
-      quilometragem: quilometragem ?? this.quilometragem,
-      litros: litros ?? this.litros,
-      pricePerLiter: pricePerLiter ?? this.pricePerLiter,
-      totalPrice: totalPrice ?? this.totalPrice,
-      tanqueCheio: tanqueCheio ?? this.tanqueCheio,
-      comprovantePath: comprovantePath ?? this.comprovantePath,
-    );
   }
 }

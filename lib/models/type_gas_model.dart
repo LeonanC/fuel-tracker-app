@@ -1,5 +1,5 @@
 class TypeGasModel {
-  final String id;
+  final int id;
   final String nome;
   final String? abbr;
   final int octane;
@@ -12,7 +12,7 @@ class TypeGasModel {
   });
 
   TypeGasModel copyWith({
-    String? id,
+    int? id,
     String? nome,
     String? abbr,
     int? octane,
@@ -27,7 +27,7 @@ class TypeGasModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'pk_type_fuel': id,
       'nome': nome,
       'abbr': abbr,
       'octane_rating': octane,
@@ -36,7 +36,7 @@ class TypeGasModel {
 
   factory TypeGasModel.fromMap(Map<String, dynamic> map) {
     return TypeGasModel(
-      id: map['id'] as String,
+      id: map['pk_type_fuel'] as int,
       nome: map['nome'] as String,
       abbr: map['abbr'] as String,
       octane: map['octane_rating'] as int,

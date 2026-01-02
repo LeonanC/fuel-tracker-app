@@ -1,5 +1,5 @@
 class MaintenanceEntry {
-  final String id;
+  final int? id;
   final String tipo;
   final DateTime dataServico;
   final double quilometragem;
@@ -13,7 +13,7 @@ class MaintenanceEntry {
   final int? veiculoId;
 
   MaintenanceEntry({
-    required this.id,
+    this.id,
     required this.tipo,
     required this.dataServico,
     required this.quilometragem,
@@ -27,7 +27,7 @@ class MaintenanceEntry {
 
   factory MaintenanceEntry.fromMap(Map<String, dynamic> map) {
     return MaintenanceEntry(
-      id: map['id'],
+      id: map['pk_manutencao'],
       tipo: map['tipo'],
       dataServico: DateTime.parse(map['data_servico']),
       quilometragem: (map['quilometragem'] as num).toDouble(),
@@ -42,7 +42,7 @@ class MaintenanceEntry {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'pk_manutencao': id,
       'tipo': tipo,
       'data_servico': dataServico.toIso8601String().split('T').first,
       'quilometragem': quilometragem,
@@ -73,7 +73,7 @@ class MaintenanceEntry {
 
 extension MaintenanceEntryCopWith on MaintenanceEntry {
   MaintenanceEntry copyWith({
-    String? id,
+    int? id,
     String? tipo,
     DateTime? dataServico,
     double? quilometragem,

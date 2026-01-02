@@ -4,6 +4,7 @@ import 'package:fuel_tracker_app/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/screens/gas_entry_screen.dart';
 import 'package:fuel_tracker_app/services/gas_station_service.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -27,13 +28,20 @@ class GasStationController extends GetxController {
     super.onInit();
   }
 
+  void navigateToAddEntry(BuildContext context, {GasStationModel? data}) async {
+    final entry = await Get.to(() => GasEntryScreen(data: data));
+    if(entry != null){
+      await saveStation(entry);
+    }
+  }
+
   Future<void> loadStations() async {
     try {
       final List<GasStationModel> loadedStations = await _db.getStation();
       stations.assignAll(loadedStations);
     } catch (e) {
       print('Erro ao carregar postos de gasolinas do banco de dados: $e');
-      Get.snackbar('Erro', 'Falha ao carregar postos: $e', snackPosition: SnackPosition.BOTTOM);
+      // Get.snackbar('Erro', 'Falha ao carregar postos: $e', snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -75,32 +83,12 @@ class GasStationController extends GetxController {
     }
   }
 
-  void saveStation(GasStationModel newStation) async {
-    final bool isEditing = newStation.id.isNotEmpty;
-    
-    final stationToSave = newStation.id.isEmpty
-        ? newStation.copyWith(id: const Uuid().v4())
-        : newStation;
-
+  Future<void> saveStation(GasStationModel newStation) async {
     await _db.insertStation(newStation);
     await loadStations();
-
-    if (!isEditing) {
-      Get.snackbar(
-        'Sucesso',
-        'Posto adicionado: ${stationToSave.nome}',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } else {
-      Get.snackbar(
-        'Sucesso',
-        'Posto atualizado: ${stationToSave.nome}',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    }
   }
 
-  void deleteGasStation(String id) async {
+  void deleteGasStation(int id) async {
     await _db.deleteStation(id);
     await loadStations();
     Get.snackbar('Excluído', 'Posto removido com sucesso.', snackPosition: SnackPosition.BOTTOM);

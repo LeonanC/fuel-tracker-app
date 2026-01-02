@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:fuel_tracker_app/models/fuelentry_model.dart';
 
 class ExportService {
-  Future<String?> exportAndShareEntries(List<FuelEntry> entries) async {
+  Future<String?> exportAndShareEntries(List<FuelEntryModel> entries) async {
     try{
       if(entries.isEmpty){
         return 'Nenhum registro para exportar';
@@ -15,9 +15,10 @@ class ExportService {
 
       final List<List<dynamic>> csvData = [
         [
-          'Data Abastecimento',
-          'Posto',
+          'Veiculo',
           'Tipo Combustível',
+          'Posto',
+          'Data Abastecimento',        
           'Quilometragem',
           'Litros',
           'Valor Litro',

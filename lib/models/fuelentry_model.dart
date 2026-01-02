@@ -1,87 +1,144 @@
-class FuelEntry {
-  final String? id;
-  final String tipo;
-  final DateTime dataAbastecimento;
-  final String veiculo;
-  final String posto;
-  final double quilometragem;
-  final double litros;
-  final double? pricePerLiter;
-  final double? totalPrice;
-  final bool tanqueCheio;
-  final String? comprovantePath;
+class FuelEntryModel {
+  final int? id;
+  final int vehicleId;
+  final int? fuelTypeId;
+  final int? gasStationId;
 
-  FuelEntry({
+  final String? fuelTypeName;
+  final String? vehicleName;
+  final String? stationName;
+
+  final DateTime entryDate;
+  final double odometerKm;
+  final double volumeLiters;
+  final double pricePerLiter;
+  final double totalCost;
+
+  final int tankFull;
+  final String? receiptPath;
+
+  FuelEntryModel({
     this.id,
-    required this.tipo,
-    required this.dataAbastecimento,
-    required this.veiculo,
-    required this.posto,
-    required this.quilometragem,
-    required this.litros,
+    required this.vehicleId,
+    this.fuelTypeId,
+    this.gasStationId,
+    this.fuelTypeName,
+    this.vehicleName,
+    this.stationName,
+    required this.entryDate,
+    required this.odometerKm,
+    required this.volumeLiters,
     required this.pricePerLiter,
-    required this.totalPrice,
-    required this.tanqueCheio,
-    this.comprovantePath,
+    required this.totalCost,
+    this.tankFull = 0,
+    this.receiptPath,
   });
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'data_abastecimento': dataAbastecimento.toIso8601String(),
-      'veiculo': veiculo,
-      'posto': posto,
-      'tipo_combustivel': tipo,
-      'quilometragem': quilometragem,
-      'litros': litros,
-      'valor_litro': pricePerLiter,
-      'valor_total': totalPrice,
-      'tanque_cheio': tanqueCheio,
-      'comprovante_path': comprovantePath,
+      'pk_fuel': id,
+      'fk_vehicle': vehicleId,
+      'fk_type_fuel': fuelTypeId,
+      'fk_station': gasStationId,
+      'entry_date': entryDate.toIso8601String(),
+      'odometer_km': odometerKm,
+      'volume_liters': volumeLiters,
+      'price_per_liter': pricePerLiter,
+      'total_cost': totalCost,
+      'tank_full': tankFull,
+      'receipt_path': receiptPath,
     };
   }
 
-  factory FuelEntry.fromMap(Map<String, dynamic> map) {
-    return FuelEntry(
-      id: map['id'],
-      dataAbastecimento: DateTime.parse(map['data_abastecimento']),
-      veiculo: map['veiculo'],
-      posto: map['posto'],
-      tipo: map['tipo_combustivel'],
-      quilometragem:  (map['quilometragem'] as num).toDouble(),
-      litros:  (map['litros'] as num).toDouble(),
-      pricePerLiter: (map['valor_litro'] as num).toDouble(),
-      totalPrice: (map['valor_total'] as num).toDouble(),
-      tanqueCheio: map['tanque_cheio'] ==  1,
-      comprovantePath: map['comprovante_path'],
+  factory FuelEntryModel.fromMap(Map<String, dynamic> map) {
+    return FuelEntryModel(
+      id: map['pk_fuel'] as int?,
+      vehicleId: map['fk_vehicle'] ?? 0,
+      fuelTypeId: map['fk_type_fuel'] as int?,
+      gasStationId: map['fk_station'] as int?,
+
+      fuelTypeName: map['fuel_name'] as String?,
+      vehicleName: map['vehicle_name'] as String?,
+      stationName: map['station_name'] as String?,
+
+      entryDate: map['entry_date'] is String
+          ? DateTime.parse(map['entry_date'])
+          : DateTime.now(),
+
+      odometerKm: (map['odometer_km'] as num?)?.toDouble() ?? 0.0,
+
+      volumeLiters: double.tryParse(map['volume_liters']?.toString() ?? '0') ?? 0.0,
+
+      pricePerLiter: (map['price_per_liter'] as num?)?.toDouble() ?? 0.0,
+      totalCost: (map['total_cost'] as num?)?.toDouble() ?? 0.0,
+      
+      tankFull: map['tank_full'] ?? 0,
+      receiptPath: map['receipt_path'] as String?,
     );
   }
 
-  double calculateConsumption(FuelEntry previousEntry){
-    final double distance = this.quilometragem - previousEntry.quilometragem;
-    final double liters = previousEntry.litros;
+  
 
-    if(distance <= 0 || liters <= 0){
-      return 0.0;
-    }
-    
-    return distance / litros;
+  FuelEntryModel copyWith({
+    int? id,
+    int? vehicleId,
+    int? fuelTypeId,
+    int? gasStationId,
+    DateTime? entryDate,
+    double? odometerKm,
+    double? volumeLiters,
+    double? pricePerLiter,
+    double? totalCost,
+    int? tankFull,
+    String? receiptPath,
+  }) {
+    return FuelEntryModel(
+      id: id ?? this.id,
+      vehicleId: vehicleId ?? this.vehicleId,
+      fuelTypeId: fuelTypeId ?? this.fuelTypeId,
+      gasStationId: gasStationId ?? this.gasStationId,
+      entryDate: entryDate ?? this.entryDate,
+      odometerKm: odometerKm ?? this.odometerKm,
+      volumeLiters: volumeLiters ?? this.volumeLiters,
+      pricePerLiter: pricePerLiter ?? this.pricePerLiter,
+      totalCost: totalCost ?? this.totalCost,
+      tankFull: tankFull ?? this.tankFull,
+      receiptPath: receiptPath ?? this.receiptPath,
+    );
   }
 
   List<dynamic> toCsvList() {
-    final String tanqueCheioText = tanqueCheio == 1 ? 'Sim' : 'Não';
+    final DateTime dateTime = entryDate;
+    final String tankFullText = tankFull == 1 ? 'Sim' : 'Não';
+    final String formattedDate =
+        '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     return [
-      '${dataAbastecimento.day.toString().padLeft(2, '0')}/${dataAbastecimento.month.toString().padLeft(2, '0')}/${dataAbastecimento.year} ${dataAbastecimento.hour.toString().padLeft(2, '0')}:${dataAbastecimento.minute.toString().padLeft(2, '0')}',
-      posto.toString(),
-      tipo.toString(),
-      quilometragem.toStringAsFixed(1),
-      litros.toStringAsFixed(3),
-      pricePerLiter!.toStringAsFixed(3),
-      totalPrice!.toStringAsFixed(2),
-      tanqueCheioText,
-      comprovantePath ?? '',
+      formattedDate,
+      vehicleId,
+      gasStationId ?? 'N/A',
+      fuelTypeId ?? 'N/A',
+      odometerKm,
+      volumeLiters,
+      pricePerLiter.toStringAsFixed(3),
+      totalCost.toStringAsFixed(2),
+      tankFullText,
+      receiptPath ?? '',
     ];
   }
 
-  
+  double calculateConsumption(FuelEntryModel previousEntry) {
+    if (previousEntry.tankFull != 1) {
+      return 0.0;
+    }
+
+    final double distanceKM = this.odometerKm - previousEntry.odometerKm;
+
+    if (this.volumeLiters <= 0 || distanceKM <= 0) {
+      return 0.0;
+    }
+
+    final double consumption = distanceKM / this.volumeLiters;
+
+    return double.parse(consumption.toStringAsFixed(2));
+  }
 }

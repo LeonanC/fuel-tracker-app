@@ -178,8 +178,8 @@ class MapNavigationController extends GetxController {
 
   void _moveMapToCurrentLocation(LatLng newLocation) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      mapController.move(newLocation, 15.0);
-      mapController.rotate(0);
+      // mapController.move(newLocation, 15.0);
+      // mapController.rotate(0);
     });
   }
 

@@ -165,10 +165,7 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
           : null;
       final serviceName = selectedService?.nome;
 
-      final maintenanceId = widget.entry?.id ?? const Uuid().v4();
-
       final MaintenanceEntry newEntry = MaintenanceEntry(
-        id: maintenanceId,
         tipo: serviceName!,
         dataServico: _dataServico,
         quilometragem: km,

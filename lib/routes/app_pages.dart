@@ -6,6 +6,7 @@ import 'package:fuel_tracker_app/screens/fuel_entry_screen.dart';
 import 'package:fuel_tracker_app/screens/fuel_list_screen.dart';
 import 'package:fuel_tracker_app/screens/gas_station_management_screen.dart';
 import 'package:fuel_tracker_app/screens/language_settings_screen.dart';
+import 'package:fuel_tracker_app/screens/home_screen.dart';
 import 'package:fuel_tracker_app/screens/main_navigation_screen.dart';
 import 'package:fuel_tracker_app/screens/maintenance_entry_screen.dart';
 import 'package:fuel_tracker_app/screens/maintenance_list_screen.dart';
@@ -13,12 +14,16 @@ import 'package:fuel_tracker_app/screens/unit_settings_screen.dart';
 import 'package:get/get.dart';
 
 class AppPages {
-  static const INITIAL = Routes.main_navigation;
+  static const INITIAL = Routes.home_screen;
 
   static final routes = [
     GetPage(
-      name: Routes.main_navigation,
-      page: () => MainNavigationScreen(),
+      name: Routes.on_boarding,
+      page: () => OnboardingScreen(),
+    ),
+    GetPage(
+      name: Routes.home_screen,
+      page: () => HomePage(),
     ),
     GetPage(
       name: Routes.fuel_list,

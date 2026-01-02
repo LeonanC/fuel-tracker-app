@@ -29,7 +29,7 @@ class MaintenanceController extends GetxController {
     final List<MaintenanceEntry> loadedEntries = maps
         .map((map) => MaintenanceEntry.fromMap(map))
         .toList();
-    lastOdometer.value = await _db.getLastOdometer();
+    // lastOdometer.value = await _db.getLastOdometer();
     loadedEntries.sort((a, b) => b.dataServico.compareTo(a.dataServico));
     maintenanceEntries.assignAll(loadedEntries);
     isLoading.value = false;
@@ -44,16 +44,12 @@ class MaintenanceController extends GetxController {
   }
 
   Future<void> saveMaintenance(MaintenanceEntry newMaintenance) async {
-    final maintenanceToSave = newMaintenance.id.isEmpty
-        ? newMaintenance.copyWith(id: const Uuid().v4())
-        : newMaintenance;
-
-    await _db.insertMaintenance(maintenanceToSave);
+    await _db.insertMaintenance(newMaintenance);
     await loadMaintenanceEntries();
 
   }
 
-  Future<void> deleteMaintenance(String id) async {
+  Future<void> deleteMaintenance(int id) async {
     await _db.deleteMaintenance(id);
     await loadMaintenanceEntries();
   }

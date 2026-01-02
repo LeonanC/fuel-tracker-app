@@ -1,5 +1,5 @@
 class ServicesTypeModel {
-  final String id;
+  final int id;
   final String nome;
   final String? abbr;
   final int frequency;
@@ -12,7 +12,7 @@ class ServicesTypeModel {
   });
 
   ServicesTypeModel copyWith({
-    String? id,
+    int? id,
     String? nome,
     String? abbr,
     int? frequency,
@@ -27,7 +27,7 @@ class ServicesTypeModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'pk_service': id,
       'nome': nome,
       'abbr': abbr,
       'default_frequency_km': frequency,
@@ -36,7 +36,7 @@ class ServicesTypeModel {
 
   factory ServicesTypeModel.fromMap(Map<String, dynamic> map) {
     return ServicesTypeModel(
-      id: map['id'] as String,
+      id: map['id'] as int,
       nome: map['nome'] as String,
       abbr: map['abbr'] as String,
       frequency: map['default_frequency_km'] as int,

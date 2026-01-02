@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/controllers/fuel_list_controller.dart';
+import 'package:fuel_tracker_app/repository/fuel_repository.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:fuel_tracker_app/utils/unit_nums.dart';
 import 'package:get/get.dart';
@@ -9,10 +10,16 @@ class FuelListFilterMenu extends StatelessWidget {
   FuelListFilterMenu({super.key});
 
   final FuelListController controller = Get.find<FuelListController>();
+  final FuelRepository repository = FuelRepository();
 
-  PopupMenuItem<String> buildVeiculoTypeItem(String vehicle, bool isSelected) {
+  PopupMenuItem<String> _buildFilterItem({
+    required String value,
+    required String label,
+    required bool isSelected,
+    required IconData icon,
+  }) {
     return PopupMenuItem<String>(
-      value: 'SetVeiculo:$vehicle',
+      value: value,
       child: Row(
         children: [
           Icon(
@@ -22,44 +29,7 @@ class FuelListFilterMenu extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            vehicle,
-            style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-          ),
-        ],
-      ),
-    );
-  }
-
-  PopupMenuItem<String> buildFuelTypeItem(String gas, bool isSelected) {
-    return PopupMenuItem<String>(
-      value: 'SetFuel:$gas',
-      child: Row(
-        children: [
-          Icon(
-            isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 20,
-            color: isSelected ? Colors.green : Colors.grey,
-          ),
-          const SizedBox(width: 8),
-          Text(gas, style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-
-  PopupMenuItem<String> buildStationItem(String station, bool isSelected) {
-    return PopupMenuItem<String>(
-      value: 'SetStation:$station',
-      child: Row(
-        children: [
-          Icon(
-            isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 20,
-            color: isSelected ? Colors.green : Colors.grey,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            station,
+            label,
             style: TextStyle(fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
           ),
         ],
@@ -72,20 +42,15 @@ class FuelListFilterMenu extends StatelessWidget {
       context: context,
       firstDate: DateTime(2020, 1),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: controller.isDateFilterActive
-          ? DateTimeRange(start: controller.startDate!, end: controller.endDate!)
+      initialDateRange: repository.isDateFilterActive
+          ? DateTimeRange(start: repository.startDate!, end: repository.endDate!)
           : null,
-      helpText: 'Selecione o Período de Abastecimento',
-      saveText: 'Aplicar',
-      cancelText: 'Cancelar',
+      helpText: 'Selecione o Período',
     );
 
-    if(picked != null){
-      controller.applyDateFilter(picked.start, picked.end);
-      Get.snackbar(
-        'Filtro', 
-        'Filtro aplicado: ${controller.formattedDateRange}',
-      );
+    if (picked != null) {
+      repository.applyDateFilter(picked.start, picked.end);
+      controller.loadFuel();
     }
   }
 
@@ -93,169 +58,149 @@ class FuelListFilterMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Obx(() {
-      final selectedVehicleTypeFilter = controller.selectedVehicleFilter.value;
-      final selectedFuelTypeFilter = controller.selectedFuelTypeFilter.value;
-      final selectedStationFilter = controller.selectedStationFilter.value;
+      final selectedVehicle = controller.selectedVehicleFilter.value;
+      final selectedFuel = controller.selectedFuelTypeFilter.value;
+      final selectedStation = controller.selectedStationFilter.value;
 
       final bool isFiltered =
-          selectedVehicleTypeFilter != null ||
-          selectedFuelTypeFilter != null ||
-          selectedStationFilter != null;
+          selectedVehicle != null ||
+          selectedFuel != null ||
+          selectedStation != null ||
+          repository.isDateFilterActive;
 
       return PopupMenuButton<String>(
-        onSelected: (value) {
-          if (value == 'ClearVeiculo') {
-            controller.setVeiculoFilter(null);
-          } else if (value.startsWith('SetVeiculo:')) {
-            final type = value.substring(11);
-            controller.setVeiculoFilter(type);
-          } else if (value == 'ClearFuel') {
-            controller.setFuelTypeFilter(null);
-          } else if (value.startsWith('SetFuel:')) {
-            final type = value.substring(8);
-            controller.setFuelTypeFilter(type);
-          } else if (value == 'ClearStation') {
-            controller.setStationFilter(null);
-          } else if (value.startsWith('SetStation:')) {
-            final station = value.substring(11);
-            controller.setStationFilter(station);
-          } else if (value == 'ClearPeriod') {
-            controller.clearDateFilter();
-          } else if (value.startsWith('SetPeriod:')) {
-            _selectDateRange(context);
-          }
-        },
         icon: Icon(
-          RemixIcons.filter_line,
+          RemixIcons.filter_3_line,
           color: isFiltered ? Colors.orange : theme.colorScheme.onSurface,
         ),
-        tooltip: context.tr(TranslationKeys.dialogFilterTitle),
-        itemBuilder: (BuildContext context) {
-          final List<PopupMenuEntry<String>> items = [];
-
-          items.add(
-            PopupMenuItem<String>(
-              enabled: false,
-              child: Text(
-                context.tr(TranslationKeys.dialogFilterTitle),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ),
-          );
-          items.add(const PopupMenuDivider());
-          items.add(
-            PopupMenuItem<String>(
-              enabled: false,
-              child: Row(
-                children: [
-                  Icon(Icons.directions_car, color: Colors.blueGrey),
-                  SizedBox(width: 8),
-                  Text('Filtro por Veiculos:', style: TextStyle(fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          );
-          items.addAll(
-            controller.availableVehicleNames.map((vehicleName) {
-              return buildVeiculoTypeItem(
-                vehicleName,
-                controller.selectedVehicleFilter.value == vehicleName,
-              );
-            }),
-          );
-          items.add(
-            PopupMenuItem<String>(
-              value: 'ClearVeiculo',
-              child: Text('Limpar Filtro', style: const TextStyle(color: Colors.red)),
-            ),
-          );
-          items.add(const PopupMenuDivider());
-          items.add(
-            PopupMenuItem<String>(
-              enabled: false,
-              child: Row(
-                children: [
-                  Icon(Icons.oil_barrel, color: Colors.orangeAccent),
-                  SizedBox(width: 8),
-                  Text(
-                    'Filtro por Tipo de Combustível:',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-          );
-          items.addAll(
-            controller.availableTypeGasNames.map((gasName) {
-              return buildFuelTypeItem(gasName, controller.selectedFuelTypeFilter.value == gasName);
-            }),
-          );
-          items.add(
-            PopupMenuItem<String>(
-              value: 'ClearFuel',
-              child: Text('Limpar Filtro', style: const TextStyle(color: Colors.red)),
-            ),
-          );
-          items.add(const PopupMenuDivider());
-          items.add(
-            PopupMenuItem<String>(
-              enabled: false,
-              child: Row(
-                children: [
-                  Icon(Icons.local_gas_station, color: Colors.blueGrey),
-                  SizedBox(width: 8),
-                  Text('Filtro por Posto:', style: TextStyle(fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ),
-          );
-          items.addAll(
-            controller.availableGasStationNames.map((stationName) {
-              return buildStationItem(
-                stationName,
-                controller.selectedStationFilter.value == stationName,
-              );
-            }),
-          );
-          items.add(
-            PopupMenuItem<String>(
-              value: 'ClearStation',
-              child: Text('Limpar Filtro', style: const TextStyle(color: Colors.red)),
-            ),
-          );
-          items.add(const PopupMenuDivider());
-          String periodText = controller.isDateFilterActive
-              ? 'Período: ${controller.formattedDateRange}'
-              : 'Filtrar por Período';
-
-          items.add(
-            PopupMenuItem<String>(
-              value: 'SetPeriod:trigger',
-              child: Row(
-                children: [
-                  const Icon(Icons.date_range, color: Colors.indigo),
-                  const SizedBox(width: 8),
-                  Text(
-                    periodText,
-                    style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_right_alt, color: Colors.indigoAccent),
-                ],
-              ),
-            ),
-          );
-          items.add(
-            PopupMenuItem<String>(
-              value: 'ClearPeriod',
-              child: Text('Limpar Filtro', style: const TextStyle(color: Colors.red)),
-            ),
-          );
-          return items;
+        onSelected: (value) {
+          if (value == 'ClearAll') {
+            controller.setVeiculoFilter(null);
+            controller.setFuelTypeFilter(null);
+            controller.setStationFilter(null);
+            repository.clearDateFilter();
+          } else if (value.startsWith('SetVeiculo:')) {
+            controller.setVeiculoFilter(value.substring(11));
+          } else if (value == 'ClearVeiculo') {
+            controller.setVeiculoFilter(null);
+          } else if (value.startsWith('SetFuel:')) {
+            controller.setFuelTypeFilter(value.substring(8));
+          } else if (value == 'ClearFuel') {
+            controller.setFuelTypeFilter(null);
+          } else if (value.startsWith('SetStation:')) {
+            controller.setStationFilter(value.substring(11));
+          } else if (value == 'ClearStation') {
+            controller.setStationFilter(null);
+          } else if (value == 'SetPeriod') {
+            _selectDateRange(context);
+          } else if (value.startsWith('ClearPeriod')) {
+            repository.clearDateFilter();
+            controller.loadFuel();
+          }
         },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem(
+            enabled: false,
+            child: Text(
+              "Filtros Ativos",
+              style: TextStyle(fontWeight: FontWeight.bold, color: theme.primaryColor),
+            ),
+          ),
+          const PopupMenuDivider(),
+
+          PopupMenuItem(
+            enabled: false,
+            child: Text('Veiculos:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ),
+          ...repository.availableVehicleNames.map(
+            (name) => _buildFilterItem(
+              value: 'SetVeiculo:$name',
+              label: name,
+              isSelected: selectedVehicle == name,
+              icon: RemixIcons.car_line,
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'ClearVeiculo',
+            child: Text("Limpar Veículo", style: TextStyle(color: Colors.red, fontSize: 13)),
+          ),
+          const PopupMenuDivider(),
+
+          PopupMenuItem(
+            enabled: false,
+            child: Text('Combustível', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ),
+
+          ...repository.availableTypeGasNames.map(
+            (name) => _buildFilterItem(
+              value: 'SetFuel:$name',
+              label: name,
+              isSelected: selectedFuel == name,
+              icon: Icons.oil_barrel,
+            ),
+          ),
+
+          PopupMenuItem(
+            value: 'ClearFuel',
+            child: Text(
+              'Limpar Combustível',
+              style: const TextStyle(color: Colors.red, fontSize: 13),
+            ),
+          ),
+
+          const PopupMenuDivider(),
+
+          PopupMenuItem<String>(
+            enabled: false,
+            child: Row(
+              children: [
+                Icon(Icons.local_gas_station, color: Colors.blueGrey),
+                SizedBox(width: 8),
+                Text('Filtro por Posto:', style: TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+
+          ...repository.availableGasStationNames.map((name) {
+            return _buildFilterItem(
+              value: 'SetStation:$name',
+              label: name,
+              isSelected: selectedStation == name,
+              icon: Icons.local_gas_station,
+            );
+          }),
+
+          PopupMenuItem(
+            value: 'ClearStation',
+            child: Text('Limpar Posto', style: const TextStyle(color: Colors.red, fontSize: 13)),
+          ),
+          const PopupMenuDivider(),
+
+          PopupMenuItem(
+            value: 'SetPeriod',
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  repository.isDateFilterActive
+                      ? repository.formattedDateRange
+                      : "Filtrar por Data",
+                ),
+              ],
+            ),
+          ),
+          if (repository.isDateFilterActive)
+            PopupMenuItem(
+              value: 'ClearPeriod',
+              child: Text(
+                'Limpar Período',
+                style: const TextStyle(color: Colors.red, fontSize: 13),
+              ),
+            ),
+
+          // return items;
+        ],
       );
     });
   }

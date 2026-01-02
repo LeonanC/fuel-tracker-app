@@ -1,5 +1,5 @@
 class GasStationModel {
-  final String id;
+  final int? id;
   final String nome;
   final String? address;
   final String brand;
@@ -13,7 +13,7 @@ class GasStationModel {
   final bool is24Hours;
 
   GasStationModel({
-    required this.id,
+    this.id,
     required this.nome,
     this.address,
     required this.brand,
@@ -28,7 +28,7 @@ class GasStationModel {
   });
 
   GasStationModel copyWith({
-    String? id,
+    int? id,
     String? nome,
     double? latitude,
     double? longitude,
@@ -59,8 +59,8 @@ class GasStationModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'nome': nome,
+      'pk_station': id,
+      'nome_posto': nome,
       'latitude': latitude,
       'longitude': longitude,
       'address': address,
@@ -76,8 +76,8 @@ class GasStationModel {
 
   factory GasStationModel.fromMap(Map<String, dynamic> map) {
     return GasStationModel(
-      id: map['id'] as String,
-      nome: map['nome'] as String,
+      id: map['pk_station'] as int,
+      nome: map['nome_posto'] as String,
       latitude: map['latitude'] is int
           ? (map['latitude'] as int).toDouble()
           : map['latitude'] as double,

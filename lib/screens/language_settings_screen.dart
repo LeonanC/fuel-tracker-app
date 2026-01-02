@@ -44,7 +44,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
       final primaryTextColor = theme.colorScheme.onSurface;
       final secondaryTextColor = theme.colorScheme.onSurfaceVariant;
 
-      final currentLanguage = languageController.currentLanguage.value;
+      final currentLanguage = languageController.currentLanguage;
       final isRtlLanguage = currentLanguage.isRtl;
 
       final titleStyle = isRtlLanguage
@@ -200,7 +200,7 @@ class _LanguageSettingsScreenState extends State<LanguageSettingsScreen>
 
   Widget _buildLanguageList(bool isRtlLanguage, Color primaryTextColor, Color cardColor) {
     return Obx(() {
-      final currentLanguage = languageController.currentLanguage.value;
+      final currentLanguage = languageController.currentLanguage;
 
       return ListView.builder(
         physics: const BouncingScrollPhysics(),

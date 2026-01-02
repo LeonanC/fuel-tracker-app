@@ -106,7 +106,9 @@
         "dialog_receipt_title": "Selecionar Comprovante",
         "dialog_receipt_option_camera": "Tirar Foto",
         "dialog_receipt_option_gallery": "Escolher da Galeria",
-        "validade_odometer_greater": "A quilometragem não pode ser nula ou zero"
+        "validade_odometer_greater": "A quilometragem não pode ser nula ou zero",
+        "error_odometer_title": "Odômetro Inválido",
+        "error_odometer_message": "O valor do odômetro inserido não é válido. Certifique-se de que é um número positivo."
     },
     "validation": {
         "required_odometer": "Por favor, insira o hodômetro.",
@@ -309,8 +311,8 @@
     },
     "gasstation": {
         "title": "Gerenciamento de Postos",
-        "update_title": "Atualizar",
-        "add_title": "Salvar",        
+        "title_edit": "Editar Posto",
+        "title_new": "Adicionar Posto",
         "label_name": "Nome do Posto",
         "label_address": "Endereço",
         "label_brand": "Bandeira",
@@ -329,22 +331,13 @@
         "button_delete_subtitle": "Tem certeza que deseja excluir este item? Esta ação é irreversível.",
         "button_delete_confirm": "Confirmar Exclusão",
         "button_delete_cancel": "Cancelar",
-        "button_cancel": "Cancelar",
         "button_update": "Atualizar",
+        "button_add": "Salvar",        
+        "button_cancel": "Cancelar",
         "button_save": "Salvar Posto",
         "required": "Campo obrigatório"
         
-    },
-    "onboardings": {
-        "onboarding_title_1": "Rastreie Seu Consumo",
-        "onboarding_desc_1": "Veja o desempenho do seu veículo com gráficos claros de km/L e custos.",
-        "onboarding_title_2": "Gerenciamento Completo",
-        "onboarding_desc_2": "Adicione e personalize vários veículos, de carros a motos, com fotos.",
-        "onboarding_title_3": "Histórico e Estatísticas",
-        "onboarding_desc_3": "Registre cada abastecimento e serviço para ter um controle financeiro total.",
-        "onboarding_button_start": "Começar Agora",
-        "onboarding_button_next": "Próximo",
-        "onboarding_button_skip": "Pular"
     }
+    
 
 }

@@ -53,7 +53,7 @@ class VehicleManagementScreen extends GetView<VehicleController> {
         );
       }),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showVehicleForm(context),
+        onPressed: () => controller.navigateToAddEntry(context),
         backgroundColor: AppTheme.primaryFuelColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -61,13 +61,11 @@ class VehicleManagementScreen extends GetView<VehicleController> {
   }
 }
 
-void _showVehicleForm(BuildContext context, [VehicleModel? vehicle]) {
-  Get.dialog(VehicleForm(vehicle: vehicle), useSafeArea: true, barrierDismissible: true);
-}
-
 class VehicleCard extends StatelessWidget {
   final VehicleModel vehicle;
-  const VehicleCard({required this.vehicle});
+  VehicleCard({required this.vehicle});
+
+  final VehicleController controller = Get.find<VehicleController>();
 
   @override
   Widget build(BuildContext context) {
@@ -90,20 +88,21 @@ class VehicleCard extends StatelessWidget {
               : null,
         ),
         title: Text(vehicle.nickname, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('${vehicle.make} ${vehicle.model} (${vehicle.year}) | ${vehicle.fuelType}'),
+        subtitle: Text('${vehicle.make} ${vehicle.model} (${vehicle.year}) | ${vehicle.fuelTypeName}'),
         trailing: PopupMenuButton<String>(
           onSelected: (String result) {
-            if (result == 'edit') {
-              _showVehicleForm(context, vehicle);
+            if (result == 'share') {
+              // _showVehicleForm(context, vehicle);
             } else if (result == 'delete') {
               _confirmDelete(context);
             }
           },
           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(value: 'edit', child: Text('Editar')),
+            const PopupMenuItem<String>(value: 'share', child: Text('Compartilhar')),
             const PopupMenuItem<String>(value: 'delete', child: Text('Excluir')),
           ],
         ),
+        onTap: () => controller.navigateToAddEntry(context, data: vehicle),
       ),
     );
   }
@@ -119,285 +118,12 @@ class VehicleCard extends StatelessWidget {
       textCancel: context.tr(TranslationKeys.vehiclesCancel),
       confirmTextColor: AppTheme.cardLight,
       onConfirm: () {
-        controller.deleteVehicle(vehicle.id);
+        // controller.deleteVehicle(vehicle.id);
         Get.back();
       },
       onCancel: () => Get.back(),
       buttonColor: AppTheme.primaryFuelColor,
       cancelTextColor: AppTheme.primaryFuelColor,
-    );
-  }
-}
-
-class VehicleForm extends StatefulWidget {
-  final VehicleModel? vehicle;
-  const VehicleForm({super.key, this.vehicle});
-
-  @override
-  State<VehicleForm> createState() => _VehicleFormState();
-}
-
-class _VehicleFormState extends State<VehicleForm> {
-  final _formKey = GlobalKey<FormState>();
-  late String _nickname;
-  late String _make;
-  late String _model;
-  late String _fuelType;
-  late int _year;
-  late double _initialOdometer;
-  String? _imageUrl;
-
-  final ImagePicker _picker = ImagePicker();
-  final VehicleController controller = Get.find<VehicleController>();
-  final List<String> _fuelTypes = ['Flex', 'Gasolina', 'Gasolina Comum', 'Etanol', 'Diesel', 'Elétrico'];
-
-  @override
-  void initState() {
-    super.initState();
-    final vehicle = widget.vehicle;
-    _nickname = vehicle?.nickname ?? '';
-    _make = vehicle?.make ?? '';
-    _model = vehicle?.model ?? '';
-    _fuelType = vehicle?.fuelType ?? 'Gasolina';
-    _year = vehicle?.year ?? DateTime.now().year;
-    _initialOdometer = vehicle?.initialOdometer ?? 0.0;
-    _imageUrl = vehicle?.imageUrl;
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source, imageQuality: 79);
-
-    if (pickedFile != null) {
-      setState(() {
-        _imageUrl = pickedFile.path;
-      });
-    }
-
-    if (Get.isBottomSheetOpen == true) {
-      Get.back();
-    }
-  }
-
-  void _showImageSourceActionSheet(BuildContext context) {
-    Get.bottomSheet(
-      Container(
-        color: Theme.of(context).cardColor,
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: Text(context.tr(TranslationKeys.vehiclesChooseFromGallery)),
-                onTap: () => _pickImage(ImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: Text(context.tr(TranslationKeys.vehiclesTakePhoto)),
-                onTap: () => _pickImage(ImageSource.camera),
-              ),
-              if (_imageUrl != null)
-                ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Colors.red),
-                  title: Text(
-                    context.tr(TranslationKeys.vehiclesRemovePhoto),
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: () {
-                    setState(() {
-                      _imageUrl = null;
-                    });
-                    Get.back();
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _submit() {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
-      final vehicleId = widget.vehicle?.id ?? const Uuid().v4();
-      final vehicleCreatedAt = widget.vehicle?.createdAt;
-
-      final newVehicle = VehicleModel(
-        id: vehicleId,
-        nickname: _nickname,
-        make: _make,
-        model: _model,
-        fuelType: _fuelType,
-        year: _year,
-        initialOdometer: _initialOdometer,
-        imageUrl: _imageUrl,
-        createdAt: vehicleCreatedAt,
-      );
-      controller.saveVehicle(newVehicle);
-      Get.back();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isEditing = widget.vehicle != null;
-    final theme = Theme.of(context);
-
-    return AlertDialog(
-      title: Text(
-        context.tr(
-          isEditing ? TranslationKeys.vehiclesEditVehicle : TranslationKeys.vehiclesAddNewVehicle,
-        ),
-        textAlign: TextAlign.center,
-        style: theme.textTheme.headlineSmall,
-      ),
-      content: SizedBox(
-        width: Get.width * 0.9,
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                GestureDetector(
-                  onTap: () => _showImageSourceActionSheet(context),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: AppTheme.primaryFuelColor.withOpacity(0.2),
-                    backgroundImage: _imageUrl != null ? FileImage(File(_imageUrl!)) : null,
-                    child: _imageUrl == null
-                        ? Icon(Icons.camera_alt, size: 40, color: AppTheme.primaryFuelColor)
-                        : null,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  initialValue: _nickname,
-                  decoration: InputDecoration(
-                    labelText: context.tr(TranslationKeys.vehiclesNickname),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                  ),
-                  onSaved: (value) => _nickname = value ?? '',
-                  validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  initialValue: _make,
-                  decoration: InputDecoration(
-                    labelText: context.tr(TranslationKeys.vehiclesMake),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                  ),
-                  onSaved: (value) => _make = value ?? '',
-                  validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  initialValue: _model,
-                  decoration: InputDecoration(labelText: context.tr(TranslationKeys.vehiclesModel)),
-                  onSaved: (value) => _model = value ?? '',
-                  validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  initialValue: _year.toString(),
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: context.tr(TranslationKeys.vehiclesYear),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                  ),
-                  onSaved: (value) {
-                    _year = int.tryParse(value ?? '0') ?? 0;
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Campo obrigatório';
-                    }
-                    final year = int.tryParse(value);
-                    final currentYear = DateTime.now().year;
-                    if (year == null || year < 1900 || year > currentYear + 1) {
-                      return 'Ano inválido';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  initialValue: _initialOdometer.toStringAsFixed(0),
-                  keyboardType: TextInputType.numberWithOptions(decimal: true),
-                  decoration: InputDecoration(
-                    labelText: context.tr(TranslationKeys.vehiclesOdometer),
-                    suffixText: 'km',
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                  ),
-                  onSaved: (value) {
-                    final cleanedValue = value?.replaceAll(',', '.');
-                    _initialOdometer = double.tryParse(cleanedValue ?? '0.0') ?? 0.0;
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Campo obrigatório';
-                    }
-                    final cleanedValue = value.replaceAll(',', '.');
-                    if (double.tryParse(cleanedValue) == null) {
-                      return 'Insire um valor numérico válido';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: _fuelType,
-                  decoration: InputDecoration(
-                    labelText: context.tr(TranslationKeys.vehiclesFuelType),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                  ),
-                  items: _fuelTypes.map((String value) {
-                    return DropdownMenuItem<String>(value: value, child: Text(value));
-                  }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _fuelType = newValue!;
-                    });
-                  },
-                  onSaved: (value) => _fuelType = value ?? 'Flex',
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      actionsAlignment: MainAxisAlignment.spaceAround,
-      actions: [
-        TextButton(
-          onPressed: () => Get.back(),
-          child: Text(context.tr(TranslationKeys.vehiclesCancel)),
-        ),
-        ElevatedButton(
-          onPressed: _submit,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primaryFuelColor,
-            foregroundColor: AppTheme.cardLight,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          ),
-          child: Text(
-            context.tr(
-              isEditing ? TranslationKeys.vehiclesSave : TranslationKeys.vehiclesAddNewVehicle,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

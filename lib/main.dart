@@ -18,8 +18,6 @@ void main() async {
   final languageProvider = Get.put(LanguageController());
   await languageProvider.initialize();  
 
-  Get.put(ThemeController());
-
   runApp(MyApp(languageProvider: languageProvider));
 }
 
@@ -34,40 +32,31 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    final ThemeController themeController = Get.find<ThemeController>();
     final LanguageController languageController = Get.find<LanguageController>();
 
-    return Obx(() {
-      final mediaQuery = MediaQuery.of(context);
-
-      return MediaQuery(
-        data: mediaQuery.copyWith(textScaleFactor: themeController.fontScale.value),
-        child: GetMaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'Controle de Combustível',
-          locale: languageController.locale,
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: const [
-            Locale('en'),
-            Locale('pt'),
-            Locale('es'),
-            Locale('fr'),
-            Locale('de'),
-            Locale('it'),
-            Locale('ru'),
-          ],
-          themeMode: themeController.themeMode.value,
-          theme: AppTheme.lightTheme(),
-          darkTheme: AppTheme.darkTheme(),
-          initialRoute: AppPages.INITIAL,
-          getPages: AppPages.routes,
-          initialBinding: InitialBinding(),
-        ),
-      );
-    });
+    return GetMaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Controle de Combustível',
+        theme: AppTheme.darkTheme(languageController.currentLanguage.code),
+        locale: languageController.locale,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en'),
+          Locale('pt'),
+          Locale('es'),
+          Locale('fr'),
+          Locale('de'),
+          Locale('it'),
+          Locale('ru'),
+        ],
+        initialRoute: AppPages.INITIAL,
+        getPages: AppPages.routes,
+        initialBinding: InitialBinding(),
+      
+    );
   }
 }

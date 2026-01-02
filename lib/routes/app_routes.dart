@@ -1,5 +1,6 @@
 abstract class Routes {
-  static const main_navigation = '/';
+  static const on_boarding = '/';
+  static const home_screen = '/main_navigation';
   static const fuel_list = '/fuel_list';
   static const fuel_entry = '/fuel_entry';
   static const maintenance_list = '/maintenace_list';
