@@ -340,26 +340,7 @@ class TranslationKeys {
   static const String dialogFilterFilterClearFilter = "dialog_filter.filter_clear_filter";
   static const String dialogFilterFilterApply = "dialog_filter.filter_apply";
 
-  static const String vehiclesScreenTitle = 'vehicles.screen_title';
-  static const String vehiclesScreenDescription = 'vehicles.screen_description';
-  static const String vehiclesEmptyList = 'vehicles.empty_list';
-  static const String vehiclesAddNewVehicle = 'vehicles.add_new_vehicle';
-  static const String vehiclesEditVehicle = 'vehicles.edit_vehicle';
-  static const String vehiclesNickname = 'vehicles.nickname';
-  static const String vehiclesMake = 'vehicles.make';
-  static const String vehiclesModel = 'vehicles.model';
-  static const String vehiclesYear = 'vehicles.year';
-  static const String vehiclesFuelType = 'vehicles.fuel_type';
-  static const String vehiclesOdometer = 'vehicles.odometer';
-  static const String vehiclesImage = 'vehicles.image';
-  static const String vehiclesSelectImage = 'vehicles.select_image';
-  static const String vehiclesChooseFromGallery = 'vehicles.choose_from_gallery';
-  static const String vehiclesTakePhoto = 'vehicles.take_photo';
-  static const String vehiclesDeleteConfirm = 'vehicles.delete_confirm_message';
-  static const String vehiclesDelete = 'vehicles.delete';
-  static const String vehiclesSave = 'vehicles.save';
-  static const String vehiclesCancel = 'vehicles.cancel';
-  static const String vehiclesRemovePhoto = 'vehicles.remove_photo';
+  
 
   static const String gasStationScreenTitle = 'gasstation.title';
   static const String gasStationUpdateTitle = 'gasstation.title_edit';

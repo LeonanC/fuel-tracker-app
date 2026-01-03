@@ -76,7 +76,7 @@ class GasStationModel {
 
   factory GasStationModel.fromMap(Map<String, dynamic> map) {
     return GasStationModel(
-      id: map['pk_station'] as int,
+      id: map['pk_station'] as int?,
       nome: map['nome_posto'] as String,
       latitude: map['latitude'] is int
           ? (map['latitude'] as int).toDouble()

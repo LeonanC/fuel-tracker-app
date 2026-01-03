@@ -1,14 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:remixicon/remixicon.dart';
-import 'package:uuid/uuid.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
 
 class GasStationManagementScreen extends GetView<GasStationController> {
   GasStationManagementScreen({super.key});
@@ -73,6 +74,7 @@ class GasStationManagementScreen extends GetView<GasStationController> {
 
 class PostoCard extends StatelessWidget {
   final GasStationModel stations;
+  final ScreenshotController _screenshotController = ScreenshotController();
 
   PostoCard({super.key, required this.stations});
 
@@ -83,49 +85,132 @@ class PostoCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    return Card(
-      color: isDarkMode ? AppTheme.cardDark : AppTheme.cardLight,
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-        leading: Icon(RemixIcons.gas_station_fill, color: AppTheme.primaryFuelColor, size: 32),
-        title: Text(stations.nome, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Bandeira: ${stations.brand}'),
-            const SizedBox(height: 4),
-            Row(
+    return Screenshot(
+      controller: _screenshotController,
+      child: Card(
+        color: isDarkMode ? AppTheme.cardDark : AppTheme.cardLight,
+        elevation: 2,
+        margin: const EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: InkWell(
+          onTap: () => controller.navigateToAddEntry(context, data: stations),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(RemixIcons.gas_station_fill, size: 16, color: AppTheme.primaryFuelColor),
-                const SizedBox(width: 4),
-                Flexible(child: Text('G: ${stations.priceGasolineComum}')),
-                const SizedBox(width: 12),
-                Icon(RemixIcons.flask_fill, size: 16, color: AppTheme.primaryFuelColor),
-                const SizedBox(width: 4),
-                Flexible(child: Text('E: ${stations.priceEthanol}')),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppTheme.primaryFuelColor.withOpacity(0.1),
+                      child: Icon(RemixIcons.gas_station_fill, color: AppTheme.primaryFuelColor),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(stations.nome, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                          Text(stations.brand, style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor)),
+                        ],
+                      ),
+                    ),
+                    _buildStatusIcons(),
+                    _buildPopupMenu(context),
+                  ],
+                ),
+                const Divider(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildPriceInfo(context, "Gasolina", stations.priceGasolineComum, RemixIcons.drop_fill),
+                    Container(width: 1, height: 30, color: theme.dividerColor),
+                    _buildPriceInfo(context, "Etanol", stations.priceEthanol, RemixIcons.leaf_fill),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (String result) {
-            if (result == 'share') {
-              // _showGasForm(context, stations);
-            } else if (result == 'delete') {
-              _confirmDelete(context);
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(value: 'share', child: Text('Compartilhar')),
-            const PopupMenuItem<String>(value: 'delete', child: Text('Excluir')),
-          ],
-        ),
-        onTap: () => controller.navigateToAddEntry(context, data: stations),
       ),
     );
+  }
+
+  Widget _buildStatusIcons(){
+    return Row(
+      children: [
+        if(stations.is24Hours)
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: Icon(RemixIcons.time_line, size: 28, color: Colors.orange),
+          ),
+        if(stations.hasConvenientStore)
+          const Icon(RemixIcons.store_2_line, size: 18, color: Colors.blue),
+      ],
+    );
+  }
+
+  Widget _buildPriceInfo(BuildContext context, String label, double price, IconData icon){
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: AppTheme.primaryFuelColor),
+            const SizedBox(width: 4),
+            Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        ),
+        Text(
+          'R\$ ${price.toStringAsFixed(3)}',
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        )
+      ],
+    );
+  }
+
+  Widget _buildPopupMenu(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, size: 20),
+      onSelected: (value) {
+        if(value == 'share') _shareCard();
+        if (value == 'delete') _confirmDelete(context);
+      },
+      itemBuilder: (BuildContext context) => [
+        PopupMenuItem(
+          value: 'share',
+          child: Row(
+            children: [Icon(RemixIcons.share_line, size: 18), SizedBox(width: 8), Text('Compartilhar')],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [Icon(RemixIcons.edit_line, size: 18), SizedBox(width: 8), Text('Editar')],
+          ),
+          onTap: () => controller.navigateToAddEntry(context, data: stations),
+        ),
+        PopupMenuItem(
+          value: 'delete', 
+          child: Row(
+            children: [
+              Icon(RemixIcons.delete_bin_3_line, size: 18, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Excluir', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _shareCard() async {
+    final image = await _screenshotController.capture();
+    if(image != null){
+      final directory = await getTemporaryDirectory();
+      final imagePath = await File('${directory.path}/${stations.nome}.png').create();
+      await imagePath.writeAsBytes(image);
+      await Share.shareXFiles([XFile(imagePath.path)], text: 'Localização do posto cadastro no Fuel Tracker!');
+    }
   }
 
   void _confirmDelete(BuildContext context) {
@@ -138,7 +223,7 @@ class PostoCard extends StatelessWidget {
       textCancel: context.tr(TranslationKeys.gasStationButtonDeleteCancel),
       confirmTextColor: AppTheme.cardLight,
       onConfirm: () {
-        // controller.deleteGasStation(stations.id);
+        controller.deleteGasStation(stations.id!);
         Get.back();
       },
       onCancel: () => Get.back(),

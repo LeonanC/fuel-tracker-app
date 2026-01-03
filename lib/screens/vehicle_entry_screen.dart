@@ -5,10 +5,39 @@ import 'package:fuel_tracker_app/controllers/vehicle_controller.dart';
 import 'package:fuel_tracker_app/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
+import 'package:fuel_tracker_app/utils/vehicle_plate_widget.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:uuid/uuid.dart';
+
+class TranslationKeys_5 {
+  static const String vehiclesScreenTitle = 'vehicles.screen_title';
+  static const String vehiclesScreenDescription = 'vehicles.screen_description';
+  static const String vehiclesEmptyList = 'vehicles.empty_list';
+  static const String vehiclesAddNewVehicle = 'vehicles.add_new_vehicle';
+  static const String vehiclesEditVehicle = 'vehicles.edit_vehicle';
+  static const String vehiclesNickname = 'vehicles.nickname';
+  static const String vehiclesPlate = 'vehicles.plate';
+  static const String vehiclesNewPlate = 'Placa Mercosul';
+  static const String vehiclesOldPlate = 'Placa Antiga';
+  static const String vehiclesTankCapacity = 'Capacidade do Tanque';
+  static const String vehiclesCity = 'vehicles.city';
+  static const String vehiclesMake = 'vehicles.make';
+  static const String vehiclesModel = 'vehicles.model';
+  static const String vehiclesYear = 'vehicles.year';
+  static const String vehiclesFuelType = 'vehicles.fuel_type';
+  static const String vehiclesOdometer = 'vehicles.odometer';
+  static const String vehiclesImage = 'vehicles.image';
+  static const String vehiclesSelectImage = 'vehicles.select_image';
+  static const String vehiclesChooseFromGallery = 'vehicles.choose_from_gallery';
+  static const String vehiclesTakePhoto = 'vehicles.take_photo';
+  static const String vehiclesDeleteConfirm = 'vehicles.delete_confirm_message';
+  static const String vehiclesDelete = 'vehicles.delete';
+  static const String vehiclesSave = 'vehicles.save';
+  static const String vehiclesCancel = 'vehicles.cancel';
+  static const String vehiclesRemovePhoto = 'vehicles.remove_photo';
+}
 
 class VehicleEntryScreen extends StatefulWidget {
   final VehicleModel? data;
@@ -20,102 +49,88 @@ class VehicleEntryScreen extends StatefulWidget {
 
 class _VehicleEntryScreenState extends State<VehicleEntryScreen> {
   final _formKey = GlobalKey<FormState>();
-
-  late String _nickname;
-  late String _make;
-  late String _model;
-  late int _fuelType;
-  late int _year;
-  late double _initialOdometer;
-  String? _imageUrl;
-  int? _selectedFuelId;
-
-  final ImagePicker _picker = ImagePicker();
   final VehicleController controller = Get.find<VehicleController>();
+
+  late TextEditingController _nicknameController;
+  late TextEditingController _makeController;
+  late TextEditingController _modelController;
+  late TextEditingController _plateController;
+  late TextEditingController _yearController;
+  late TextEditingController _tankCapacityController;
+  late TextEditingController _odometerController;
+  late TextEditingController _cityController;
+  
+  String? _selectedImageUrl;
+  bool _isMercosul = true;
+  bool get _isEditing => widget.data != null;
 
   @override
   void initState() {
     super.initState();
-    final vehicle = widget.data;
-    _nickname = vehicle?.nickname ?? '';
-    _make = vehicle?.make ?? '';
-    _model = vehicle?.model ?? '';
-    _selectedFuelId = widget.data?.fuelType;
-    _year = vehicle?.year ?? DateTime.now().year;
-    _initialOdometer = vehicle?.initialOdometer ?? 0.0;
-    _imageUrl = vehicle?.imageUrl;
+      final e = widget.data;
+      _nicknameController = TextEditingController(text: e?.nickname ?? '');
+      _makeController = TextEditingController(text: e?.make ?? '');
+      _modelController = TextEditingController(text: e?.model ?? '');
+      _yearController = TextEditingController(text: e?.year.toString() ?? '');
+      _plateController = TextEditingController(text: e?.plate ?? '');
+      _tankCapacityController = TextEditingController(text: e?.tankCapacity.toString() ?? '50');
+      _odometerController = TextEditingController(text: e?.initialOdometer.toString() ?? '0');
+      _cityController = TextEditingController(text: e?.city ?? 'BRASIL');
+      _selectedImageUrl = e?.imageUrl;
+      _isMercosul = e?.isMercosul ?? true;    
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source, imageQuality: 79);
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      setState(() {
-        _imageUrl = pickedFile.path;
-      });
-    }
-
-    if (Get.isBottomSheetOpen == true) {
-      Get.back();
+      setState(() => _selectedImageUrl = pickedFile.path);
     }
   }
 
-  void _showImageSourceActionSheet(BuildContext context) {
-    Get.bottomSheet(
-      Container(
-        color: Theme.of(context).cardColor,
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: Text(context.tr(TranslationKeys.vehiclesChooseFromGallery)),
-                onTap: () => _pickImage(ImageSource.gallery),
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: Text(context.tr(TranslationKeys.vehiclesTakePhoto)),
-                onTap: () => _pickImage(ImageSource.camera),
-              ),
-              if (_imageUrl != null)
-                ListTile(
-                  leading: const Icon(Icons.delete_outline, color: Colors.red),
-                  title: Text(
-                    context.tr(TranslationKeys.vehiclesRemovePhoto),
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: () {
-                    setState(() {
-                      _imageUrl = null;
-                    });
-                    Get.back();
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _submit() {
+  void _save() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      final vehicleCreatedAt = widget.data?.createdAt;
 
-      final newVehicle = VehicleModel(
-        nickname: _nickname,
-        make: _make,
-        model: _model,
-        fuelType: _selectedFuelId!,
-        year: _year,
-        initialOdometer: _initialOdometer,
-        imageUrl: _imageUrl,
-        createdAt: vehicleCreatedAt,
+      final vehicle = VehicleModel(
+        id: widget.data?.id,
+        nickname: _nicknameController.text,
+        make: _makeController.text,
+        model: _modelController.text,
+        year: int.parse(_yearController.text),
+        plate: _plateController.text,
+        tankCapacity: double.parse(_tankCapacityController.text),
+        initialOdometer: double.parse(_odometerController.text),
+        imageUrl: _selectedImageUrl,
+        isMercosul: _isMercosul,
+        city: _cityController.text,
+        fuelType: widget.data?.fuelType ?? 0,
+        fuelTypeName: widget.data?.fuelTypeName ?? 'Flex',
       );
-      controller.saveVehicle(newVehicle);
-      Get.back();
+
+      try {
+        await controller.saveVehicle(vehicle.toMap());
+        if (!mounted) return;
+        Get.back();
+        Get.snackbar(
+          'Sucesso',
+          _isEditing
+              ? 'Veículo atualizado com sucesso!'
+              : 'Veículo "${vehicle.nickname}" adicionado com sucesso!',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      } catch (e) {
+        print(e);
+        if (!mounted) return;
+        Get.back();
+        Get.snackbar(
+          'Erro',
+          'Falha ao salvar o veículo: $e',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.redAccent,
+        );
+      }
     }
   }
 
@@ -126,25 +141,21 @@ class _VehicleEntryScreenState extends State<VehicleEntryScreen> {
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
       appBar: AppBar(
-        backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+        centerTitle: false,
+        elevation: 0,
         title: Text(
-          context.tr(
-            isEditing ? TranslationKeys.vehiclesEditVehicle : TranslationKeys.vehiclesAddNewVehicle,
-          ),
-          textAlign: TextAlign.center,
-          style: theme.textTheme.headlineSmall,
+          isEditing
+          ? context.tr(TranslationKeys_5.vehiclesEditVehicle)
+          : context.tr(TranslationKeys_5.vehiclesAddNewVehicle),
         ),
-        centerTitle: theme.appBarTheme.centerTitle,
-        elevation: theme.appBarTheme.elevation,
         actions: [
           IconButton(
             icon: isEditing ? Icon(RemixIcons.edit_line) : Icon(RemixIcons.save_line),
-            onPressed: _submit,
+            onPressed: _save,
             tooltip: isEditing
-                ? context.tr(TranslationKeys.vehiclesEditVehicle)
-                : context.tr(TranslationKeys.vehiclesSave),
+                ? context.tr(TranslationKeys_5.vehiclesEditVehicle)
+                : context.tr(TranslationKeys_5.vehiclesSave),
           ),
         ],
       ),
@@ -153,130 +164,96 @@ class _VehicleEntryScreenState extends State<VehicleEntryScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
               GestureDetector(
-                onTap: () => _showImageSourceActionSheet(context),
+                onTap: _pickImage,
                 child: CircleAvatar(
                   radius: 50,
                   backgroundColor: AppTheme.primaryFuelColor.withOpacity(0.2),
-                  backgroundImage: _imageUrl != null ? FileImage(File(_imageUrl!)) : null,
-                  child: _imageUrl == null
+                  backgroundImage: _selectedImageUrl != null ? FileImage(File(_selectedImageUrl!)) : null,
+                  child: _selectedImageUrl == null
                       ? Icon(Icons.camera_alt, size: 40, color: AppTheme.primaryFuelColor)
                       : null,
                 ),
               ),
-              const SizedBox(height: 10),
-              TextFormField(
-                initialValue: _nickname,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.vehiclesNickname),
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                ),
-                onSaved: (value) => _nickname = value ?? '',
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+              const SizedBox(height: 24),
+              ValueListenableBuilder(
+                valueListenable: _plateController,
+                builder: (context, value, child){
+                  return VehiclePlateWidget(
+                    plate: _plateController.text.isEmpty ? "ABC1D23" : _plateController.text,
+                    isMercosul: _isMercosul,
+                    city: _cityController.text,
+                  );
+                }
               ),
-              const SizedBox(height: 10),
-              TextFormField(
-                initialValue: _make,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.vehiclesMake),
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                ),
-                onSaved: (value) => _make = value ?? '',
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(child: _buildTextField(_nicknameController, "Apelido (Ex: City)", RemixIcons.medal_line)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildTextField(_plateController, "Placa", RemixIcons.barcode_box_line)),
+                  
+                ],
               ),
-              const SizedBox(height: 10),
-              TextFormField(
-                initialValue: _model,
-                decoration: InputDecoration(labelText: context.tr(TranslationKeys.vehiclesModel)),
-                onSaved: (value) => _model = value ?? '',
-                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+              SwitchListTile(
+                title: const Text("Padrão Mercosul"),
+                value: _isMercosul,
+                onChanged: (val) => setState(() => _isMercosul = val),
+                secondary: const Icon(Icons.flag_outlined),
               ),
-              const SizedBox(height: 10),
-              TextFormField(
-                initialValue: _year.toString(),
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.vehiclesYear),
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                ),
-                onSaved: (value) {
-                  _year = int.tryParse(value ?? '0') ?? 0;
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Campo obrigatório';
-                  }
-                  final year = int.tryParse(value);
-                  final currentYear = DateTime.now().year;
-                  if (year == null || year < 1900 || year > currentYear + 1) {
-                    return 'Ano inválido';
-                  }
-                  return null;
-                },
+
+              const Divider(),
+              Row(
+                children: [
+                  Expanded(child: _buildTextField(_makeController, "Marca", RemixIcons.building_line)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildTextField(_modelController, "Modelo", RemixIcons.car_line)),
+                ],
               ),
-              const SizedBox(height: 10),
-              TextFormField(
-                initialValue: _initialOdometer.toStringAsFixed(0),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.vehiclesOdometer),
-                  suffixText: 'km',
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                  ),
-                ),
-                onSaved: (value) {
-                  final cleanedValue = value?.replaceAll(',', '.');
-                  _initialOdometer = double.tryParse(cleanedValue ?? '0.0') ?? 0.0;
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Campo obrigatório';
-                  }
-                  final cleanedValue = value.replaceAll(',', '.');
-                  if (double.tryParse(cleanedValue) == null) {
-                    return 'Insire um valor numérico válido';
-                  }
-                  return null;
-                },
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(child: _buildTextField(_tankCapacityController, "Tanque (L)", RemixIcons.drop_line, keyboardType: TextInputType.number)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildTextField(_odometerController, "KM Inicial", RemixIcons.speed_up_line, keyboardType: TextInputType.number)),
+                ],
               ),
-              const SizedBox(height: 10),
-              Obx(
-                () => DropdownButtonFormField<int>(
-                  value:
-                      controller.fuelTypes.any(
-                        (element) => element.id == _selectedFuelId,
-                      )
-                      ? _selectedFuelId
-                      : null,
-                  decoration: InputDecoration(
-                    labelText: context.tr(TranslationKeys.vehiclesFuelType),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(8)),
-                    ),
-                  ),
-                  items: controller.fuelTypes.map((type) {
-                    return DropdownMenuItem<int>(
-                      value: type.id, 
-                      child: Text(type.nome),
-                    );
-                  }).toList(),
-                  onChanged: (val) => setState(() => _selectedFuelId = val),
-                  validator: (value) => value == null ? 'Selecione um combustível' : null,
+              const SizedBox(height: 12),
+              _buildTextField(_cityController, "Cidade/País na Placa", RemixIcons.map_pin_user_line),
+              const SizedBox(height: 12),
+              _buildTextField(_yearController, "Ano", RemixIcons.calendar_line, keyboardType: TextInputType.number),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryFuelColor),
+                  child: const Text("SALVAR VEÍCULO", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
+
+              
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {TextInputType keyboardType = TextInputType.text}){
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (value) => value!.isEmpty ? "Obrigatório" : null,
+      onChanged: (val) => setState((){}),
     );
   }
 }

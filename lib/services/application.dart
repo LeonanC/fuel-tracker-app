@@ -37,11 +37,15 @@ final List<String> dbCreate = <String>[
   """CREATE TABLE vehicles(
     pk_vehicle INTEGER PRIMARY KEY AUTOINCREMENT,
     nickname TEXT NOT NULL,
+    plate TEXT,
+    is_mercosul INTEGER DEFAULT 1,
+    city TEXT,
     make TEXT NOT NULL,
     model TEXT NOT NULL,
     fk_type_fuel INTEGER,
     year INTEGER,
     initial_odometer REAL,
+    tank_capacity REAL,
     imagem_url TEXT NOT NULL,
     created_at TEXT,
     FOREIGN KEY (fk_type_fuel) REFERENCES fuel_types (pk_type_fuel) ON DELETE CASCADE

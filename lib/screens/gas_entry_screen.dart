@@ -8,7 +8,6 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
-import 'package:uuid/uuid.dart';
 
 class GasEntryScreen extends StatefulWidget {
   final GasStationModel? data;
@@ -20,6 +19,7 @@ class GasEntryScreen extends StatefulWidget {
 
 class _GasEntryScreenState extends State<GasEntryScreen> {
   final formKey = GlobalKey<FormState>();
+
   late TextEditingController nameController;
   late TextEditingController addressController;
   late TextEditingController brandController;
@@ -29,126 +29,57 @@ class _GasEntryScreenState extends State<GasEntryScreen> {
   late MoneyMaskedTextController priceEthanolController;
 
   final GasStationController controller = Get.find<GasStationController>();
+
   bool hasConvenienceStore = false;
   bool is24Hours = false;
   bool isLocationLoading = false;
 
   bool get isEditing => widget.data != null;
 
-  Future<void> getCurrentLocation(BuildContext context) async {
-    isLocationLoading = true;
-
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      Get.snackbar('Erro', 'Serviços de localização desabilitados.');
-      isLocationLoading = false;
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        Get.snackbar('Erro', 'Permissão de localização negada.');
-        isLocationLoading = false;
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      Get.snackbar(
-        'Erro',
-        'Permissão negada permanentemente. Por favor, habilite nas configurações do app.',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      isLocationLoading = false;
-      return;
-    }
-
-    try {
-      Get.snackbar('Aguarde', 'Obtendo sua localização...');
-
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      String formattedAddress = "Endereço não encontrado.";
-      if (placemarks.isNotEmpty) {
-        final placemark = placemarks.first;
-        formattedAddress = [
-          placemark.thoroughfare,
-          placemark.subThoroughfare,
-          placemark.subLocality,
-          placemark.locality,
-        ].where((element) => element != null && element.isNotEmpty).join(', ');
-      }
-
-      setState(() {
-        latitudeController.updateValue(position.latitude);
-        longitudeController.updateValue(position.longitude);
-        addressController.text = formattedAddress;
-      });
-
-      Get.snackbar('Sucesso', 'Localização atualizada com sucesso!');
-    } catch (e) {
-      Get.snackbar(
-        'Erro',
-        'Não foi possível obter a localização: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.shade400,
-        colorText: Colors.white,
-      );
-    } finally {
-      isLocationLoading = false;
-    }
-  }
-
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
+  }
 
-    const int coordinatePrecision = 7;
+  void _initializeControllers() {
+    const int coordPrecision = 7;
+    final d = widget.data;
 
     if (isEditing) {
-      final s = widget.data!;
-      nameController = TextEditingController(text: s.nome);
-      addressController = TextEditingController(text: s.address ?? '');
-      brandController = TextEditingController(text: s.brand);
+      nameController = TextEditingController(text: d?.nome ?? '');
+      addressController = TextEditingController(text: d?.address ?? '');
+      brandController = TextEditingController(text: d?.brand ?? '');
+
       latitudeController = MoneyMaskedTextController(
-        initialValue: s.latitude,
+        initialValue: d?.latitude ?? 0.0,
         decimalSeparator: '.',
         thousandSeparator: '',
-        precision: coordinatePrecision,
+        precision: coordPrecision,
         leftSymbol: '-',
       );
       longitudeController = MoneyMaskedTextController(
-        initialValue: s.longitude,
+        initialValue: d?.longitude ?? 0.0,
         decimalSeparator: '.',
         thousandSeparator: '',
-        precision: coordinatePrecision,
+        precision: coordPrecision,
         leftSymbol: '-',
       );
       priceGasolineController = MoneyMaskedTextController(
-        initialValue: s.priceGasolineComum,
+        initialValue: d?.priceGasolineComum ?? 0.0,
         decimalSeparator: ',',
         thousandSeparator: '.',
+        leftSymbol: 'R\$ ',
       );
       priceEthanolController = MoneyMaskedTextController(
-        initialValue: s.priceEthanol,
+        initialValue: d?.priceEthanol ?? 0.0,
         decimalSeparator: ',',
         thousandSeparator: '.',
+        leftSymbol: 'R\$ ',
       );
-      hasConvenienceStore = s.hasConvenientStore;
-      is24Hours = s.is24Hours;
+
+      hasConvenienceStore = d?.hasConvenientStore ?? false;
+      is24Hours = d?.is24Hours ?? false;
     } else {
       nameController = TextEditingController();
       addressController = TextEditingController();
@@ -156,13 +87,13 @@ class _GasEntryScreenState extends State<GasEntryScreen> {
       latitudeController = MoneyMaskedTextController(
         decimalSeparator: '.',
         thousandSeparator: '',
-        precision: coordinatePrecision,
+        precision: coordPrecision,
         leftSymbol: '-',
       );
       longitudeController = MoneyMaskedTextController(
         decimalSeparator: '.',
         thousandSeparator: '',
-        precision: coordinatePrecision,
+        precision: coordPrecision,
         leftSymbol: '-',
       );
       priceGasolineController = MoneyMaskedTextController(
@@ -180,16 +111,45 @@ class _GasEntryScreenState extends State<GasEntryScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    nameController.dispose();
-    addressController.dispose();
-    brandController.dispose();
-    latitudeController.dispose();
-    longitudeController.dispose();
-    priceGasolineController.dispose();
-    priceEthanolController.dispose();
-    super.dispose();
+  Future<void> getCurrentLocation() async {
+    setState(() => isLocationLoading = true);
+
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) throw 'Permissão negada';
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        addressController.text = '${p.thoroughfare}, ${p.subThoroughfare} - ${p.subLocality}';
+      }
+
+      latitudeController.updateValue(position.latitude);
+      longitudeController.updateValue(position.longitude);
+
+      Get.snackbar('Sucesso', 'Localização obtida!', snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      Get.snackbar(
+        'Erro',
+        e.toString(),
+        backgroundColor: Colors.red,
+        snackPosition: SnackPosition.BOTTOM,
+        colorText: Colors.white,
+      );
+    } finally {
+      setState(() => isLocationLoading = false);
+    }
   }
 
   void _submit() {
@@ -197,8 +157,9 @@ class _GasEntryScreenState extends State<GasEntryScreen> {
       formKey.currentState!.save();
 
       final GasStationModel newStation = GasStationModel(
+        id: widget.data?.id,
         nome: nameController.text.trim(),
-        address: addressController.text.trim().isEmpty ? null : addressController.text.trim(),
+        address: addressController.text.trim(),
         brand: brandController.text.trim(),
         latitude: latitudeController.numberValue,
         longitude: longitudeController.numberValue,
@@ -251,7 +212,7 @@ class _GasEntryScreenState extends State<GasEntryScreen> {
             icon: isLocationLoading
                 ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator())
                 : Icon(Icons.location_on, size: 20),
-            onPressed: isLocationLoading ? null : () => getCurrentLocation(context),
+            onPressed: isLocationLoading ? null : () => getCurrentLocation(),
           ),
           IconButton(
             icon: isEditing ? Icon(RemixIcons.edit_line) : Icon(RemixIcons.save_line),
@@ -267,97 +228,40 @@ class _GasEntryScreenState extends State<GasEntryScreen> {
         child: Form(
           key: formKey,
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.gasStationLabelName),
-                  hintText: 'Ex: Posto Amarelo',
-                ),
-                validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
-              ),
+              _buildInput(nameController, "Nome do Posto", RemixIcons.gas_station_line),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: addressController,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.gasStationLabelAddress),
-                  hintText: 'Ex: Av. Principal, 123',
-                ),
-                validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
-              ),
+              _buildInput(brandController, "Bandeira (Ex: Shell)", RemixIcons.flag_line),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: brandController,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.gasStationLabelBrand),
-                  hintText: 'Ex: Ipiranga, Shell',
+              _buildInput(addressController, 'Endereço Completo', RemixIcons.map_pin_line),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(child: _buildInput(priceGasolineController, 'Gasolina', RemixIcons.drop_line)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildInput(priceEthanolController, 'Etanol', RemixIcons.leaf_line)),
+                ],
+              ),
+              const Divider(height: 40),
+              _buildSwitch(RemixIcons.store_2_line, "Loja de Conveniência", hasConvenienceStore, (v) => setState(() => hasConvenienceStore = v)),
+              _buildSwitch(RemixIcons.time_line, "Aberto 24 Horas", is24Hours, (v) => setState(() => is24Hours = v)),
+
+              const SizedBox(height: 20),
+
+              ExpansionTile(
+                title: const Text("Coordenadas Geográficas", style: TextStyle(fontSize: 14)),
+                leading: const Icon(RemixIcons.earth_line),
+                children: [
+                Row(
+                  children: [
+                    Expanded(child: _buildInput(latitudeController, "Latitude", Icons.explore_outlined, isNumeric: true)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildInput(longitudeController, "Longitude", Icons.explore_outlined, isNumeric: true)),
+                  ],
                 ),
-                validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
+                const SizedBox(height: 10),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: latitudeController,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.gasStationLabelLatitude),
-                  hintText: 'Ex: -23.6789',
-                ),
-                validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: longitudeController,
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.gasStationLabelLongitude),
-                  hintText: 'Ex: -46.12345',
-                ),
-                validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: priceGasolineController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.gasStationLabelPriceGasoline),
-                  hintText: 'Ex: R\$ 5,99',
-                ),
-                validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: priceEthanolController,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: context.tr(TranslationKeys.gasStationLabelPriceEthanol),
-                  hintText: 'Ex: R\$ 3,99',
-                ),
-                validator: (value) => value!.isEmpty ? context.tr('Campo obrigatório') : null,
-              ),
-              const SizedBox(height: 10),
-              _buildSwitchTile(
-                context: context,
-                icon: RemixIcons.store_2_fill,
-                label: context.tr(TranslationKeys.gasStationLabelConvenienceStore),
-                value: hasConvenienceStore,
-                onChanged: (newValue) {
-                  setState(() {
-                    hasConvenienceStore = newValue;
-                  });
-                },
-              ),
-              const SizedBox(height: 10),
-              _buildSwitchTile(
-                context: context,
-                icon: RemixIcons.time_fill,
-                label: context.tr(TranslationKeys.gasStationLabel24Hours),
-                value: is24Hours,
-                onChanged: (newValue) {
-                  setState(() {
-                    is24Hours = newValue;
-                  });
-                },
-              ),
-              // const SizedBox(height: 10),
             ],
           ),
         ),
@@ -365,47 +269,43 @@ class _GasEntryScreenState extends State<GasEntryScreen> {
     );
   }
 
-  Widget _buildSwitchTile({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: value ? AppTheme.primaryFuelColor : Theme.of(context).colorScheme.onSurface,
-              size: 28,
-            ),
-            const SizedBox(width: 16),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  // fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: value
-                      ? AppTheme.primaryFuelColor
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ],
-        ),
-        Switch(
-          value: value,
-          onChanged: onChanged,
-          activeColor: value ? AppTheme.primaryFuelColor : Theme.of(context).colorScheme.onSurface,
-        ),
-      ],
+  Widget _buildSwitch(IconData icon, String label, bool value, ValueChanged<bool> onChanged){
+    return SwitchListTile(
+      secondary: Icon(icon, color: value ? AppTheme.primaryFuelColor : null),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+      value: value,
+      onChanged: onChanged,
+      activeColor: AppTheme.primaryFuelColor,
     );
+  }
+
+  Widget _buildInput(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    bool isNumeric = false,
+  }) {
+    return TextFormField(
+      controller: ctrl,
+      keyboardType: isNumeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      validator: (value) => value!.isEmpty ? "Obrigatório" : null,
+    );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    addressController.dispose();
+    brandController.dispose();
+    latitudeController.dispose();
+    longitudeController.dispose();
+    priceGasolineController.dispose();
+    priceEthanolController.dispose();
+    super.dispose();
   }
 }

@@ -9,6 +9,7 @@ import 'package:fuel_tracker_app/screens/gas_station_management_screen.dart';
 import 'package:fuel_tracker_app/screens/language_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/notificationReminders_settings_screen.dart';
 import 'package:fuel_tracker_app/screens/unit_settings_screen.dart';
+import 'package:fuel_tracker_app/screens/vehicle_entry_screen.dart';
 import 'package:fuel_tracker_app/screens/vehicle_management_screen.dart';
 import 'package:fuel_tracker_app/services/export_service.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
@@ -78,8 +79,8 @@ class ToolsScreen extends GetView<FuelListController> {
               ),
               _buildToolCard(
                 context,
-                title: context.tr(TranslationKeys.vehiclesScreenTitle),
-                description: context.tr(TranslationKeys.vehiclesScreenDescription),
+                title: context.tr(TranslationKeys_5.vehiclesScreenTitle),
+                description: context.tr(TranslationKeys_5.vehiclesScreenDescription),
                 icon: Icons.directions_car_filled,
                 onTap: () => Get.to(() => VehicleManagementScreen()),
               ),

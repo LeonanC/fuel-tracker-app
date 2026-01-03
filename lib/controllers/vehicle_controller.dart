@@ -35,11 +35,6 @@ class VehicleController extends GetxController {
       vehicles.assignAll(loadedVehicles);
     } catch (e) {
       print('Erro ao carregar veículos do banco de dados: $e');
-      // Get.snackbar(
-      //   'Erro',
-      //   'Não foi possível carregar os veículos.',
-      //   snackPosition: SnackPosition.BOTTOM,
-      // );
     }
   }
 
@@ -70,8 +65,13 @@ class VehicleController extends GetxController {
     }
   }
 
-  Future<void> saveVehicle(VehicleModel newVehicle) async {
-    await _db.insertVehicles(newVehicle);
+  Future<void> saveVehicle(Map<String, dynamic> data) async {
+    final db = await _db.getDb();
+    if(data['pk_vehicle'] == null){
+      await db.insert('vehicles', data);
+    }else{
+      await db.update('vehicles', data, where: 'pk_vehicle = ?', whereArgs: [data['pk_vehicle']]);
+    }
     await loadVehicles();
   }
 

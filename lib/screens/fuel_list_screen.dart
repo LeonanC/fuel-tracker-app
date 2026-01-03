@@ -73,6 +73,7 @@ class FuelListScreen extends GetView<FuelListController> {
         final filteredEntries = controller.filteredEntries;
         final lastEntry = filteredEntries.isNotEmpty ? filteredEntries.last : null;
         final bool isLastTankFull = lastEntry?.tankFull == 1;
+        final double fuelLevel = lastEntry?.vehicleTank ?? 0.0;
         final String vehicleName = lastEntry?.vehicleName ?? "";
 
         return Column(
@@ -94,7 +95,7 @@ class FuelListScreen extends GetView<FuelListController> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
-                          isLastTankFull ? "100%" : "Parcial",
+                          "$fuelLevel",
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: isLastTankFull ? Colors.green : Colors.orange,
                             fontWeight: FontWeight.bold,
@@ -106,7 +107,7 @@ class FuelListScreen extends GetView<FuelListController> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: LinearProgressIndicator(
-                        value: isLastTankFull ? 1.0 : 0.4,
+                        value: fuelLevel,
                         minHeight: 10,
                         backgroundColor: theme.colorScheme.surfaceVariant,
                         valueColor: AlwaysStoppedAnimation<Color>(
@@ -208,7 +209,7 @@ class FuelCard extends StatelessWidget {
         ? entry.odometerKm * controller.kmToMileFactor
         : entry.odometerKm.toDouble();
 
-    double fuelLevel = entry.tankFull == 1 ? 1.0 : 0.5;
+    
 
     return Dismissible(
       key: ValueKey(entry.id),
@@ -244,21 +245,10 @@ class FuelCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        entry.vehicleName ?? "---",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ),
+                    if(entry.vehiclePlate != true)
+                      _buildNewMiniPlate(entry.vehiclePlate!)
+                    else
+                      _buildMiniPlate(entry.vehiclePlate!, entry.vehicleCity!),
                   ],
                 ),
                 const Divider(height: 16),
@@ -273,7 +263,7 @@ class FuelCard extends StatelessWidget {
                         style: theme.textTheme.bodyMedium,
                       ),
                       const Spacer(),
-                      _buildBadge(entry.fuelTypeName ?? "Conbustível", theme),
+                      _buildBadge(entry.fuelTypeName ?? "Combustível", theme),
                     ],
                   ),
                 ),
@@ -344,6 +334,119 @@ class FuelCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNewMiniPlate(String plateText) {
+    return Container(
+      width: 80,
+      height: 30,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.black, width: 1.5),
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 2))],
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Colors.blue,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(2),
+                topRight: Radius.circular(2),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                plateText,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                  fontFamily: 'Monospace',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniPlate(String plateText, String city) {
+    return Container(
+      width: 80,
+      height: 35,
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+      decoration: BoxDecoration(
+        color: Color(0xFFB0B0B0),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Color(0xFF9EA7A7), width: 2),
+        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 1, offset: Offset(0, 1))],
+      ),
+      child: Column(
+        children: [
+          Container(
+            height: 8,
+            margin: const EdgeInsets.only(bottom: 2),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFF8A9393), width: 0.5)),
+              borderRadius: BorderRadius.circular(1),
+            ),
+            child: Row(
+              children: [
+                _buildParafuso(),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      city.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                _buildParafuso(),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  plateText.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParafuso(){
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+      width: 1.5,
+      height: 1.5,
+      decoration: const BoxDecoration(
+        color: Colors.black45,
+        shape: BoxShape.circle,
       ),
     );
   }

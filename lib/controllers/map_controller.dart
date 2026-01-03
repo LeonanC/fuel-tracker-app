@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
 import 'package:fuel_tracker_app/controllers/maintenance_controller.dart';
+import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/models/route_step_model.dart';
 import 'package:fuel_tracker_app/services/voice_navigation_service.dart';
@@ -21,417 +22,190 @@ import 'package:remixicon/remixicon.dart';
 const LatLng defaultCenter = LatLng(-23.55052, -46.63330);
 
 class MapNavigationController extends GetxController {
-  final GasStationController gasStationController = Get.find<GasStationController>();
-  final MaintenanceController maintenanceController = Get.find<MaintenanceController>();
-  final VoiceNavigationService voiceService = VoiceNavigationService();
-
-  final Rx<LatLng?> currentLocation = Rx<LatLng?>(null);
-  final RxBool isLoading = true.obs;
-  final RxBool isRouting = false.obs;
-  final RxBool isNavigationMode = false.obs;
-
+  final FuelDb _db = FuelDb();
   final MapController mapController = MapController();
 
-  final Rx<LatLng?> destinationPoint = Rx<LatLng?>(null);
-  final Rx<GasStationModel?> currentDestinationStation = Rx<GasStationModel?>(null);
+  var currentLocation = Rxn<LatLng>();
+  var currentHeading = 0.0.obs;
+  var isLoading = true.obs;
 
-  final RxDouble routeDistanceMeters = 0.0.obs;
-  final RxDouble routeDurationSeconds = 0.0.obs;
-  final RxDouble currentHeading = 0.0.obs;
+  var destinationPoint = Rxn<LatLng>();
+  var routePoints = <LatLng>[].obs;
+  var isRouting = false.obs;
+  var isNavigationMode = false.obs;
 
-  final RxList<Marker> stationMarkers = <Marker>[].obs;
-  final RxList<LatLng> routePoints = <LatLng>[].obs;
-  final RxList<RouteStep> routeSteps = <RouteStep>[].obs;
-  final RxInt nextManeuverIndex = 0.obs;
+  var currentDestinationStation = Rxn<GasStationModel>();
+  var routeDistanceMeters = 0.0.obs;
+  var routeDurationSeconds = 0.0.obs;
 
-  final double offRouteToleranceMeters = 75.0;
-  final double maneuverToleranceMeters = 30.0;
+  var stationMarkers = <Marker>[].obs;
 
-  StreamSubscription<Position>? _positionStreamSubscription;
-  Worker? _stationsListener;
+  StreamSubscription<Position>? _positionStream;
 
   @override
   void onInit() {
     super.onInit();
-    _initializeVoiceService();
     determinePositionAndLoadMap();
-    _setupControllerListeners();
-  }
-
-  void _setupControllerListeners() {
-    _stationsListener = ever(gasStationController.stations, (List<GasStationModel> stations) {
-      _updateStationMarkers(stations);
-    });
-  }
-
-  void _updateStationMarkers(List<GasStationModel> stations) {
-    final List<Marker> newMarkers = stations
-        .map(
-          (station) =>
-              _createGasStationMarker(LatLng(station.latitude, station.longitude), station),
-        )
-        .toList();
-
-    stationMarkers.value = newMarkers;
-  }
-
-  Marker _createGasStationMarker(LatLng point, GasStationModel station) {
-    final isDestination =
-        destinationPoint.value == point && currentDestinationStation.value?.nome == station.nome;
-
-    final iconColor = isDestination
-        ? Colors.red.shade700
-        : AppTheme.primaryFuelColor.withOpacity(0.8);
-
-    final iconSize = isDestination ? 45.0 : 35.0;
-
-    return Marker(
-      point: point,
-      width: 100,
-      height: 100,
-      child: GestureDetector(
-        onTap: () {
-          if (currentLocation.value != null) {
-            if (isDestination) {
-              clearNavigation();
-            } else {
-              calculateRoute(currentLocation.value!, point, station);
-              Get.snackbar('Rota', 'Calculando rota para ${station.nome}...');
-            }
-          } else {
-            Get.snackbar('Erro', 'Localização indisponível. Recalcule sua posição.');
-          }
-        },
-        child: Column(
-          children: [
-            Icon(RemixIcons.gas_station_fill, color: iconColor, size: iconSize),
-            Flexible(
-              child: Text(
-                station.nome.split(' ').first,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isDestination ? Colors.red.shade700 : AppTheme.primaryFuelColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _initializeVoiceService() async {
-    try {
-      await voiceService.init();
-    } catch (e) {
-      Get.snackbar('Erro', 'Erro ao iniciar serviço de voz: $e');
-    }
-  }
-
-  Future<void> determinePositionAndLoadMap() async {
-    isLoading.value = true;
-
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      currentLocation.value = defaultCenter;
-      isLoading.value = false;
-      Get.snackbar('Atenção', Get.context!.tr(TranslationKeys.mapLocationServiceDisabled));
-      await loadStationsFromDB();
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        currentLocation.value = defaultCenter;
-        isLoading.value = false;
-        Get.snackbar('Atenção', Get.context!.tr(TranslationKeys.mapPermissionDenied));
-        await loadStationsFromDB();
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      currentLocation.value = defaultCenter;
-      isLoading.value = false;
-      Get.snackbar('Atenção', Get.context!.tr(TranslationKeys.mapPermissionDeniedForever));
-      await loadStationsFromDB();
-      return;
-    }
-
-    final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    final newLocation = LatLng(position.latitude, position.longitude);
-    currentLocation.value = newLocation;
-    isLoading.value = false;
-    routePoints.clear();
-
-    _moveMapToCurrentLocation(newLocation);
-    await loadStationsFromDB();
     _startLocationTracking();
   }
 
-  void _moveMapToCurrentLocation(LatLng newLocation) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // mapController.move(newLocation, 15.0);
-      // mapController.rotate(0);
-    });
+  @override
+  void onClose() {
+    _positionStream?.cancel();
+    super.onClose();
+  }
+
+  Future<void> determinePositionAndLoadMap() async {
+    try {
+      isLoading.value = true;
+      Position position = await Geolocator.getCurrentPosition();
+      currentLocation.value = LatLng(position.latitude, position.longitude);
+
+      mapController.move(currentLocation.value!, 15.0);
+
+      await loadStationsFromDB();
+    } catch (e) {
+      Get.snackbar("Erro", "Não foi possível obter sua localização.");
+    } finally {
+      isLoading.value = false;
+    }
   }
 
   void _startLocationTracking() {
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
-      distanceFilter: 10,
-    );
+    const locationSettings = LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5);
 
-    _positionStreamSubscription = Geolocator.getPositionStream(locationSettings: locationSettings)
-        .listen((Position position) {
-          final newLocation = LatLng(position.latitude, position.longitude);
-          currentLocation.value = newLocation;
-          currentHeading.value = position.heading;
+    _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen((
+      Position position,
+    ) {
+      currentLocation.value = LatLng(position.latitude, position.longitude);
+      currentHeading.value = position.heading;
 
-          if (destinationPoint.value != null) {
-            _checkManeuverProgress(newLocation);
-            _checkIfOffRoute(newLocation);
-
-            if (isNavigationMode.value) {
-              _moveMapToNavigationMode(newLocation, currentHeading.value);
-            }
-          }
-        });
-  }
-
-  void _moveMapToNavigationMode(LatLng newLocation, double heading) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      const double navigationZoom = 17.0;
-
-      mapController.moveAndRotate(newLocation, navigationZoom, -heading);
+      if (isNavigationMode.value) {
+        mapController.move(currentLocation.value!, mapController.camera.zoom);
+        mapController.rotate(360 - position.heading);
+      }
     });
   }
 
-  void toggleNavigationMode() {
-    isNavigationMode.toggle();
-
-    if (isNavigationMode.value && currentLocation.value != null) {
-      _moveMapToNavigationMode(currentLocation.value!, currentHeading.value);
-      Get.snackbar('Sucesso', 'Modo Navegação ATIVADO');
-    } else {
-      _moveMapToCurrentLocation(currentLocation.value ?? defaultCenter);
-      Get.snackbar('Erro', 'Modo Navegação DESATIVADO');
-    }
-  }
-
-  void clearNavigation() {
-    routePoints.clear();
-    destinationPoint.value = null;
-    currentDestinationStation.value = null;
-    isNavigationMode.value = false;
-    routeSteps.clear();
-    nextManeuverIndex.value = 0;
-
-    if (currentLocation.value != null) {
-      _moveMapToCurrentLocation(currentLocation.value!);
-    }
-    Get.snackbar('Erro', 'Navegação cancelada.');
-  }
-
-  String formatDistance(double meters) {
-    final km = meters / 1000.0;
-    return '${km.toStringAsFixed(1)} km';
-  }
-
-  String formatDuration(double seconds) {
-    final minutes = (seconds / 60).round();
-    if (minutes < 60) {
-      return '$minutes min';
-    } else {
-      final hours = (minutes / 60).floor();
-      final remainingMinutes = minutes % 60;
-      return '${hours}h ${remainingMinutes}min';
-    }
-  }
-
-  String calculateETA(double durationSeconds) {
-    if (durationSeconds <= 0) return 'Calculando...';
-    final etaTime = DateTime.now().add(Duration(seconds: durationSeconds.round()));
-    final hour = etaTime.hour.toString().padLeft(2, '0');
-    final minute = etaTime.minute.toString().padLeft(2, '0');
-
-    return '$hour:$minute';
-  }
-
   Future<void> loadStationsFromDB({String? query}) async {
-    if (query != null && query.isNotEmpty) {
-      await gasStationController.searchStations(query);
-    } else {
-      await gasStationController.loadStations();
-    }
+    List<GasStationModel> stations = await _db.getStations(query: query);
+    stationMarkers.value = stations.map((station) {
+      return Marker(
+        point: LatLng(station.latitude, station.longitude),
+        width: 50,
+        height: 50,
+        child: GestureDetector(
+          onTap: () => _setupNavigation(station),
+          child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+        ),
+      );
+    }).toList();
   }
 
-  static Map<String, dynamic> _parseRouteData(String responseBody) {
-    return json.decode(responseBody);
+  Future<void> _setupNavigation(GasStationModel station) async {
+    currentDestinationStation.value = station;
+    destinationPoint.value = LatLng(station.latitude, station.longitude);
+    await fetchRoute();
+    _fitBounds();
   }
 
-  Future<void> calculateRoute(LatLng start, LatLng end, GasStationModel station) async {
-    if (isRouting.isTrue) return;
-
-    isRouting.value = true;
-    routePoints.clear();
-    routeSteps.clear();
-    nextManeuverIndex.value = 0;
-
-    final url =
-        'https://router.project-osrm.org/route/v1/driving/'
-        '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
-        '?overview=full&geometries=geojson&steps=true';
+  Future<void> fetchRoute() async {
+    if (currentLocation.value == null || destinationPoint.value == null) return;
 
     try {
+      isRouting.value = true;
+      final start = currentLocation.value!;
+      final end = destinationPoint.value!;
+
+      final url =
+          'https://router.project-osrm.org/route/v1/driving/'
+          '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
+          '?overview=full&geometries=polyline&steps=true';
+
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        final data = await compute(_parseRouteData, response.body);
+        final data = await json.decode(response.body);
+        final route = data['routes'][0];
 
-        if (data['code'] == 'Ok' && data['routes'] != null) {
-          final route = data['routes'][0];
-          final geometry = route['geometry'];
-          final List<dynamic> coordinates = geometry['coordinates'];
+        routeDistanceMeters.value = route['distance'].toDouble();
+        routeDurationSeconds.value = route['duration'].toDouble();
 
-          final double distanceMeters = route['distance']?.toDouble() ?? 0.0;
-          final double durationSeconds = route['duration']?.toDouble() ?? 0.0;
+        
 
-          final List<LatLng> points = coordinates.map<LatLng>((coord) {
-            return LatLng(coord[1].toDouble(), coord[0].toDouble());
-          }).toList();
+        routePoints.value = _decodePolyline(route['geomatry']);
 
-          final List<RouteStep> steps = [];
-          final List<dynamic> legs = route['legs'] ?? [];
-          if (legs.isNotEmpty) {
-            for (final stepData in legs.first['steps'] ?? []) {
-              final String instruction =
-                  stepData['maneuver']['instruction'] ?? 'Continue em frente';
-              final double distance = stepData['distance']?.toDouble() ?? 0.0;
-              final List<dynamic> locationCoords = stepData['maneuver']['location'] ?? [0.0, 0.0];
-              final LatLng location = LatLng(
-                locationCoords[1].toDouble(),
-                locationCoords[0].toDouble(),
-              );
-
-              steps.add(RouteStep(instruction, location, distance));
-            }
-          }
-
-          routePoints.assignAll(points);
-          destinationPoint.value = end;
-          currentDestinationStation.value = station;
-          routeDistanceMeters.value = distanceMeters;
-          routeDurationSeconds.value = durationSeconds;
-          routeSteps.assignAll(steps);
-          nextManeuverIndex.value = 0;
-          isNavigationMode.value = true;
-
-          _updateStationMarkers(gasStationController.stations.toList());
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            mapController.fitCamera(
-              CameraFit.bounds(
-                bounds: LatLngBounds.fromPoints(points),
-                padding: const EdgeInsets.all(50),
-              ),
-            );
-          });
-
-          final destinationName = currentDestinationStation.value?.nome ?? 'seu destino';
-          voiceService.speak('Início da rota. Navegação para $destinationName');
-          await Future.delayed(const Duration(milliseconds: 1500));
-
-          if (routeSteps.isNotEmpty) {
-            nextManeuverIndex.value = 0;
-            if (routeSteps.length > 1 && routeSteps.first.distanceToNext < 50.0) {
-              nextManeuverIndex.value = 1;
-            }
-            _speakNextInstruction();
-          }
-        } else {
-          Get.snackbar('Erro', 'Erro ao calcular a rota: ${data['message']}');
-        }
-      } else {
-        Get.snackbar('Erro', 'Erro de comunicação com o serviço de roteamento.');
+        print(routePoints.value);
       }
     } catch (e) {
-      if (kDebugMode) {
-        Get.snackbar('Erro', 'Falha na requisição de rota: $e');
-      }
+      Get.snackbar('Erro de Rota', 'Não foi possível calcular o caminho.');
     } finally {
       isRouting.value = false;
     }
   }
 
-  void _checkManeuverProgress(LatLng userLocation) {
-    if (routeSteps.isEmpty || nextManeuverIndex.value >= routeSteps.length) {
-      if (destinationPoint.value != null) {
-        final Distance distance = const Distance();
-        final distToDest = distance.distance(userLocation, destinationPoint.value!);
-        if (distToDest <= maneuverToleranceMeters * 2) {
-          voiceService.speak('Você chegou ao seu destino.');
-          clearNavigation();
-        }
-      }
-      return;
+  List<LatLng> _decodePolyline(String encoded) {
+    List<LatLng> points = [];
+    int index = 0, len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+      points.add(LatLng(lat / 1E5, lng / 1E5));
     }
+    return points;
+  }
 
-    final nextStep = routeSteps[nextManeuverIndex.value];
-    final Distance distance = const Distance();
+  void toggleNavigationMode() {
+    isNavigationMode.value = !isNavigationMode.value;
 
-    final distToManeuver = distance.distance(userLocation, nextStep.location);
-
-    if (distToManeuver <= maneuverToleranceMeters) {
-      nextManeuverIndex.value++;
-      _speakNextInstruction();
+    if (isNavigationMode.value) {
+      mapController.move(currentLocation.value!, 18.0);
+      ;
+    } else {
+      mapController.rotate(0);
     }
   }
 
-  void _speakNextInstruction() {
-    if (nextManeuverIndex.value < routeSteps.length) {
-      final nextStep = routeSteps[nextManeuverIndex.value];
-      final distanceStr = formatDistance(
-        nextStep.distanceToNext,
-      ).replaceAll(' km', 'metros').replaceAll('.0', '');
-      final instruction = 'Em $distanceStr, ${nextStep.instruction}';
-      voiceService.speak(instruction);
-    } else if (nextManeuverIndex.value == routeSteps.length) {
-      voiceService.speak('Você chegou ao seu destino.');
-    }
+  void clearNavigation() {
+    destinationPoint.value = null;
+    routePoints.clear();
+    currentDestinationStation.value = null;
+    isNavigationMode.value = false;
   }
 
-  void _checkIfOffRoute(LatLng userLocation) {
-    if (destinationPoint.value == null || routePoints.isEmpty || isRouting.isTrue) {
-      return;
-    }
-
-    double closestDistance = double.infinity;
-    final Distance distance = const Distance();
-
-    for (final point in routePoints) {
-      final distInMeters = distance.distance(userLocation, point);
-      closestDistance = math.min(closestDistance, distInMeters);
-    }
-
-    if (closestDistance < offRouteToleranceMeters) {
-      Get.snackbar('Atenção', 'Desvio de rota detectado. Recalculando...');
-      voiceService.speak('Recalculando rota.');
-      calculateRoute(userLocation, destinationPoint.value!, currentDestinationStation.value!);
-    }
+  void _fitBounds() {
+    if (routePoints.isEmpty) return;
+    final bounds = LatLngBounds.fromPoints(routePoints);
+    mapController.fitCamera(CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)));
   }
 
-  @override
-  void onClose() {
-    _positionStreamSubscription?.cancel();
-    _stationsListener?.dispose();
-    voiceService.dispose();
-    super.onClose();
+  String formatDistance(double meters) {
+    if (meters < 1000) return "${meters.toStringAsFixed(0)} m";
+    return '${(meters / 1000).toStringAsFixed(1)} km';
+  }
+
+  String calculateETA(double seconds) {
+    final minutes = (seconds / 60).ceil();
+    if (minutes < 60) return '$minutes min';
+    final hours = minutes ~/ 60;
+    final remainingMinutes = minutes % 60;
+
+    return '${hours}h ${remainingMinutes}m';
   }
 }

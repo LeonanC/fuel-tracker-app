@@ -14,7 +14,6 @@ import 'package:fuel_tracker_app/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/repository/fuel_repository.dart';
 import 'package:fuel_tracker_app/screens/fuel_entry_screen.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
-import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:fuel_tracker_app/utils/unit_nums.dart';
 import 'package:get/get.dart';
 
@@ -25,12 +24,6 @@ class FuelListController extends GetxController {
   var gasStationEntries = <GasStationModel>[].obs;
 
   final FuelDb _db = FuelDb();
-  final FuelRepository _repository = FuelRepository();
-
-  final int vehicleId = 0;
-  String fuelTypeName = '';
-  String vehicleName = '';
-  String stationName = '';
 
   static const double _alertThresholdKm = 100.0;
   static const double _kmToMileFactor = 0.621371;
@@ -41,58 +34,47 @@ class FuelListController extends GetxController {
   final CurrencyController currencyController = Get.find<CurrencyController>();
   final LanguageController languageController = Get.find<LanguageController>();
 
-  final _isLoading = false.obs;
-  final _errorMessage = ''.obs;
-  final _sucessoMessage = ''.obs;
+  final isLoading = false.obs;
+  final errorMessage = ''.obs;
+  final sucessoMessage = ''.obs;
 
-  var errorMessage = ''.obs;
-  var isLoading = false.obs;
+  
   var lastOdometer = Rxn<double>();
   var overallConsumption = 0.0.obs;
-  var periodConsumptions = <double>[].obs;
-  var updateAvailable = Rxn<AppUpdate>();
+  
   var selectedVehicleFilter = Rxn<String>();
   var selectedFuelTypeFilter = Rxn<String>();
   var selectedStationFilter = Rxn<String>();
-  var vehicleTypeMap = <String, String>{}.obs;
-  var fuelTypeMap = <String, String>{}.obs;
 
-  void navigateToAddEntry(BuildContext context, {FuelEntryModel? data}) async {
-    final currentOdometer = lastOdometer.value;
-    final entry = await Get.to(() => FuelEntryScreen(lastOdometer: currentOdometer, entry: data));
-    if (entry != null) {
-      await saveFuel(entry);
-    }
-  }
-
-  @override
+   @override
   void onInit() {
-    loadFuel();
-    loadTypeFuel();
-    loadVehicle();
-    loadStation();
+    refreshAllData();
     super.onInit();
   }
 
-  void _setLoading(bool loading) {
-    _isLoading.value = loading;
+  Future<void> refreshAllData() async {
+    isLoading.value = true;
+    await Future.wait([
+      loadFuel(),
+      loadTypeFuel(),
+      loadVehicle(),
+      loadStation(),
+    ]);
+    isLoading.value = false;
   }
 
-  void _setError(String error) {
-    _errorMessage.value = error;
+  VehicleModel? get selectedVehicleData {
+    if(selectedVehicleFilter.value == null) return null;
+    return vehicleEntries.firstWhereOrNull(
+      (v) => v.nickname == selectedVehicleFilter.value,
+    );
   }
-
-  void _setSucesso(String sucesso) {
-    _sucessoMessage.value = sucesso;
-  }
-
+  
   Future<void> loadFuel() async {
     try {
-      _setLoading(true);
-      _setError('');
-
+      errorMessage.value = '';
       final List<FuelEntryModel> entries = await _db.getFuel();
-     final double odometerValue = await _db.getLastOdometer();
+      final double odometerValue = await _db.getLastOdometer();
 
       entries.sort((a, b) => b.entryDate.compareTo(a.entryDate));
       fuelEntries.assignAll(entries);
@@ -102,76 +84,29 @@ class FuelListController extends GetxController {
       );
 
       overallConsumption.value = consumptionData['overall'] as double;
-
       lastOdometer.value = odometerValue;
     } catch (e) {
-      _setError('Não foi possível carregar os dados. Verifique sua conexão.');
-
-      Get.snackbar(
-        'Erro de Carregamento',
-        errorMessage.value,
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.8),
-        colorText: Colors.white,
-      );
-    } finally {
-      _setLoading(false);
+      errorMessage.value = 'Não foi possível carregar os dados. Verifique sua conexão.';
     }
   }
 
-  Future<void> loadTypeFuel() async {
-    final List<TypeGasModel> data = await _db.getGas();
-    fuelTypeEntries.assignAll(data);
-  }
-
-  Future<void> loadVehicle() async {
-    final List<VehicleModel> data = await _db.getVehicles();
-    vehicleEntries.assignAll(data);
-  }
-
-  Future<void> loadStation() async {
-    final List<GasStationModel> data = await _db.getStation();
-    gasStationEntries.assignAll(data);
-  }
+  Future<void> loadTypeFuel() async =>  fuelTypeEntries.assignAll(await _db.getGas());
+  Future<void> loadVehicle() async => vehicleEntries.assignAll(await _db.getVehicles());
+  Future<void> loadStation() async => gasStationEntries.assignAll(await _db.getStation());
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
     final db = await _db.getDb();
     if(data['pk_fuel'] == null){
       await db.insert('fuel_entries', data);  
-      await loadFuel();    
     }else{
-      await db.update(
-        'fuel_entries', 
-        data,
-        where: 'pk_fuel = ?',
-        whereArgs: [data['pk_fuel']]
-      );
-      await loadFuel();
+      await db.update('fuel_entries', data, where: 'pk_fuel = ?', whereArgs: [data['pk_fuel']]);
     }
+    await loadFuel();
   }
 
   Future<void> deleteEntry(int id) async {
     await _db.deleteFuelEntrie(id);
     await loadFuel();
-  }
-
-  Future<String> backupEntries() async {
-    if (fuelEntries.isEmpty) {
-      await loadFuel();
-    }
-    if (fuelEntries.isEmpty) {
-      return 'Nenhum registro para backup.';
-    }
-
-    final StringBuffer sb = StringBuffer(
-      'Data,Hodometro,Litros,PrecoPorLitro,PrecoTotal,Posto,TipoCombustivel,TanqueCheio\n',
-    );
-
-    return sb.toString();
-  }
-
-  String tr(String key, {Map<String, String>? parameters}) {
-    return languageController.translate(key, parameters: parameters);
   }
 
   List<FuelEntryModel> get filteredEntries {
@@ -198,176 +133,112 @@ class FuelListController extends GetxController {
     selectedStationFilter.value = station;
   }
 
-  double get filteredOverallConsumption {
-    final Map<String, dynamic> result = calculateOverallAverageConsumption(
-      entries: filteredEntries,
-    );
-    return result['overall'] ?? 0.0;
-  }
-
-  double get overallTotalDistance {
-    final entries = fuelEntries;
-    if (entries.length < 2) return 0.0;
-
-    final double latestKm = entries.first.odometerKm;
-    final double oldestKm = entries.last.odometerKm;
-
-    return latestKm > oldestKm ? latestKm - oldestKm : 0.0;
-  }
-
-  double get overallTotalCost {
-    double totalCost = 0.0;
-    for (final entry in fuelEntries) {
-      totalCost += entry.totalCost;
-    }
-    return totalCost;
-  }
-
-  double get overallCostPerDistance {
-    final totalDistanceKm = overallTotalDistance;
-    if (totalDistanceKm <= 0) return 0.0;
-    return overallTotalCost / totalDistanceKm;
-  }
-
-  String formatConsumption(double kmPerLiterValue) {
-    final ConsumptionUnit unit = unitController.consumptionUnit.value;
-    double formattedValue;
-
-    switch (unit) {
-      case ConsumptionUnit.kmPerLiter:
-        formattedValue = kmPerLiterValue;
-        break;
-      case ConsumptionUnit.litersPer100km:
-        formattedValue = kmPerLiterValue > 0 ? (100 / kmPerLiterValue) : 0;
-        break;
-      case ConsumptionUnit.milesPerGallon:
-        formattedValue = kmPerLiterValue * _kmPerLiterToMPGFactor;
-        break;
-      default:
-        formattedValue = kmPerLiterValue;
-    }
-    return formattedValue.toStringAsFixed(2);
-  }
-
-  String getConsumptionUnitString() {
-    final ConsumptionUnit unit = unitController.consumptionUnit.value;
-    String key;
-
-    switch (unit) {
-      case ConsumptionUnit.kmPerLiter:
-        key = TranslationKeys.unitSettingsScreenKmPerLiter;
-        break;
-      case ConsumptionUnit.litersPer100km:
-        key = TranslationKeys.unitSettingsScreenLitersPer100km;
-        break;
-      case ConsumptionUnit.milesPerGallon:
-        key = TranslationKeys.unitSettingsScreenMpg;
-        break;
-    }
-
-    return tr(key).replaceAll(RegExp(r'\(.*\)'), '').trim();
-  }
-
-  String getDistanceUnitString() {
-    final bool isMiles = unitController.distanceUnit.value == DistanceUnit.miles;
-    final String key = isMiles
-        ? TranslationKeys.unitSettingsScreenMiles
-        : TranslationKeys.unitSettingsScreenKilometers;
-    return tr(key).replaceAll(RegExp(r'\(.*\)'), '');
-  }
-
-  double get kmToMileFactor => _kmToMileFactor;
-
   Map<String, String>? get fuelAlertData {
     final entries = filteredEntries;
 
-    if (entries.length < 2 || overallConsumption <= 0) {
+    final double tankSize = selectedVehicleData?.tankCapacity ?? (vehicleEntries.isNotEmpty ? vehicleEntries.first.tankCapacity : 0.0);
+
+    if (entries.length < 2 || overallConsumption <= 0 || tankSize <= 0) {
       return null;
     }
 
     final lastEntry = entries.first;
     final previousEntry = entries[1];
 
-    final double estimatedTankSize = 44.0;
+    final distanceSinceLastFill = lastEntry.odometerKm - previousEntry.odometerKm;
+    final double avgConsump = overallConsumption.value;
 
-    final distanceSinceLastFill =
-        (lastEntry.odometerKm).toDouble() - (previousEntry.odometerKm).toDouble();
-    final double overallConsumptionValue = overallConsumption.value;
-
-    final double totalEstimatedRange = estimatedTankSize * overallConsumptionValue;
+    final double totalEstimatedRange = tankSize * avgConsump;
     final double estimatedRange = totalEstimatedRange - distanceSinceLastFill;
 
     if (estimatedRange < _alertThresholdKm) {
       final bool isMiles = unitController.distanceUnit.value == DistanceUnit.miles;
       final double rangeToDisplay = isMiles ? (estimatedRange * _kmToMileFactor) : estimatedRange;
+
+      final String distUnit = getDistanceUnitString();
+      final String consUnit = getConsumptionUnitString();
       final String displayRange = rangeToDisplay.toStringAsFixed(0);
 
-      final String distanceUnitStr = getDistanceUnitString();
-
-      final double litersFilled = (lastEntry.volumeLiters).toDouble();
-      final double trajetConsumptionKmPerLiter = (litersFilled > 0 && distanceSinceLastFill >= 0)
-          ? distanceSinceLastFill / litersFilled
-          : 0.0;
-
-      final String displayTrajetConsumption = formatConsumption(trajetConsumptionKmPerLiter);
-      final String consumptionUnitStr = getConsumptionUnitString();
-
-      final versionLabel1 = tr(TranslationKeys.alertsThresholdMsg1);
-      final versionLabel2 = tr(TranslationKeys.alertsThresholdMsg2);
-      final alertText0 = '$displayRange $distanceUnitStr';
-      final alertText1 = '$displayTrajetConsumption $consumptionUnitStr';
+      final double trajetConsump = distanceSinceLastFill / lastEntry.volumeLiters;
 
       return {
-        'alertText': '$versionLabel1 $alertText0 $versionLabel2 $alertText1',
+        'alertText': 'Autonomia restante: $displayRange $distUnit Consumo no trajeto: ${formatConsumption(trajetConsump)} $consUnit',
         'displayRange': displayRange,
-        'distanceUnit': distanceUnitStr,
-        'consumptionValue': displayTrajetConsumption,
-        'consumptionUnit': consumptionUnitStr,
+        'distanceUnit': distUnit,
+        'consumptionValue': formatConsumption(trajetConsump),
+        'consumptionUnit': consUnit,
       };
     }
     return null;
   }
 
   Map<String, dynamic> calculateOverallAverageConsumption({required List<FuelEntryModel> entries}) {
-    if (fuelEntries.length < 2) {
-      return {'overall': 0.0, 'periods': <double>[]};
-    }
+    if (entries.length < 2) return {'overall': 0.0, 'periods': <double>[]};
 
     double totalDistance = 0.0;
     double totalLiters = 0.0;
-    List<double> periodConsumptions = [];
+    List<double> periods = [];
 
-    final List<FuelEntryModel> sortedEntries = List<FuelEntryModel>.from(fuelEntries);
-    sortedEntries.sort((a, b) {
-      return a.odometerKm.compareTo(b.odometerKm);
-    });
+    final sorted = List<FuelEntryModel>.from(fuelEntries)..sort((a, b) => a.odometerKm.compareTo(b.odometerKm));
 
-    for (int i = 1; i < sortedEntries.length; i++) {
-      final FuelEntryModel currentEntry = sortedEntries[i];
-      final FuelEntryModel previousEntry = sortedEntries[i - 1];
-
-      final double currentOdometer = currentEntry.odometerKm;
-      final double previousOdometer = previousEntry.odometerKm;
-
-      final double previousLiters = previousEntry.volumeLiters;
-      final double currentLiters = currentEntry.volumeLiters;
-
-      final double distance = currentOdometer - previousOdometer;
-
-      double consumptionForThisPeriod = 0.0;
-
-      if (distance > 0 && previousLiters > 0 && previousEntry.tankFull == 1) {
-        consumptionForThisPeriod = distance / previousLiters;
+    for (int i = 1; i < sorted.length; i++) {
+      final dist = sorted[i].odometerKm - sorted[i - 1].odometerKm;
+      if(dist > 0 && sorted[i-1].tankFull == 1){
+        periods.add(dist / sorted[i-1].volumeLiters);
+        totalDistance += dist;
+        totalLiters += sorted[i].volumeLiters;
       }
-
-      periodConsumptions.add(consumptionForThisPeriod);
-
-      totalDistance += distance;
-      totalLiters += currentLiters;
     }
 
-    double overall = (totalLiters <= 0) ? 0.0 : (totalDistance / totalLiters);
+    double overall = totalLiters > 0 ? totalDistance / totalLiters : 0.0;
 
-    return {'overall': overall, 'periods': calculateOverallAverageConsumption};
+    return {'overall': overall, 'periods': periods};
+  }
+
+  String formatConsumption(double value) {
+    final unit = unitController.consumptionUnit.value;
+    if(unit == ConsumptionUnit.litersPer100km) return (value > 0 ? 100 / value : 0).toStringAsFixed(2);
+    if(unit == ConsumptionUnit.milesPerGallon) return (value  * _kmPerLiterToMPGFactor).toStringAsFixed(2);
+    return value.toStringAsFixed(2);
+  }
+
+  String getDistanceUnitString() => unitController.distanceUnit.value == DistanceUnit.miles
+  ? 'Milhas (mi)'
+  : 'Quilômetros (km)'.replaceAll(RegExp(r'\(.*\)'), '').trim();
+  
+
+  String getConsumptionUnitString() {
+    final unit = unitController.consumptionUnit.value;
+    String key = 'km/L';
+    if(unit == ConsumptionUnit.litersPer100km) key = 'L/100km';
+    if(unit == ConsumptionUnit.milesPerGallon) key = 'Milhas por Galão (MPG)';
+    return tr(key).replaceAll(RegExp(r'\(.*\)'), '').trim();
+  }
+
+  double get overallTotalCost => fuelEntries.fold(0.0, (sum, entry) => sum + entry.totalCost);
+  double get overallTotalDistance {
+    if(fuelEntries.length < 2) return 0.0;
+    final double latestKm = fuelEntries.first.odometerKm;
+    final double oldestKm = fuelEntries.last.odometerKm;
+
+    return latestKm > oldestKm ? latestKm - oldestKm : 0.0;
+  }
+
+  double get overallCostPerDistance {
+    final double totalDistance = overallTotalDistance;
+    if(totalDistance <= 0) return 0.0;
+    return overallTotalCost / totalDistance;
+  }
+
+  String tr(String key, {Map<String, String>? parameters}) => languageController.translate(key, parameters: parameters);
+
+  double get kmToMileFactor => _kmToMileFactor;
+  
+  void navigateToAddEntry(BuildContext context, {FuelEntryModel? data}) async {
+    final currentOdometer = lastOdometer.value;
+    final entry = await Get.to(() => FuelEntryScreen(lastOdometer: currentOdometer, entry: data));
+    if (entry != null) {
+      await saveFuel(entry);
+    }
   }
 }

@@ -29,7 +29,10 @@ class FuelDb extends DatabaseHelper {
         f.*,
         c.nome as fuel_name,
         v.nickname as vehicle_name,
-        p.nome_posto as station_name
+        p.nome_posto as station_name,
+        v.plate as vehicle_plate,
+        v.city as vehicle_city,
+        v.tank_capacity as vehicle_tank
         FROM fuel_entries f
         LEFT JOIN vehicles v ON f.fk_vehicle = v.pk_vehicle
         LEFT JOIN fuel_types c ON f.fk_type_fuel = c.pk_type_fuel        
@@ -126,6 +129,26 @@ class FuelDb extends DatabaseHelper {
     return await db.delete('manutencao', where: 'pk_manutencao = ?', whereArgs: [id]);
   }
 
+  Future<List<GasStationModel>> getStations({String? query}) async {
+    final db = await getDb();
+    String? whereClause;
+    List<dynamic>? whereArgs;
+
+    if(query != null && query.isNotEmpty){
+      whereClause = 'nome_posto LIKE ? OR brand LIKE ?';
+      whereArgs = ['%$query%', '%$query%'];
+    }
+
+    final result = await db.query(
+      'gas_stations',
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: 'nome_posto ASC',
+    );
+
+    return result.map((json) => GasStationModel.fromMap(json)).toList();
+  }
+
   Future<int> insertStation(GasStationModel station) async {
     final db = await getDb();
     return await db.insert(
@@ -156,15 +179,6 @@ class FuelDb extends DatabaseHelper {
     ''');
 
     return List.generate(maps.length, (i) => VehicleModel.fromMap(maps[i]));
-  }
-
-  Future<int> insertVehicles(VehicleModel vehicle) async {
-    final db = await getDb();
-    return await db.insert(
-      'vehicles',
-      vehicle.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
   }
 
   Future<int> deleteVehicle(int id) async {

@@ -7,6 +7,9 @@ class FuelEntryModel {
   final String? fuelTypeName;
   final String? vehicleName;
   final String? stationName;
+  final String? vehiclePlate;
+  final String? vehicleCity;
+  final double? vehicleTank;
 
   final DateTime entryDate;
   final double odometerKm;
@@ -25,6 +28,9 @@ class FuelEntryModel {
     this.fuelTypeName,
     this.vehicleName,
     this.stationName,
+    this.vehiclePlate,
+    this.vehicleCity,
+    this.vehicleTank,
     required this.entryDate,
     required this.odometerKm,
     required this.volumeLiters,
@@ -60,6 +66,9 @@ class FuelEntryModel {
       fuelTypeName: map['fuel_name'] as String?,
       vehicleName: map['vehicle_name'] as String?,
       stationName: map['station_name'] as String?,
+      vehiclePlate: map['vehicle_plate'] as String?,
+      vehicleCity: map['vehicle_city'] as String?,
+      vehicleTank: (map['vehicle_tank'] as num?)?.toDouble() ?? 0.0,
 
       entryDate: map['entry_date'] is String
           ? DateTime.parse(map['entry_date'])

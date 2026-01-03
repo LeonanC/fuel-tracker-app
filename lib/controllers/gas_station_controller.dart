@@ -41,7 +41,7 @@ class GasStationController extends GetxController {
       stations.assignAll(loadedStations);
     } catch (e) {
       print('Erro ao carregar postos de gasolinas do banco de dados: $e');
-      // Get.snackbar('Erro', 'Falha ao carregar postos: $e', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Erro', 'Falha ao carregar postos: $e', snackPosition: SnackPosition.BOTTOM);
     }
   }
 
