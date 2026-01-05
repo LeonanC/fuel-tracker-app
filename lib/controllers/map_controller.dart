@@ -28,6 +28,7 @@ class MapNavigationController extends GetxController {
   var currentDestinationStation = Rxn<GasStationModel>();
   var stationMarkers = <Marker>[].obs;
   var isNavigationMode = false.obs;
+  var isCompassMode = false.obs;
 
   var routeDistanceMeters = 0.0.obs;
   var routeDurationSeconds = 0.0.obs;
@@ -65,6 +66,13 @@ class MapNavigationController extends GetxController {
     super.onClose();
   }
 
+  void toggleCompassMode(){
+    isCompassMode.value = !isCompassMode.value;
+    if(!isCompassMode.value){
+      mapController.rotate(0);
+    }
+  }
+
   Future<void> determinePosition() async {
     try {
       isLoading.value = true;
@@ -87,8 +95,8 @@ class MapNavigationController extends GetxController {
   void _startLocationTracking() {
     final locationSettings = AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 2,
-      intervalDuration: const Duration(seconds: 1),
+      distanceFilter: 0,
+      intervalDuration: const Duration(milliseconds: 500),
       foregroundNotificationConfig: const ForegroundNotificationConfig(
         notificationText: "Fuel Tracker está rastreando sua rota",
         notificationTitle: "Navegação Ativa",
@@ -100,12 +108,14 @@ class MapNavigationController extends GetxController {
     ) {
       LatLng pos = LatLng(position.latitude, position.longitude);
       currentLocation.value = pos;
+      currentHeading.value = position.heading;
+      
 
       if (routePoints.isNotEmpty) {
         _checkNavigationSteps(pos);
       }
 
-      if (isNavigationMode.value) {
+      if (isNavigationMode.value || isCompassMode.value) {
         mapController.move(pos, mapController.camera.zoom);
         mapController.rotate(360 - position.heading);
       }

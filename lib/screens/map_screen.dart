@@ -68,7 +68,28 @@ class MapScreen extends GetView<MapNavigationController> {
                         point: navCtrl.currentLocation.value!,
                         width: 60,
                         height: 60,
-                        child: _buildUserMarker(),
+                        child: Obx(
+                          () => Transform.rotate(
+                            angle: (navCtrl.isCompassMode.value || navCtrl.isNavigationMode.value)
+                                ? 0
+                                : (navCtrl.currentHeading.value * (math.pi / 180)),
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                if (navCtrl.currentLocation.value != null)
+                                  Opacity(
+                                    opacity: 0.3,
+                                    child: Icon(
+                                      Icons.keyboard_arrow_up,
+                                      size: 50,
+                                      color: Colors.blue.shade200,
+                                    ),
+                                  ),
+                                const Icon(Icons.navigation, color: Colors.blueAccent, size: 35),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ...navCtrl.stationMarkers.toList(),
                   ],
@@ -108,26 +129,6 @@ class MapScreen extends GetView<MapNavigationController> {
           _CircleActionButton(icon: RemixIcons.search_line, onPressed: () => _openSearch(context)),
           const SizedBox(width: 8),
         ],
-      ],
-    );
-  }
-
-  Widget _buildUserMarker() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppTheme.primaryFuelColor.withOpacity(0.2),
-            shape: BoxShape.circle,
-          ),
-        ),
-        Transform.rotate(
-          angle: controller.currentHeading.value * (math.pi / 180),
-          child: Icon(RemixIcons.navigation_fill, color: AppTheme.primaryFuelColor, size: 35),
-        ),
       ],
     );
   }
@@ -258,6 +259,16 @@ class MapScreen extends GetView<MapNavigationController> {
               backgroundColor: Colors.redAccent,
               child: const Icon(RemixIcons.stop_line, color: Colors.white),
             ),
+          FloatingActionButton(
+            heroTag: "compass_btn",
+            mini: true,
+            backgroundColor: controller.isCompassMode.value ? Colors.blue : Colors.white,
+            onPressed: () => controller.toggleCompassMode(),
+            child: Icon(
+              controller.isCompassMode.value ? Icons.explore : Icons.explore_outlined,
+              color: controller.isCompassMode.value ? Colors.white : Colors.blue,
+            ),
+          )
         ],
       ),
     );
