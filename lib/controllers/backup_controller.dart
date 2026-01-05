@@ -22,13 +22,19 @@ class BackupController extends GetxController {
     'service_types',
   ];
 
-  late final Map<String, List<String>> tableGroups = {
-    'all': allTableNames,
+  final Map<String, List<String>> scopeToTables = {
     'fuel_entries': ['fuel_entries'],
     'manutencao': ['manutencao'],
     'vehicles': ['vehicles'],
     'lookups': ['gas_stations', 'fuel_types', 'service_types'],
   };
+
+  var selectedScopes = {
+    'fuel_entries': true,
+    'manutencao': true,
+    'vehicles': true,
+    'lookups': true,
+  }.obs;
 
   @override
   void onInit() {
@@ -44,29 +50,47 @@ class BackupController extends GetxController {
     }
   }
 
+  void toggleScope(String scope) {
+    selectedScopes[scope] = !(selectedScopes[scope] ?? false);
+  }
+
   Future<void> exportData() async {
     if (_database == null) return;
 
-    isLoading.value = true;
-    statusMessage.value = null;
-
     try {
-      final tables = tableGroups[selectedGroupKey.value]!;
-      final Map<String, List<Map<String, dynamic>>> allData = {};
+      isLoading.value = true;
+      statusMessage.value = "Preparando dados...";
 
-      for(var table in tables){
-        allData[table] = await _database!.query(table);
+      Map<String, dynamic> backupPayload = {
+        'version': '1.0',
+        'export_date': DateTime.now().toIso8601String(),
+        'data': <String, List<Map<String, dynamic>>>{},
+      };
+
+      for (var entry in selectedScopes.entries) {
+        if (entry.value) {
+          final tables = scopeToTables[entry.key] ?? [];
+          for (var table in tables) {
+            final List<Map<String, dynamic>> rows = await _database!.query(table);
+            backupPayload['data'][table] = rows;
+          }
+        }
       }
 
-      final jsonString = jsonEncode(allData);
+      if ((backupPayload['data'] as Map).isEmpty) {
+        statusMessage.value = "Selecione ao menos un item para backup.";
+        return;
+      }
+
+      final jsonString = jsonEncode(backupPayload);
       final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:.]'), '-');
       final fileName = 'Fuel-${selectedGroupKey.value.toUpperCase()}-$timestamp.json';
 
       Directory? directory = Platform.isAndroid
-        ? Directory('storage/emulated/0/Download')
-        : await getApplicationDocumentsDirectory();
+          ? Directory('storage/emulated/0/Download')
+          : await getApplicationDocumentsDirectory();
 
-      if(Platform.isAndroid && !await directory.exists()){
+      if (Platform.isAndroid && !await directory.exists()) {
         directory = await getExternalStorageDirectory();
       }
 
@@ -85,22 +109,36 @@ class BackupController extends GetxController {
     if (_database == null) return;
 
     try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
-      if(result == null) return;
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      if (result == null) return;
 
       isLoading.value = true;
+      statusMessage.value = "Restaurando dados...";
+
       final file = File(result.files.single.path!);
-      final data = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      final tables = tableGroups[selectedGroupKey.value]!;
+      final Map<String, dynamic> decoded = jsonDecode(await file.readAsString());
+
+      if (!decoded.containsKey('data')) {
+        throw "Arquivo de backup inválido.";
+      }
+
+      final Map<String, dynamic> data = decoded['data'];
 
       await _database!.transaction((txn) async {
-        for(var table in tables){
-          if(data.containsKey(table)){
-            await txn.delete(table);
-            for(var row in List<Map<String, dynamic>>.from(data[table])){
-              final newRow = Map<String, dynamic>.from(row);
-              await txn.insert(table, newRow, conflictAlgorithm: ConflictAlgorithm.replace);
-            }
+        for (var tableName in data.keys) {
+          await txn.delete(tableName);
+
+          final List<dynamic> rows = data[tableName];
+
+          for (var row in rows) {
+            await txn.insert(
+              tableName, 
+              Map<String, dynamic>.from(row), 
+              conflictAlgorithm: ConflictAlgorithm.replace,
+            );
           }
         }
       });

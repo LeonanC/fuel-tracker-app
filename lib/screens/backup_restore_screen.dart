@@ -1,15 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/controllers/backup_controller.dart';
-import 'package:fuel_tracker_app/data/database_helper.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:get/get.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:remixicon/remixicon.dart';
 
 abstract class TranslationKeys_2 {
   static const String backupRestoreAppBarTitle = 'Título Backup/Restaurar';
@@ -57,6 +51,8 @@ class BackupRestoreScreen extends GetView<BackupController> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(context.tr(TranslationKeys_2.backupRestoreScopeTitle)),
+            const SizedBox(height: 12),
+            _buildScopeSelector(),
             const SizedBox(height: 24),
             _buildActionCard(
               context,
@@ -77,27 +73,44 @@ class BackupRestoreScreen extends GetView<BackupController> {
               isWarning: true,
             ),
             const SizedBox(height: 20),
-            Obx(() => controller.statusMessage.value != null
-            ? Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryFuelColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                controller.statusMessage.value!,
-                style: TextStyle(
-                  color: AppTheme.primaryFuelColor,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            )
-            : const SizedBox.shrink())
+            Obx(
+              () => controller.statusMessage.value != null
+                  ? _buildStatusBanner()
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildScopeSelector() {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Column(
+        children: [
+          _buildScopeItem('fuel_entries', TranslationKeys_2.scopeFuelEntries, RemixIcons.gas_station_line),
+          const Divider(height: 1),
+          _buildScopeItem('manutencao', TranslationKeys_2.scopeManutencao, RemixIcons.tools_line),
+          const Divider(height: 1),
+          _buildScopeItem('vehicles', TranslationKeys_2.scopeVehicles, RemixIcons.car_line),
+          const Divider(height: 1),
+          _buildScopeItem('lookups', TranslationKeys_2.scopeLookups, RemixIcons.table_line),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScopeItem(String key, String labelKey, IconData icon){
+    return Obx(() => CheckboxListTile(
+      secondary: Icon(icon, color: AppTheme.primaryFuelColor),
+      title: Text(Get.context!.tr(labelKey)),
+      value: controller.selectedScopes[key],
+      activeColor: AppTheme.primaryFuelColor,
+      onChanged: (_) => controller.toggleScope(key),
+      controlAffinity: ListTileControlAffinity.trailing,
+    ));
   }
 
   Widget _buildActionCard(
@@ -139,6 +152,21 @@ class BackupRestoreScreen extends GetView<BackupController> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBanner() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryFuelColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        controller.statusMessage.value!,
+        style: TextStyle(color: AppTheme.primaryFuelColor, fontWeight: FontWeight.bold),
+        textAlign: TextAlign.center,
       ),
     );
   }

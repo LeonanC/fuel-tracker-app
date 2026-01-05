@@ -36,7 +36,7 @@ class MaintenanceEntry {
       lembreteKm: (map['lembrete_km'] as num?)?.toDouble(),
       lembreteData: map['lembrete_data'] != null ? DateTime.parse(map['lembrete_data']) : null,
       lembreteAtivo: map['lembrete_ativo'] == 1,
-      veiculoId: map['veiculo_id'],
+      veiculoId: map['fk_vehicle'],
     );
   }
 
@@ -51,7 +51,7 @@ class MaintenanceEntry {
       'lembrete_km': lembreteKm,
       'lembrete_data': lembreteData?.toIso8601String().split('T').first,
       'lembrete_ativo': lembreteAtivo ? 1 : 0,
-      'veiculo_id': veiculoId,
+      'fk_vehicle': veiculoId,
     };
   }
 
