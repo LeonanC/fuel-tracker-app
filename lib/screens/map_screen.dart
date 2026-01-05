@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -25,196 +26,253 @@ class MapScreen extends GetView<MapNavigationController> {
       final bool loading = controller.isLoading.value || controller.isRouting.value;
 
       return Scaffold(
-        backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
-        appBar: AppBar(
-          backgroundColor: isDarkMode
-              ? AppTheme.backgroundColorDark
-              : AppTheme.backgroundColorLight,
-          title: Text(isNavigation ? 'Em Navegação' : context.tr(TranslationKeys.navigationMap)),
-          elevation: theme.appBarTheme.elevation,
-          centerTitle: theme.appBarTheme.centerTitle,
-          actions: [
-            if (!isNavigation)
-              IconButton(
-                icon: const Icon(RemixIcons.user_location_line, color: Colors.white),
-                onPressed: () => navCtrl.determinePositionAndLoadMap(),
-              ),
-            if (!isNavigation)
-              IconButton(
-                icon: const Icon(RemixIcons.search_line, color: Colors.white),
-                onPressed: () => _openSearch(context),
-              ),
-          ],
-        ),
+        extendBodyBehindAppBar: true,
+        appBar: _buildTransparentAppBar(context, isNavigation, isDarkMode),
         floatingActionButton: _buildFABs(isNavigation),
-
-        body: loading
-            ? _buildLoadingOverlay(context)
-            : Stack(
-                children: [
-                  FlutterMap(
-                    mapController: navCtrl.mapController,
-                    options: MapOptions(
-                      initialCenter: center,
-                      initialZoom: 15.0,
-                      interactionOptions: InteractionOptions(
-                        flags: navCtrl.isNavigationMode.value
-                            ? InteractiveFlag.none
-                            : InteractiveFlag.all,
-                      ),
-                    ),
-                    children: [
-                      TileLayer(
-                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                        userAgentPackageName: 'br.com.fuel_tracker_app',
-                      ),
-                      if (navCtrl.routePoints.isNotEmpty)
-                        PolylineLayer(
-                          polylines: [
-                            Polyline(
-                              points: navCtrl.routePoints.toList(),
-                              strokeWidth: 6.0,
-                              color: Colors.blue.shade600,
-                              useStrokeWidthInMeter: false,
-                            ),
-                          ],
-                        ),
-                      MarkerLayer(
-                        markers: [
-                          if (navCtrl.currentLocation.value != null)
-                            Marker(
-                              point: navCtrl.currentLocation.value!,
-                              width: 45,
-                              height: 45,
-                              child: _buildUserMarker(),
-                            ),
-                          ...navCtrl.stationMarkers.toList(),
-                        ],
+        body: Stack(
+          children: [
+            FlutterMap(
+              mapController: navCtrl.mapController,
+              options: MapOptions(
+                initialCenter: center,
+                initialZoom: 15.0,
+                interactionOptions: InteractionOptions(
+                  flags: navCtrl.isNavigationMode.value
+                      ? InteractiveFlag.none
+                      : InteractiveFlag.all,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: isDarkMode
+                      ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                      : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'br.com.fuel_tracker_app',
+                ),
+                if (navCtrl.routePoints.isNotEmpty)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(
+                        points: navCtrl.routePoints.toList(),
+                        strokeWidth: 5.0,
+                        color: Colors.blueAccent.withOpacity(0.8),
+                        borderColor: Colors.blue.shade900,
+                        borderStrokeWidth: 2.0,
                       ),
                     ],
                   ),
+                MarkerLayer(
+                  markers: [
+                    if (navCtrl.currentLocation.value != null)
+                      Marker(
+                        point: navCtrl.currentLocation.value!,
+                        width: 60,
+                        height: 60,
+                        child: _buildUserMarker(),
+                      ),
+                    ...navCtrl.stationMarkers.toList(),
+                  ],
+                ),
+              ],
+            ),
 
-                  if (isNavigation) _buildNavigationOverlay(),
-                ],
-              ),
+            if (isNavigation) _buildModernNavigationCard(),
+            if (loading) _buildBlurredLoading(),
+          ],
+        ),
       );
     });
   }
 
-  Widget _buildUserMarker() {
-    return Transform.rotate(
-      angle: controller.currentHeading.value * (math.pi / 180),
-      child: Icon(RemixIcons.navigation_fill, color: AppTheme.primaryFuelColor, size: 35),
+  PreferredSizeWidget _buildTransparentAppBar(BuildContext context, bool isNav, bool isDark) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black.withOpacity(isDark ? 0.7 : 0.3), Colors.transparent],
+          ),
+        ),
+      ),
+      title: Text(isNav ? 'Nevagação Ativa' : context.tr(TranslationKeys.navigationMap)),
+      actions: [
+        if (!isNav) ...[
+          _CircleActionButton(
+            icon: RemixIcons.user_location_line,
+            onPressed: () => controller.determinePosition(),
+          ),
+          const SizedBox(width: 8),
+          _CircleActionButton(icon: RemixIcons.search_line, onPressed: () => _openSearch(context)),
+          const SizedBox(width: 8),
+        ],
+      ],
     );
   }
 
-  Widget _buildNavigationOverlay() {
+  Widget _buildUserMarker() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryFuelColor.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+        ),
+        Transform.rotate(
+          angle: controller.currentHeading.value * (math.pi / 180),
+          child: Icon(RemixIcons.navigation_fill, color: AppTheme.primaryFuelColor, size: 35),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernNavigationCard() {
     final station = controller.currentDestinationStation.value;
     if (station == null) return const SizedBox.shrink();
 
-    return Positioned(
-      bottom: 20,
-      left: 15,
-      right: 15,
-      child: Card(
-        color: AppTheme.primaryDark.withOpacity(0.9),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                station.nome,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 30),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: Colors.white10),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildInfoTile(
-                    RemixIcons.map_pin_2_line,
-                    'Distância',
-                    controller.formatDistance(controller.routeDistanceMeters.value),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryFuelColor.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(RemixIcons.gas_station_fill, color: AppTheme.primaryFuelColor),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          station.nome,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  _buildInfoTile(
-                    RemixIcons.time_line,
-                    'Tempo',
-                    controller.calculateETA(controller.routeDurationSeconds.value),
-                  ),
-                  _buildInfoTile(
-                    RemixIcons.money_dollar_circle_line,
-                    'Preço',
-                    'R\$ ${station.priceGasolineComum.toStringAsFixed(2)}',
+                  const Divider(color: Colors.white12, height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildInfoTile(
+                        RemixIcons.pin_distance_line,
+                        'Distância',
+                        controller.formatDistance(controller.routeDistanceMeters.value),
+                      ),
+                      _buildInfoTile(
+                        RemixIcons.time_line,
+                        'Chegada',
+                        controller.calculateETA(controller.routeDurationSeconds.value),
+                      ),
+                      _buildInfoTile(
+                        RemixIcons.money_dollar_circle_line,
+                        'Gasolina',
+                        'R\$ ${station.priceGasolineComum.toStringAsFixed(2)}',
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildLoadingOverlay(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 16),
-          Text(
-            controller.isRouting.value ? 'Traçando melhor rota...' : 'Localizando GPS...',
-            style: const TextStyle(fontWeight: FontWeight.w500),
+  Widget _buildBlurredLoading() {
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+      child: Container(
+        color: Colors.black26,
+        child: Center(
+          child: Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(controller.isRouting.value ? 'Calculando Rota...' : 'Buscando Satélites...'),
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildFABs(bool isNavigation) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        if (isNavigation)
-          FloatingActionButton(
-            heroTag: 'toggle_mode',
-            onPressed: controller.toggleNavigationMode,
-            backgroundColor: controller.isNavigationMode.value
-                ? Colors.blue
-                : AppTheme.primaryFuelColor,
-            child: Icon(
-              controller.isNavigationMode.value
-                  ? RemixIcons.lock_fill
-                  : RemixIcons.lock_unlock_fill,
+    return Padding(
+      padding: EdgeInsets.only(bottom: isNavigation ? 160 : 0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (isNavigation)
+            FloatingActionButton.small(
+              heroTag: 'lock',
+              onPressed: controller.toggleNavigationMode,
+              backgroundColor: controller.isNavigationMode.value ? Colors.blue : Colors.white,
+              child: Icon(
+                controller.isNavigationMode.value
+                    ? RemixIcons.lock_fill
+                    : RemixIcons.lock_unlock_line,
+                color: controller.isNavigationMode.value ? Colors.white : Colors.black,
+              ),
             ),
-          ),
-        const SizedBox(height: 12),
-        if (isNavigation)
-          FloatingActionButton.extended(
-            heroTag: 'cancel_nav',
-            onPressed: controller.clearNavigation,
-            label: const Text('Parar'),
-            icon: const Icon(RemixIcons.stop_circle_line),
-            backgroundColor: Colors.redAccent,
-          ),
-      ],
+          const SizedBox(height: 12),
+          if (isNavigation)
+            FloatingActionButton(
+              heroTag: 'stop',
+              onPressed: controller.clearNavigation,
+              backgroundColor: Colors.redAccent,
+              child: const Icon(RemixIcons.stop_line, color: Colors.white),
+            ),
+        ],
+      ),
     );
   }
 
   Widget _buildInfoTile(IconData icon, String label, String value) {
     return Column(
       children: [
-        Icon(icon, color: AppTheme.primaryFuelColor, size: 20),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+        Icon(icon, color: Colors.blueAccent, size: 22),
+        const SizedBox(height: 4),
         Text(
-          value,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          label,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
         ),
+        Text(value, style: const TextStyle(color: Colors.white54, fontSize: 11)),
       ],
     );
   }
@@ -269,6 +327,23 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
           },
         );
       },
+    );
+  }
+}
+
+class _CircleActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+  const _CircleActionButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white, size: 20),
+        onPressed: onPressed,
+      ),
     );
   }
 }

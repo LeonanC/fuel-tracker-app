@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/gas_station_model.dart';
 import 'package:http/http.dart' as http;
@@ -15,29 +16,47 @@ const LatLng defaultCenter = LatLng(-23.55052, -46.63330);
 class MapNavigationController extends GetxController {
   final FuelDb _db = FuelDb();
   final MapController mapController = MapController();
+  final FlutterTts _tts = FlutterTts();
 
   var currentLocation = Rxn<LatLng>();
   var currentHeading = 0.0.obs;
   var isLoading = true.obs;
-
-  var destinationPoint = Rxn<LatLng>();
-  var routePoints = <LatLng>[].obs;
   var isRouting = false.obs;
+  var routePoints = <LatLng>[].obs;
+  var routeSteps = <dynamic>[].obs;
+  var destinationPoint = Rxn<LatLng>();
+  var currentDestinationStation = Rxn<GasStationModel>();
+  var stationMarkers = <Marker>[].obs;
   var isNavigationMode = false.obs;
 
-  var currentDestinationStation = Rxn<GasStationModel>();
   var routeDistanceMeters = 0.0.obs;
   var routeDurationSeconds = 0.0.obs;
-
-  var stationMarkers = <Marker>[].obs;
+  int _lastStepIndex = -1;
 
   StreamSubscription<Position>? _positionStream;
 
   @override
   void onInit() {
     super.onInit();
-    determinePositionAndLoadMap();
-    _startLocationTracking();
+    _setupVoice();
+    initMap();
+  }
+
+  Future<void> _setupVoice() async {
+    await _tts.setLanguage("pt-BR");
+    await _tts.setSpeechRate(0.5);
+    await _tts.setVolume(1.0);
+  }
+
+  Future<void> speak(String text) async {
+    if (text.isNotEmpty) {
+      await _tts.speak(text);
+    }
+  }
+
+  Future<void> initMap() async {
+    await determinePosition();
+    await loadStationsFromDB();
   }
 
   @override
@@ -46,59 +65,30 @@ class MapNavigationController extends GetxController {
     super.onClose();
   }
 
-  Future<void> determinePositionAndLoadMap() async {
+  Future<void> determinePosition() async {
     try {
       isLoading.value = true;
-      bool hasPermission = await _handleLocationPermission();
-      if(!hasPermission) return;
-      
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
+      Position position = await Geolocator.getCurrentPosition();
       currentLocation.value = LatLng(position.latitude, position.longitude);
-
       mapController.move(currentLocation.value!, 15.0);
-
       _startLocationTracking();
     } catch (e) {
-      Get.snackbar("Erro", "Não foi possível obter sua localização.");
+      Get.snackbar("Erro", "Falha ao obter sua localização.");
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<bool> _handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if(!serviceEnabled){
-      Get.snackbar('GPS Desligado', "Por favor, ative a localização no seu dispositivo.");
-      return false;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if(permission == LocationPermission.denied){
-      permission = await Geolocator.requestPermission();
-      if(permission == LocationPermission.denied){
-        Get.snackbar("Permissão Negada", "O app precisa da permissão para mostrar os postos próximos.");
-        return false;
-      }
-    }
-
-    if(permission == LocationPermission.deniedForever){
-      Get.snackbar("Permissão Bloqueada", "Ative a permissão de localização nas configurações do celular.");
-      return false;
-    }
-    return true;
-  }
-
   void _startLocationTracking() {
     final locationSettings = AndroidSettings(
-      accuracy: LocationAccuracy.high, 
-      distanceFilter: 10,
-      intervalDuration: const Duration(seconds: 5),
+      accuracy: LocationAccuracy.high,
+      distanceFilter: 2,
+      intervalDuration: const Duration(seconds: 1),
       foregroundNotificationConfig: const ForegroundNotificationConfig(
         notificationText: "Fuel Tracker está rastreando sua rota",
         notificationTitle: "Navegação Ativa",
@@ -108,34 +98,40 @@ class MapNavigationController extends GetxController {
     _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen((
       Position position,
     ) {
-      currentLocation.value = LatLng(position.latitude, position.longitude);
-      currentHeading.value = position.heading;
+      LatLng pos = LatLng(position.latitude, position.longitude);
+      currentLocation.value = pos;
+
+      if (routePoints.isNotEmpty) {
+        _checkNavigationSteps(pos);
+      }
 
       if (isNavigationMode.value) {
-        mapController.move(currentLocation.value!, mapController.camera.zoom);
+        mapController.move(pos, mapController.camera.zoom);
         mapController.rotate(360 - position.heading);
       }
-    },
-    onError: (e) => debugPrint("Erro no Stream de Localização: $e"),
-    );
+    });
   }
 
   Future<void> loadStationsFromDB({String? query}) async {
     List<GasStationModel> stations = await _db.getStations(query: query);
-    stationMarkers.value = stations.map((station) {
-      return Marker(
-        point: LatLng(station.latitude, station.longitude),
-        width: 50,
-        height: 50,
-        child: GestureDetector(
-          onTap: () => _setupNavigation(station),
-          child: const Icon(Icons.location_on, color: Colors.red, size: 40),
-        ),
-      );
-    }).toList();
+    stationMarkers.assignAll(
+      stations
+          .map(
+            (s) => Marker(
+              point: LatLng(s.latitude, s.longitude),
+              width: 40,
+              height: 40,
+              child: GestureDetector(
+                onTap: () => setupNavigation(s),
+                child: const Icon(Icons.location_on, color: Colors.red, size: 40),
+              ),
+            ),
+          )
+          .toList(),
+    );
   }
 
-  Future<void> _setupNavigation(GasStationModel station) async {
+  Future<void> setupNavigation(GasStationModel station) async {
     currentDestinationStation.value = station;
     destinationPoint.value = LatLng(station.latitude, station.longitude);
     await fetchRoute();
@@ -149,30 +145,84 @@ class MapNavigationController extends GetxController {
       isRouting.value = true;
       final start = currentLocation.value!;
       final end = destinationPoint.value!;
-
       final url =
           'https://router.project-osrm.org/route/v1/driving/'
           '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
-          '?overview=full&geometries=polyline&step=true';
+          '?overview=full&geometries=polyline&steps=true';
 
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if(data['routes'] != null && data['routes'].isNotEmpty){
-          final route = data['routes'][0];
+        final route = data['routes'][0];
 
-          routeDistanceMeters.value = route['distance'].toDouble();
-          routeDurationSeconds.value = route['duration'].toDouble();
+        routeDistanceMeters.value = route['distance'].toDouble();
+        routeDurationSeconds.value = route['duration'].toDouble();
 
-          final String encodedPolyline = route['geometry'];
-          routePoints.value = _decodePolyline(encodedPolyline);
+        routeSteps.assignAll(route['legs'][0]['steps']);
+        _lastStepIndex = -1;
 
-        }
+        routePoints.assignAll(_decodePolyline(route['geometry']));
+
+        speak("Rota iniciada.");
       }
     } catch (e) {
-      Get.snackbar('Erro de Rota', 'Não foi possível calcular o caminho.');
+      speak('Erro ao calcular rota');
     } finally {
       isRouting.value = false;
+    }
+  }
+
+  void _checkNavigationSteps(LatLng currentPos) {
+    if (routeSteps.isEmpty) return;
+
+    for (int i = 0; i < routeSteps.length; i++) {
+      final step = routeSteps[i];
+      final stepLocation = step['maneuver']['location'];
+      final stepLatLng = LatLng(stepLocation[1], stepLocation[0]);
+
+      double distanteToStep = Geolocator.distanceBetween(
+        currentPos.latitude,
+        currentPos.longitude,
+        stepLatLng.latitude,
+        stepLatLng.longitude,
+      );
+
+      if (distanteToStep < 100 && _lastStepIndex != i) {
+        _lastStepIndex = i;
+        String instruction = _translateInstruction(step);
+        _tts.speak(instruction);
+      }
+    }
+  }
+
+  String _translateInstruction(Map<String, dynamic> step) {
+    final maneuver = step;
+    String type = maneuver['type'];
+    String modifier = maneuver['modifier'] ?? "";
+    String streetName = step['name'] ?? "";
+
+    String streetInfo = (streetName.isNotEmpty && streetName != "null") ? " na $streetName" : "";
+
+    switch (type) {
+      case 'turn':
+        if (modifier.contains('left')) return "Vire à esquerda$streetInfo";
+        if (modifier.contains('right')) return "Vire à direta$streetInfo";
+        return "Vire$streetInfo";
+      case 'new name':
+        return "Continue na$streetInfo";
+      case  'on ramp':
+        return "Entre na rampa em direção a$streetInfo";
+      case 'merge':
+        return "Incorpore no trânsito$streetInfo";
+      case 'roundabout':
+        return "Na rotunda, siga em direção a$streetInfo";
+      case 'arrive':
+        return "Você está a chegar ao seu destino$streetInfo";
+      case 'depart':
+        return "Inicie o percurso na $streetName";
+      
+      default:
+        return "Siga em frente na $streetName";
     }
   }
 
@@ -216,16 +266,17 @@ class MapNavigationController extends GetxController {
   }
 
   void clearNavigation() {
-    destinationPoint.value = null;
+    speak("Navegação cancelada.");
     routePoints.clear();
-    currentDestinationStation.value = null;
+    destinationPoint.value = null;
     isNavigationMode.value = false;
+    mapController.rotate(0);
   }
 
   void _fitBounds() {
     if (routePoints.isEmpty) return;
     final bounds = LatLngBounds.fromPoints(routePoints);
-    mapController.fitCamera(CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(50)));
+    mapController.fitCamera(CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(70)));
   }
 
   String formatDistance(double meters) {
