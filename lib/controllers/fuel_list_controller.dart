@@ -95,12 +95,7 @@ class FuelListController extends GetxController {
   Future<void> loadStation() async => gasStationEntries.assignAll(await _db.getStation());
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
-    final db = await _db.getDb();
-    if(data['pk_fuel'] == null){
-      await db.insert('fuel_entries', data);  
-    }else{
-      await db.update('fuel_entries', data, where: 'pk_fuel = ?', whereArgs: [data['pk_fuel']]);
-    }
+    await _db.insertFuel(data);
     await loadFuel();
   }
 

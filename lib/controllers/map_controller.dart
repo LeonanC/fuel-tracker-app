@@ -1,23 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:fuel_tracker_app/controllers/gas_station_controller.dart';
-import 'package:fuel_tracker_app/controllers/maintenance_controller.dart';
 import 'package:fuel_tracker_app/data/fuel_db.dart';
 import 'package:fuel_tracker_app/models/gas_station_model.dart';
-import 'package:fuel_tracker_app/models/route_step_model.dart';
-import 'package:fuel_tracker_app/services/voice_navigation_service.dart';
-import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:http/http.dart' as http;
-import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:remixicon/remixicon.dart';
 
 const LatLng defaultCenter = LatLng(-23.55052, -46.63330);
 
@@ -58,12 +49,18 @@ class MapNavigationController extends GetxController {
   Future<void> determinePositionAndLoadMap() async {
     try {
       isLoading.value = true;
-      Position position = await Geolocator.getCurrentPosition();
+      bool hasPermission = await _handleLocationPermission();
+      if(!hasPermission) return;
+      
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
       currentLocation.value = LatLng(position.latitude, position.longitude);
 
       mapController.move(currentLocation.value!, 15.0);
 
-      await loadStationsFromDB();
+      _startLocationTracking();
     } catch (e) {
       Get.snackbar("Erro", "Não foi possível obter sua localização.");
     } finally {
@@ -71,8 +68,42 @@ class MapNavigationController extends GetxController {
     }
   }
 
+  Future<bool> _handleLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if(!serviceEnabled){
+      Get.snackbar('GPS Desligado', "Por favor, ative a localização no seu dispositivo.");
+      return false;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if(permission == LocationPermission.denied){
+      permission = await Geolocator.requestPermission();
+      if(permission == LocationPermission.denied){
+        Get.snackbar("Permissão Negada", "O app precisa da permissão para mostrar os postos próximos.");
+        return false;
+      }
+    }
+
+    if(permission == LocationPermission.deniedForever){
+      Get.snackbar("Permissão Bloqueada", "Ative a permissão de localização nas configurações do celular.");
+      return false;
+    }
+    return true;
+  }
+
   void _startLocationTracking() {
-    const locationSettings = LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 5);
+    final locationSettings = AndroidSettings(
+      accuracy: LocationAccuracy.high, 
+      distanceFilter: 10,
+      intervalDuration: const Duration(seconds: 5),
+      foregroundNotificationConfig: const ForegroundNotificationConfig(
+        notificationText: "Fuel Tracker está rastreando sua rota",
+        notificationTitle: "Navegação Ativa",
+      ),
+    );
 
     _positionStream = Geolocator.getPositionStream(locationSettings: locationSettings).listen((
       Position position,
@@ -84,7 +115,9 @@ class MapNavigationController extends GetxController {
         mapController.move(currentLocation.value!, mapController.camera.zoom);
         mapController.rotate(360 - position.heading);
       }
-    });
+    },
+    onError: (e) => debugPrint("Erro no Stream de Localização: $e"),
+    );
   }
 
   Future<void> loadStationsFromDB({String? query}) async {
@@ -120,21 +153,21 @@ class MapNavigationController extends GetxController {
       final url =
           'https://router.project-osrm.org/route/v1/driving/'
           '${start.longitude},${start.latitude};${end.longitude},${end.latitude}'
-          '?overview=full&geometries=polyline&steps=true';
+          '?overview=full&geometries=polyline&step=true';
 
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
-        final data = await json.decode(response.body);
-        final route = data['routes'][0];
+        final data = json.decode(response.body);
+        if(data['routes'] != null && data['routes'].isNotEmpty){
+          final route = data['routes'][0];
 
-        routeDistanceMeters.value = route['distance'].toDouble();
-        routeDurationSeconds.value = route['duration'].toDouble();
+          routeDistanceMeters.value = route['distance'].toDouble();
+          routeDurationSeconds.value = route['duration'].toDouble();
 
-        
+          final String encodedPolyline = route['geometry'];
+          routePoints.value = _decodePolyline(encodedPolyline);
 
-        routePoints.value = _decodePolyline(route['geomatry']);
-
-        print(routePoints.value);
+        }
       }
     } catch (e) {
       Get.snackbar('Erro de Rota', 'Não foi possível calcular o caminho.');

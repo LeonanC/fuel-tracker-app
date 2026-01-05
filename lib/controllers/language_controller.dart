@@ -11,14 +11,16 @@ class LanguageController extends GetxController {
   var _isInitialized = false.obs;
   var _isLoading = false.obs;
 
-AppLanguage get currentLanguage => _currentLanguage.value;
-Map<String, dynamic> get translations => _translations;
-bool get isInitialized => _isInitialized.value;
-bool get isLoading => _isLoading.value;
-List<AppLanguage> get supportedLanguages => AppLanguage.supportedLanguages;
-TextDirection get textDirection => _currentLanguage.value.isRtl ? TextDirection.rtl : TextDirection.ltr;
-Locale get locale => Locale(_currentLanguage.value.code);
-bool get isRtl => _currentLanguage.value.isRtl;
+  AppLanguage get currentLanguage => _currentLanguage.value;
+  Map<String, dynamic> get translations => _translations;
+  bool get isInitialized => _isInitialized.value;
+  bool get isLoading => _isLoading.value;
+
+  List<AppLanguage> get supportedLanguages => AppLanguage.supportedLanguages;
+  TextDirection get textDirection =>
+      _currentLanguage.value.isRtl ? TextDirection.rtl : TextDirection.ltr;
+  Locale get locale => Locale(_currentLanguage.value.code);
+  bool get isRtl => _currentLanguage.value.isRtl;
 
   @override
   void onInit() {
@@ -39,8 +41,9 @@ bool get isRtl => _currentLanguage.value.isRtl;
       _currentLanguage.value = AppLanguage.getByCode('en');
       await _loadTranslations('en');
       _isInitialized.value = true;
+    } finally {
+      _isLoading.value = false;
     }
-    _isLoading.value = false;
   }
 
   Future<bool> changeLanguage(AppLanguage language) async {
@@ -49,20 +52,18 @@ bool get isRtl => _currentLanguage.value.isRtl;
 
     try {
       final saved = await _languageService.saveLanguage(language);
-      if (!saved) {
-        _isLoading.value = false;
-        return false;
-      }
+      if (!saved) return false;
 
       await _loadTranslations(language.code);
-
       _currentLanguage.value = language;
-      Get.updateLocale(Locale(language.code));
 
+      Get.updateLocale(Locale(language.code));
       return true;
     } catch (e) {
       _isLoading.value = false;
       return false;
+    } finally {
+      _isLoading.value = false;
     }
   }
 
@@ -106,33 +107,17 @@ bool get isRtl => _currentLanguage.value.isRtl;
     return result;
   }
 
-  bool hasTranslation(String key) {
-    final keys = key.split('.');
-    dynamic current = _translations;
-
-    for (final k in keys) {
-      if (current is Map<String, dynamic> && current.containsKey(k)) {
-        current = current[k];
-      } else {
-        return false;
-      }
-    }
-
-    return current != null;
-  }
-
   Future<void> reloadTranslations() async {
     _isLoading.value = true;
-    await _loadTranslations(_currentLanguage.value.code);
-    _isLoading.value = false;
+    try {
+      await _loadTranslations(_currentLanguage.value.code);
+    } finally {
+      _isLoading.value = false;
+    }
   }
 
   Future<bool> resetToDeviceLanguage() async {
     final deviceLanguage = await _languageService.getDeviceLanguage();
     return await changeLanguage(deviceLanguage);
-  }
-
-  Future<List<AppLanguage>> getAvailableLanguages() async {
-    return await _languageService.getAvailableLanguages();
   }
 }

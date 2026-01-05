@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:fuel_tracker_app/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/models/maintenance_entry_model.dart';
 import 'package:fuel_tracker_app/controllers/fuel_list_controller.dart';
 import 'package:fuel_tracker_app/controllers/maintenance_controller.dart';
-import 'package:fuel_tracker_app/screens/maintenance_entry_screen.dart';
 import 'package:fuel_tracker_app/theme/app_theme.dart';
 import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:get/get.dart';
@@ -11,16 +10,173 @@ import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 class MaintenanceListScreen extends GetView<MaintenanceController> {
-  MaintenanceListScreen({super.key});
+  const MaintenanceListScreen({super.key});
 
-  final FuelListController fuelListController = Get.find<FuelListController>();
-  final LanguageController languageController = Get.find<LanguageController>();
+  @override
+  Widget build(BuildContext context) {
+    final fuelListController = Get.find<FuelListController>();
+    final unitController = Get.find<UnitController>();
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
-  Future<bool?> _deleteConfirmation(BuildContext context) async {
+    return Scaffold(
+      backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+      appBar: AppBar(
+        title: Text(context.tr(TranslationKeys.maintenanceScreenTitle)),
+        backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
+        elevation: 0,
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: Icon(RemixIcons.refresh_line),
+            onPressed: () => controller.loadMaintenanceEntries(),
+          ),
+        ],
+      ),
+      body: Obx(() {
+        if (controller.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final safeOdometer = fuelListController.lastOdometer.value ?? 0.0;
+        final entries = controller.loadedEntries;
+        final activeReminders = controller.getActiveReminders(safeOdometer);
+
+        return RefreshIndicator(
+          onRefresh: () => controller.loadMaintenanceEntries(),
+          child: Column(
+            children: [
+              _buildReminderAlertCard(context, activeReminders),
+              Expanded(
+                child: entries.isEmpty
+                    ? _buildEmptyState(context)
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        itemCount: entries.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) => _MaintenanceItem(
+                          entry: entries[index],
+                          unitLabel: unitController.distanceUnit.value.name,
+                          currencySymbol: unitController.currencyUnitString,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        );
+      }),
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_maintenance_list',
+        onPressed: () => controller.navigateToAddEntry(context),
+        child: const Icon(RemixIcons.tools_fill, color: Colors.white),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context){
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(RemixIcons.tools_line, size: 64, color: Colors.grey.withOpacity(0.5)),
+          const SizedBox(height: 16),
+          Text(context.tr(TranslationKeys.emptyStateMaintenanceMessage)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReminderAlertCard(BuildContext context, List<MaintenanceEntry> reminders) {
+    if (reminders.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(RemixIcons.error_warning_fill, color: Colors.redAccent),
+              const SizedBox(width: 8),
+              Text(
+                context.tr(TranslationKeys.maintenanceAlertTitle),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...reminders.map(
+            (r) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text('• ${r.tipo}', style: TextStyle(color: Colors.red[700], fontSize: 13)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MaintenanceItem extends StatelessWidget {
+  final MaintenanceEntry entry;
+  final String unitLabel;
+  final String currencySymbol;
+  const _MaintenanceItem({
+    required this.entry,
+    required this.unitLabel,
+    required this.currencySymbol,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<MaintenanceController>();
+
+    return Dismissible(
+      key: ValueKey(entry.id),
+      direction: DismissDirection.endToStart,
+      confirmDismiss: (direction) => _confirmDeletion(context),
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: const Icon(RemixIcons.delete_bin_line, color: Colors.white),
+      ),
+      onDismissed: (_) => controller.deleteMaintenance(entry.id!),
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            child: Icon(RemixIcons.tools_line, color: Theme.of(context).colorScheme.primary),
+          ),
+          title: Text(entry.tipo, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text(
+            '${entry.quilometragem.toStringAsFixed(0)} $unitLabel • ${DateFormat('dd/MM/yyyy').format(entry.dataServico)}',
+          ),
+          trailing: entry.custo != null
+              ? Text(
+                  '$currencySymbol ${entry.custo!.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                )
+              : null,
+          onTap: () => controller.navigateToAddEntry(context, data: entry),
+        ),
+      ),
+    );
+  }
+
+  Future<bool?> _confirmDeletion(BuildContext context) async {
     return await Get.dialog<bool>(
       AlertDialog(
         title: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmation)),
-        content: Text(context.tr(TranslationKeys.commonLabelsDeleteConfirmMessage)),
         actions: [
           TextButton(
             onPressed: () => Get.back(result: false),
@@ -35,166 +191,6 @@ class MaintenanceListScreen extends GetView<MaintenanceController> {
             child: Text(context.tr(TranslationKeys.commonLabelsDelete)),
           ),
         ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-
-    return Obx(() {
-      final double safeOdometer = fuelListController.lastOdometer.value ?? 0.0;
-      final List<MaintenanceEntry> entries = controller.loadedEntries;
-      final bool isLoading = controller.isLoading.value;
-
-      final List<MaintenanceEntry> activeReminders = controller.getActiveReminders(safeOdometer);
-
-      return Scaffold(
-        backgroundColor: isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight,
-        appBar: AppBar(
-          title: Text(context.tr(TranslationKeys.maintenanceScreenTitle)),
-          backgroundColor: isDarkMode
-              ? AppTheme.backgroundColorDark
-              : AppTheme.backgroundColorLight,
-          elevation: 0,
-          centerTitle: false,
-          actions: [
-            IconButton(
-              icon: Icon(RemixIcons.refresh_line),
-              tooltip: context.tr(TranslationKeys.maintenanceRefresh),
-              onPressed: () async {
-                controller.loadMaintenanceEntries();
-                Get.snackbar(
-                  context.tr(TranslationKeys.maintenanceRefreshing),
-                  '',
-                  duration: const Duration(seconds: 2),
-                  snackPosition: SnackPosition.BOTTOM,
-                );
-              },
-            ),
-          ],
-        ),
-        body: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  _buildReminderAlertCard(context, activeReminders),
-                  Expanded(
-                    child: entries.isEmpty
-                        ? Center(
-                            child: Text(context.tr(TranslationKeys.emptyStateMaintenanceMessage)),
-                          )
-                        : ListView.builder(
-                            itemCount: entries.length,
-                            itemBuilder: (context, index) {
-                              final entry = entries[index];
-                              return _buildMaintenanceListItem(context, entry);
-                            },
-                          ),
-                  ),
-                ],
-              ),
-        floatingActionButton: FloatingActionButton(
-          heroTag: 'fab_maintenance_list',
-          onPressed: () => controller.navigateToAddEntry(context),
-          child: const Icon(RemixIcons.tools_fill, color: Colors.white),
-          backgroundColor: Theme.of(context).colorScheme.secondary,
-        ),
-      );
-    });
-  }
-
-  Widget _buildMaintenanceListItem(BuildContext context, MaintenanceEntry entry) {
-    return Dismissible(
-      key: ValueKey(entry.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        color: Colors.red,
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: const Icon(RemixIcons.delete_bin_line, color: Colors.white),
-      ),
-      confirmDismiss: (direction) => _deleteConfirmation(context),
-      onDismissed: (direction) async {
-        if (entry.id != null) {
-          await controller.deleteMaintenance(entry.id!);
-          Get.snackbar(
-            context.tr(TranslationKeys.commonLabelsDelete),
-            context.tr(TranslationKeys.commonLabelsDeleteConfirmMessage),
-            duration: const Duration(seconds: 2),
-            snackPosition: SnackPosition.BOTTOM,
-            colorText: Colors.white,
-          );
-        }
-      },
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-        child: ListTile(
-          leading: const Icon(RemixIcons.tools_line),
-          title: Text(entry.tipo, style: Theme.of(context).textTheme.titleMedium),
-          subtitle: Text(
-            '${context.tr(TranslationKeys.commonLabelsOdometer)}: ${entry.quilometragem.toStringAsFixed(0)} km\n ${context.tr(TranslationKeys.commonLabelsDate)}: ${DateFormat('dd/MM/yyyy').format(entry.dataServico)}',
-          ),
-          trailing: entry.custo != null ? Text('R\$ ${entry.custo!.toStringAsFixed(2)}') : null,
-          onTap: () => controller.navigateToAddEntry(context, data: entry),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReminderAlertCard(BuildContext context, List<MaintenanceEntry> reminders) {
-    if (reminders.isEmpty) return const SizedBox.shrink();
-
-    return Card(
-      color: Colors.red[50],
-      margin: const EdgeInsets.all(16.0),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              context.tr(TranslationKeys.maintenanceAlertTitle),
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(color: Colors.red[800], fontWeight: FontWeight.bold),
-            ),
-            const Divider(),
-            ...reminders.map((remider) {
-              String trigger = '';
-              if (remider.lembreteKm != null) {
-                trigger = context.tr(
-                  TranslationKeys.maintenanceAlertByKm,
-                  parameters: {'0': remider.lembreteKm!.toStringAsFixed(0)},
-                );
-              } else if (remider.lembreteData != null) {
-                trigger = context.tr(
-                  TranslationKeys.maintenanceAlertByDate,
-                  parameters: {'0': DateFormat('dd/MM/yyyy').format(remider.lembreteData!)},
-                );
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Row(
-                  children: [
-                    Icon(RemixIcons.alert_fill, size: 18, color: Colors.red[700]),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        '${remider.tipo}: $trigger',
-                        style: TextStyle(color: Colors.red[700]),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ],
-        ),
       ),
     );
   }

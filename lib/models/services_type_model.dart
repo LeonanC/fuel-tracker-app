@@ -36,7 +36,7 @@ class ServicesTypeModel {
 
   factory ServicesTypeModel.fromMap(Map<String, dynamic> map) {
     return ServicesTypeModel(
-      id: map['id'] as int,
+      id: map['pk_service'] as int,
       nome: map['nome'] as String,
       abbr: map['abbr'] as String,
       frequency: map['default_frequency_km'] as int,

@@ -12,7 +12,6 @@ import 'package:fuel_tracker_app/utils/app_localizations.dart';
 import 'package:intl/intl.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
-import 'package:uuid/uuid.dart';
 
 class MaintenanceEntryScreen extends StatefulWidget {
   final double? lastOdometer;
@@ -28,71 +27,59 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
   final MaintenanceController controller = Get.find<MaintenanceController>();
   final UnitController unitController = Get.find<UnitController>();
   final LanguageController languageController = Get.find<LanguageController>();
+  final CurrencyController currencyController = Get.find<CurrencyController>();
 
   final _formKey = GlobalKey<FormState>();
+
   ServicesTypeModel? selectedService;
 
   late DateTime _dataServico;
+  late bool isEditing;
+  bool _lembreteAtivo = false;
+  DateTime? _lembreteData;
+
   late TextEditingController _kmController;
   late TextEditingController _custoController;
   late TextEditingController _observacoesController;
-
-  bool _lembreteAtivo = false;
   late TextEditingController _lembreteKmController;
-  DateTime? _lembreteData;
-
-  late List<ServicesTypeModel> availableServices = [];
-  late bool isEditing;
 
   @override
   void initState() {
     isEditing = widget.entry != null;
     super.initState();
 
-    if (isEditing) {
-      final entry = widget.entry!;
-      _dataServico = entry.dataServico;
-      _kmController = TextEditingController(text: entry.quilometragem.toStringAsFixed(0));
-      _custoController = TextEditingController(
-        text: entry.custo != null ? entry.custo!.toStringAsFixed(2) : '',
-      );
-      _observacoesController = TextEditingController(text: entry.observacoes ?? '');
-      _lembreteAtivo = entry.lembreteAtivo;
-      _lembreteKmController = TextEditingController(
-        text: entry.lembreteKm != null ? entry.lembreteKm!.toStringAsFixed(0) : '',
-      );
-      _lembreteData = entry.lembreteData;
-    } else {
-      _dataServico = DateTime.now();
-      _kmController = widget.lastOdometer != null
-          ? TextEditingController(text: widget.lastOdometer!.toStringAsFixed(0))
-          : TextEditingController(text: '');
-      _custoController = TextEditingController();
-      _observacoesController = TextEditingController();
-      _lembreteKmController = TextEditingController();
-      _lembreteData = null;
-    }
+    _dataServico = widget.entry?.dataServico ?? DateTime.now();
+    _lembreteData = widget.entry?.lembreteData;
+    _lembreteAtivo = widget.entry?.lembreteAtivo ?? false;
+
+    _kmController = TextEditingController(
+      text: isEditing
+          ? widget.entry!.quilometragem.toStringAsFixed(0)
+          : (widget.lastOdometer?.toStringAsFixed(0) ?? ''),
+    );
+
+    _custoController = TextEditingController(
+      text: (isEditing && widget.entry!.custo != null)
+          ? widget.entry!.custo!.toStringAsFixed(2)
+          : '',
+    );
+
+    _observacoesController = TextEditingController(text: widget.entry?.observacoes ?? '');
+
+    _lembreteKmController = TextEditingController(
+      text: (isEditing && widget.entry?.lembreteKm != null)
+          ? widget.entry!.lembreteKm!.toStringAsFixed(0)
+          : '',
+    );
 
     _loadInitialData();
   }
 
-  Future<void> _loadInitialData() async {
-    availableServices = serviceController.serviceType;
+  void _loadInitialData() {
+    final services = serviceController.serviceType;
 
-    if (isEditing && widget.entry != null) {
-      selectedService = availableServices.firstWhereOrNull((s) => s.nome == widget.entry!.tipo);
-
-      serviceController.selectedServiceType = selectedService;
-
-      setState(() {});
-    }
-  }
-
-  void updateServiceType(ServicesTypeModel? newService) {
-    if (newService != null) {
-      setState(() {
-        selectedService = newService;
-      });
+    if (isEditing) {
+      selectedService = services.firstWhereOrNull((s) => s.nome == widget.entry!.tipo);
     }
   }
 
@@ -126,92 +113,45 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
     }
   }
 
-  Widget _buildNumericField(
-    TextEditingController controller,
-    String label,
-    String suffix, {
-    double? initialValue,
-    bool isDecimal = false,
-  }) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        suffixText: suffix,
-        border: const OutlineInputBorder(),
-      ),
-      keyboardType: isDecimal
-          ? const TextInputType.numberWithOptions(decimal: true)
-          : TextInputType.number,
-      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+[,.]?\d{0,2}'))],
-      validator: (value) {
-        if (label.contains(context.tr(TranslationKeys.commonLabelsOdometer)) &&
-            (value == null || value.isEmpty)) {
-          return 'context.tr(TranslationKeys.formValidationRequired)';
-        }
-        return null;
-      },
-    );
-  }
-
   void _submit() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
       final double km = double.tryParse(_kmController.text.replaceAll(',', '.')) ?? 0.0;
       final double custo = double.tryParse(_custoController.text.replaceAll(',', '.')) ?? 0.0;
-      final double? lembreteKm = (_lembreteAtivo && _lembreteKmController.text.isNotEmpty)
+      final double? lembreteKm = _lembreteAtivo
           ? double.tryParse(_lembreteKmController.text.replaceAll(',', '.'))
           : null;
-      final serviceName = selectedService?.nome;
 
-      final MaintenanceEntry newEntry = MaintenanceEntry(
-        tipo: serviceName!,
+      final updatedEntry = MaintenanceEntry(
+        id: widget.entry?.id,
+        tipo: selectedService!.nome,
         dataServico: _dataServico,
         quilometragem: km,
-        custo: custo > 0 ? custo : null,
+        custo: (custo != null && custo > 0) ? custo : null,
         observacoes: _observacoesController.text.trim().isEmpty
             ? null
             : _observacoesController.text.trim(),
         lembreteAtivo: _lembreteAtivo,
         lembreteKm: lembreteKm,
         lembreteData: _lembreteAtivo ? _lembreteData : null,
-        veiculoId: 1,
+        veiculoId: widget.entry?.veiculoId ?? 1,
       );
 
       try {
-        await controller.saveMaintenance(newEntry);
-        if (!mounted) return;
+        await controller.saveMaintenance(updatedEntry);
         Get.back();
-
-        Get.snackbar(
-          'Sucesso',
-          isEditing
-              ? 'Serviço atualizado: ${newEntry.tipo}'
-              : 'Serviço adicionado: ${newEntry.tipo}',
-          snackPosition: SnackPosition.BOTTOM,
-        );
+        _showSuccessSnackBar(updatedEntry.tipo);
       } catch (e) {
-        if (!mounted) return;
-        Get.back();
-        Get.snackbar(
-          'Erro',
-          'Falha ao salvar o serviço: $e',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.redAccent,
-        );
+        _showErrorSnackBar(e.toString());
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.entry != null;
     final theme = Theme.of(context);
-    final CurrencyController currencyController = Get.find<CurrencyController>();
-    final String _addNewServiceKey = context.tr(TranslationKeys.maintenanceServiceAddNew);
     return Obx(() {
-      final currencySymbol = currencyController.currencySymbol.value;
       return Directionality(
         textDirection: languageController.textDirection,
         child: Scaffold(
@@ -219,136 +159,170 @@ class _MaintenanceEntryScreenState extends State<MaintenanceEntryScreen> {
               ? AppTheme.backgroundColorDark
               : AppTheme.backgroundColorLight,
           appBar: AppBar(
-            backgroundColor: theme.brightness == Brightness.dark
-                ? AppTheme.backgroundColorDark
-                : AppTheme.backgroundColorLight,
-            key: ValueKey('MaintenanceEntryAppBar_${isEditing ? 'Edit' : 'New'}'),
-            title: Text(
-              isEditing
-                  ? context.tr(TranslationKeys.maintenanceScreenTitle)
-                  : context.tr(TranslationKeys.maintenanceScreenTitle),
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(RemixIcons.save_line),
-                onPressed: _submit,
-                tooltip: context.tr(TranslationKeys.maintenanceFormSaveButton),
-              ),
-            ],
+            title: Text(isEditing ? 'Editar Manutenção' : 'Nova Manutenção'),
+            actions: [IconButton(icon: const Icon(RemixIcons.save_line), onPressed: _submit)],
           ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  DropdownButtonFormField<ServicesTypeModel>(
-                    value: selectedService,
-                    items: availableServices.map((ServicesTypeModel service) {
-                      return DropdownMenuItem<ServicesTypeModel>(
-                        value: service,
-                        child: Text(service.nome),
-                      );
-                    }).toList(),
-                    onChanged: availableServices.isEmpty ? null : updateServiceType,
-                    validator: (value) {
-                      if (value == null) {
-                        return context.tr(TranslationKeys.validationRequiredServiceType);
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      RemixIcons.calendar_line,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    title: Text(context.tr(TranslationKeys.commonLabelsDate)),
-                    trailing: TextButton(
-                      onPressed: () => _selectDate(context, true),
-                      child: Text(
-                        DateFormat('dd/MM/yyyy').format(_dataServico),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                  ),
-                  const Divider(),
-                  _buildNumericField(
-                    _kmController,
-                    context.tr(TranslationKeys.commonLabelsOdometer),
-                    'km',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildNumericField(
-                    _custoController,
-                    context.tr(TranslationKeys.maintenanceFormCost),
-                    currencySymbol,
-                    isDecimal: true,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _observacoesController,
-                    decoration: InputDecoration(
-                      labelText: context.tr(TranslationKeys.maintenanceFormNotes),
-                      border: const OutlineInputBorder(),
-                    ),
-                    maxLength: 100,
-                  ),
-                  const SizedBox(height: 32),
-                  Text(
-                    context.tr(TranslationKeys.maintenanceFormReminderSection),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(),
-                  CheckboxListTile(
-                    title: Text(context.tr(TranslationKeys.maintenanceFormEnableReminder)),
-                    value: _lembreteAtivo,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _lembreteAtivo = value ?? false;
-                      });
-                    },
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  if (_lembreteAtivo) ...[
-                    const SizedBox(height: 8),
-                    _buildNumericField(
-                      _lembreteKmController,
-                      context.tr(TranslationKeys.maintenanceFormReminderKm),
-                      'km',
-                    ),
-                    const SizedBox(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Icon(
-                        RemixIcons.calendar_check_line,
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
-                      title: Text(context.tr(TranslationKeys.maintenanceFormReminderDate)),
-                      trailing: TextButton(
-                        onPressed: () => _selectDate(context, false),
-                        child: Text(
-                          _lembreteData != null
-                              ? DateFormat('dd/MM/yyyy').format(_lembreteData!)
-                              : context.tr(TranslationKeys.commonLabelsSelect),
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                    ),
-                    const Divider(),
-                  ],
-                ],
-              ),
+          body: Form(
+            key: _formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16.0),
+              children: [
+                _buildServiceDropdown(theme),
+                const SizedBox(height: 20),
+                _buildDatePickerTile(theme),
+                const SizedBox(height: 20),
+                _buildNumericField(
+                  _kmController,
+                  context.tr(TranslationKeys.commonLabelsOdometer),
+                  unitController.distanceUnit.value.name,
+                  required: true,
+                  icon: RemixIcons.dashboard_3_line,
+                ),
+                const SizedBox(height: 16),
+                _buildNumericField(
+                  _custoController,
+                  context.tr(TranslationKeys.maintenanceFormCost),
+                  currencyController.currencySymbol.value,
+                  isDecimal: true,
+                  icon: RemixIcons.money_dollar_circle_line,
+                ),
+                const SizedBox(height: 16),
+                _buildNotesField(),
+                const SizedBox(height: 30),
+                _buildReminderSection(theme),
+              ],
             ),
           ),
         ),
       );
     });
+  }
+
+  Widget _buildServiceDropdown(ThemeData theme) {
+    return DropdownButtonFormField<ServicesTypeModel>(
+      value: selectedService,
+      decoration: const InputDecoration(
+        labelText: 'Tipo de Serviço',
+        prefixIcon: Icon(RemixIcons.tools_line),
+        border: OutlineInputBorder(),
+      ),
+      items: serviceController.serviceType
+          .map((s) => DropdownMenuItem(value: s, child: Text(s.nome)))
+          .toList(),
+      onChanged: (val) => setState(() => selectedService = val),
+      validator: (v) => v == null ? 'Campo obrigatório' : null,
+    );
+  }
+
+  Widget _buildDatePickerTile(ThemeData theme) {
+    return ListTile(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      leading: const Icon(RemixIcons.calendar_event_line),
+      title: const Text('Data do Serviço'),
+      subtitle: Text(DateFormat('dd/MM/yyyy').format(_dataServico)),
+      onTap: () => _selectDate(context, true),
+    );
+  }
+
+  Widget _buildNumericField(
+    TextEditingController ctrl,
+    String label,
+    String suffix, {
+    bool isDecimal = false,
+    bool required = false,
+    required IconData icon,
+  }) {
+    return TextFormField(
+      controller: ctrl,
+      keyboardType: TextInputType.numberWithOptions(decimal: isDecimal),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(isDecimal ? r'^\d+[,.]?\d{0,2}' : r'^\d+')),
+      ],
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        suffixText: suffix,
+        border: const OutlineInputBorder(),
+      ),
+      validator: (v) => (required && (v == null || v.isEmpty)) ? 'Campo obrigatório' : null,
+    );
+  }
+
+  Widget _buildNotesField() {
+    return TextFormField(
+      controller: _observacoesController,
+      maxLength: 50,
+      decoration: InputDecoration(
+        labelText: context.tr(TranslationKeys.maintenanceFormNotes),
+        border: const OutlineInputBorder(),
+        alignLabelWithHint: true,
+      ),
+    );
+  }
+
+  Widget _buildReminderSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(RemixIcons.notification_4_line, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              context.tr(TranslationKeys.maintenanceFormReminderSection),
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Ativar alerta de manutenção'),
+          value: _lembreteAtivo,
+          onChanged: (v) => setState(() => _lembreteAtivo = v ?? false),
+        ),
+        if (_lembreteAtivo) ...[
+          const SizedBox(height: 10),
+          _buildNumericField(_lembreteKmController, 'Lembrar com (km)', unitController.distanceUnit.value.name, icon: RemixIcons.speed_up_line),
+          const SizedBox(height: 10),
+          ListTile(
+            shape: RoundedRectangleBorder(
+              side: BorderSide(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            title: const Text('Data limite do lembrete'),
+            subtitle: Text(
+              _lembreteData != null
+                  ? DateFormat('dd/MM/yyyy').format(_lembreteData!)
+                  : 'Não definida',
+            ),
+            trailing: const Icon(RemixIcons.calendar_2_line),
+            onTap: () => _selectDate(context, false),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showSuccessSnackBar(String tipo) {
+    Get.snackbar(
+      'Sucesso',
+      isEditing ? '$tipo atualizado' : '$tipo adicionado',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green,
+      colorText: Colors.white,
+    );
+  }
+
+  void _showErrorSnackBar(String error) {
+    Get.snackbar(
+      'Erro',
+      'Não foi possível salvar: $error',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.redAccent,
+      colorText: Colors.white,
+    );
   }
 }

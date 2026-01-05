@@ -17,96 +17,96 @@ class NotificationRemindersSettingsScreen extends GetView<ReminderController> {
 
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-
     final bgColor = isDarkMode ? AppTheme.backgroundColorDark : AppTheme.backgroundColorLight;
-    final primaryColor = theme.colorScheme.primary;
-
-    final ReminderController reminderController = controller;
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: bgColor,
-        title: const Text('Noficações e Lembretes'),
-        elevation: theme.appBarTheme.elevation,
-        centerTitle: theme.appBarTheme.centerTitle,
-      ),
+      appBar: AppBar(title: const Text('Noficações e Lembretes'), elevation: 0, centerTitle: true),
       body: Obx(() {
-        final isEnabled = reminderController.isReminderEnabled.value;
-        final selectedFreq = reminderController.selectedFrequency.value;
+        final isEnabled = controller.isReminderEnabled.value;
+
         return ListView(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           children: [
             SwitchListTile(
-              title: Text('Lembretes de Registro'),
+              title: Text('Lembretes de Registro', style: TextStyle(fontWeight: FontWeight.bold)),
               subtitle: const Text('Receba notificações para registrar seu abastecimento.'),
               value: isEnabled,
-              onChanged: reminderController.toggleReminder,
-              secondary: const Icon(RemixIcons.notification_line),
-              activeColor: primaryColor,
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16,16,16,8),
-              child: Text(
-                'Frequência do Lembrete:',
-                style: Theme.of(context).textTheme.titleMedium,
+              onChanged: controller.toggleReminder,
+              secondary: Icon(
+                RemixIcons.notification_line,
+                color: isEnabled ? theme.colorScheme.primary : Colors.grey,
               ),
             ),
-            ...availableFrequencies.map((option){
-              final bool isDisabled = !isEnabled;
-              
+            const Divider(),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Frequência do Lembrete',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: isEnabled ? theme.colorScheme.primary : Colors.grey,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ...availableFrequencies.map((option) {
               return RadioListTile<ReminderFrequency>(
                 value: option.frequency,
-                groupValue: selectedFreq,
+                groupValue: controller.selectedFrequency.value,
                 title: Text(option.title),
                 subtitle: Text(option.subtitle),
-                onChanged: isDisabled ? null : (ReminderFrequency? value){
-                  if(value != null){
-                    reminderController.setFrequency(value);
-                  }
-                },
-                selected: option.frequency == selectedFreq,
-                activeColor: Theme.of(context).colorScheme.primary,
+                onChanged: isEnabled ? (val) => controller.setFrequency(val!) : null,
+                activeColor: theme.colorScheme.primary,
               );
             }).toList(),
-            const Divider(height: 1, thickness: 1),
+
+            const Divider(),
             ListTile(
               enabled: isEnabled,
               leading: Icon(RemixIcons.time_line),
               title: const Text('Hora de Lembrete'),
               subtitle: Text(
-                '{context.tr(TranslationKeys.reminderTimeSubtitlePrefix)} ${reminderController.selectedReminderTime.value.format(context)}.'),
-              onTap: isEnabled ? () async {
-                final TimeOfDay initialTime = reminderController.selectedReminderTime.value;
-
-                final TimeOfDay? newTime = await showTimePicker(
-                  context: context,
-                  initialTime: initialTime,
-                  builder: (context, child){
-                    return Theme(
-                      data: Theme.of(context).copyWith(),
-                      child: child!,
-                    );
-                  }
-                );
-
-                if(newTime != null && newTime != initialTime){
-                  reminderController.setReminderTime(newTime);
-                }
-
-              } : null,
+                'Notificar às ${controller.selectedReminderTime.value.format(context)}',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: isEnabled ? () => _selectTime(context) : null,
             ),
-            const Divider(height: 1, thickness: 1),
-            ListTile(
-              leading: Icon(Icons.info_outline),
-              title: const Text('Nota importante'),
-              subtitle: const Text(
-                'A entrega das notificações depende das configurações do sistema operacional do seu dispositivo.',
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isEnabled
+                      ? theme.colorScheme.primary.withOpacity(0.05)
+                      : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, size: 20, color: Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'A entrega das notificações depende das configurações de economa de bateria do seu sistema.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
         );
       }),
+    );
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? newTime = await showTimePicker(
+      context: context,
+      initialTime: controller.selectedReminderTime.value,
     );
   }
 }

@@ -4,99 +4,46 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ReminderController extends GetxController {
-  static const String _enabledKey = 'remider_enabled';
-  static const String _frequencyKey = 'remider_frequency';
-  static const String _timeHourKey = 'remider_time_hour';
-  static const String _timeMinuteKey = 'remider_time_minute';
-
   var isReminderEnabled = false.obs;
   var selectedFrequency = ReminderFrequency.daily.obs;
-  var selectedReminderTime = TimeOfDay.now().obs;
+  var selectedReminderTime = const TimeOfDay(hour: 18, minute: 0).obs;
 
   @override
   void onInit() {
-    _loadReminders();
     super.onInit();
+    _loadSettings();
   }
 
-  Future<void> _loadReminders() async {
+  Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    isReminderEnabled.value = prefs.getBool(_enabledKey) ?? false;
+    isReminderEnabled.value = prefs.getBool('reminder_enabled') ?? false;
 
-    final freqIndex = prefs.getInt(_frequencyKey) ?? ReminderFrequency.daily.index;
-    if (freqIndex >= 0 && freqIndex < ReminderFrequency.values.length) {
-      selectedFrequency.value = ReminderFrequency.values[freqIndex];
-    } else {
-      selectedFrequency.value = ReminderFrequency.daily;
-    }
+    final freqIndex = prefs.getInt('reminder_freq') ?? 0;
+    selectedFrequency.value = ReminderFrequency.values[freqIndex];
 
-    final hour = prefs.getInt(_timeHourKey) ?? 10;
-    final minute = prefs.getInt(_timeMinuteKey) ?? 0;
+    final hour = prefs.getInt('reminder_hour') ?? 18;
+    final minute = prefs.getInt('reminder_minute') ?? 0;
     selectedReminderTime.value = TimeOfDay(hour: hour, minute: minute);
   }
 
-  void _saveReminderPreference(String key, dynamic value) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (value is bool) {
-      await prefs.setBool(key, value);
-    } else if (value is int) {
-      await prefs.setInt(key, value);
-    }
-  }
-
-  void toggleReminder(bool value) {
+  void toggleReminder(bool value) async {
     isReminderEnabled.value = value;
-    _saveReminderPreference(_enabledKey, value);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('reminder_enabled', value);
 
-    if (!value) {
-      selectedFrequency.value = ReminderFrequency.disabled;
-    } else {
-      if (selectedFrequency.value == ReminderFrequency.disabled) {
-        setFrequency(ReminderFrequency.daily);
-      }
-    }
-    _showSnackbar(
-      value ? 'Lembretes ativados' : 'Lembretes desativados',
-      'Ajuste de ativação salvo.',
-    );
+    if (value) {}
   }
 
-  void setFrequency(ReminderFrequency frequency) {
-    if (!isReminderEnabled.value) {
-      return;
-    }
-
-    if (frequency == ReminderFrequency.disabled) {
-      toggleReminder(false);
-      return;
-    }
-
-    selectedFrequency.value = frequency;
-    _saveReminderPreference(_frequencyKey, frequency.index);
-    _showSnackbar(
-      'Frequência Atualizado',
-      'Frequência de lembrete alterada para ${frequency.name}.',
-    );
+  void setFrequency(ReminderFrequency freq) async {
+    selectedFrequency.value = freq;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('reminder_freq', freq.index);
   }
 
-  void setReminderTime(TimeOfDay newTime) {
-    selectedReminderTime.value = newTime;
-    _saveReminderPreference(_timeHourKey, newTime.hour);
-    _saveReminderPreference(_timeMinuteKey, newTime.minute);
-    _showSnackbar(
-      'Hora Atualizado',
-      'A hora do lembrete foi definida para ${newTime.format(Get.context!)}.',
-    );
-  }
-
-  void _showSnackbar(String title, String message){
-    Get.snackbar(
-      title.tr,
-      message.tr,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 2),
-      backgroundColor: Get.theme.snackBarTheme.backgroundColor?.withOpacity(0.9) ?? const Color(0xFF673AB7).withOpacity(0.9),
-      colorText: Get.theme.snackBarTheme.actionTextColor ?? Get.theme.colorScheme.onSecondary,
-    );
+  void setReminderTime(TimeOfDay time) async {
+    selectedReminderTime.value = time;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('reminder_hour', time.hour);
+    await prefs.setInt('reminder_minute', time.minute);
   }
 }

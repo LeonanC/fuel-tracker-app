@@ -22,10 +22,6 @@ class AppLocalizations {
   static AppLocalizations of(BuildContext? context) {
     return AppLocalizations();
   }
-
-  static bool hasTranslation(String key) {
-    return _controller.hasTranslation(key);
-  }
 }
 
 extension LocalizationExtension on BuildContext {
@@ -33,10 +29,6 @@ extension LocalizationExtension on BuildContext {
 
   String tr(String key, {Map<String, String>? parameters}) {
     return AppLocalizations.tr(key, parameters: parameters);
-  }
-
-  bool hasTranslation(String key) {
-    return AppLocalizations.hasTranslation(key);
   }
 
   String get currentLanguageCode => AppLocalizations.currentLanguageCode;
@@ -51,10 +43,6 @@ extension LocalizedStateMixin<T extends StatefulWidget> on State<T> {
     return AppLocalizations.tr(key, parameters: parameters);
   }
 
-  bool hasTranslation(String key) {
-    return AppLocalizations.hasTranslation(key);
-  }
-
   String get currentLanguageCode => AppLocalizations.currentLanguageCode;
   bool get isRtl => AppLocalizations.isRtl;
   TextDirection get textDirection => AppLocalizations.textDirection;
@@ -65,10 +53,6 @@ mixin LocalizedStatelessMixin {
 
   String tr(String key, {Map<String, String>? parameters}) {
     return AppLocalizations.tr(key, parameters: parameters);
-  }
-
-  bool hasTranslation(String key) {
-    return AppLocalizations.hasTranslation(key);
   }
 
   String get currentLanguageCode => AppLocalizations.currentLanguageCode;
@@ -143,6 +127,9 @@ class TranslationKeys {
   static const String commonLabelsSelect = 'common_labels.select';
   static const String commonLabelsDelete = "common_labels.delete";
   static const String commonLabelsCancel = "common_labels.cancel";
+  static const String commonLabelsSettings = "Configurações";
+  static const String commonLabelsManagement = "Gestões";
+  static const String commonLabelsData = "Dados";
   static const String commonLabelsDeleteConfirmation = "common_labels.confirmation";
   static const String commonLabelsDeleteConfirmMessage = "common_labels.confirm_message";
 
@@ -243,6 +230,8 @@ class TranslationKeys {
   static const String toolsScreenClearAllDataCardTitle = 'tools_screen.clear_all_data_card_title';
   static const String toolsScreenClearAllDataCardDescription =
       'tools_screen.clear_all_data_card_description';
+  static const String toolsScreenGasStationManagementTitle = "Gerenciamento de Postos";
+  static const String toolsScreenGasStationManagementDescription = "Adicione ou edite seus postos favoritos.";
   static const String toolsScreenBackupCardTitle = 'tools_screen.backup_card_title';
   static const String toolsScreenBackupCardDescription = 'tools_screen.backup_card_description';
   static const String toolsScreenStatisticsTitle = 'tools_screen.statistics_title';
@@ -319,10 +308,10 @@ class TranslationKeys {
   static const String postoTypePostoGNV = 'maintenance.posto_GNV';
   static const String postoTypePostoGA = 'maintenance.posto_Gasolina';
 
-  static const String updateServiceUpdateAvailable = "update_service.update_available";
+  static const String updateServiceUpdateAvailable = "Nova Versão Disponível";
   static const String updateServiceCheckForUpdates = "update_service.check_for_updates";
   static const String updateServiceCurrentVersion = "update_service.current_version";
-  static const String updateServiceNewVersion = "update_service.new_version";
+  static const String updateServiceNewVersion = "Nova Versão: ";
   static const String updateServiceLater = "update_service.later";
   static const String updateServiceDownload = "update_service.download";
   static const String updateServiceNoUpdate = "update_service.service_no_update";

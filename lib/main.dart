@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:fuel_tracker_app/controllers/language_controller.dart';
-import 'package:fuel_tracker_app/controllers/theme_controller.dart';
 import 'package:fuel_tracker_app/routes/app_pages.dart';
 import 'package:fuel_tracker_app/routes/initial_binding.dart';
 import 'package:fuel_tracker_app/services/notification_service.dart';

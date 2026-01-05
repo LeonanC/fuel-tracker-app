@@ -66,12 +66,7 @@ class VehicleController extends GetxController {
   }
 
   Future<void> saveVehicle(Map<String, dynamic> data) async {
-    final db = await _db.getDb();
-    if(data['pk_vehicle'] == null){
-      await db.insert('vehicles', data);
-    }else{
-      await db.update('vehicles', data, where: 'pk_vehicle = ?', whereArgs: [data['pk_vehicle']]);
-    }
+    _db.saveVehicle(data);
     await loadVehicles();
   }
 
