@@ -1,47 +1,41 @@
-Arquivos e diretórios de build gerados pelo Flutter
-
-/ios/Flutter/App.framework
-/ios/Flutter/App.podspec
-/ios/Flutter/engine
-/ios/Flutter/Flutter.framework
-/ios/Flutter/flutter_assets
-/ios/Flutter/Generated.xcconfig
-/ios/Flutter/flutter_export_environment.sh
-
-/android/app/build
-/android/build
-/build
+# Cache e arquivos de compilação do Flutter
 .dart_tool/
-
-Exclui pacotes de dependências
-
 .packages
-.flutter-plugins
-.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
 
-Arquivos específicos do editor (VS Code, Android Studio, etc.)
+# Firebase (Arquivos gerados automaticamente)
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 
-.idea/
+# Configurações do Android
+.gradle/
+local.properties
+*.kwks
+*.keystore
+*.jks
+project.properties
+
+# Configurações do iOS
+.generated/
+Pods/
+DerivedData/
+Runner.xcworkspace
+!default.mode1v3
+!default.pbxuser
+!default.perspectivev3
+xcuserdata/
+
+# Chaves e Segredos (MUITO IMPORTANTE)
+# Se você tiver chaves de API em arquivos .env, ignore-os aqui
+.env*
+google-services.json
+GoogleService-Info.plist
+
+# IDEs (VS Code, IntelliJ, etc)
 .vscode/
+.idea/
 *.iml
-.DS_Store
-
-Chaves de depuração e outros segredos (se houver)
-
-Por segurança, descomente a linha abaixo se você tiver chaves ou arquivos sensíveis
-
-*.keys
-
-.json
-
-.env
-
-Excluir binários nativos gerados (Windows, Linux, macOS)
-
-/linux/flutter/generated
-/windows/flutter/generated
-/macos/Flutter/GeneratedPluginRegistrant.swift
-
-Configuração de testes de integração (se houver)
-
-/integration_test/
