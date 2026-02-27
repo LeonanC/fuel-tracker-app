@@ -1,4 +1,4 @@
-import 'package:fuel_tracker_app/services/application.dart';
+import 'package:fuel_tracker_app/data/services/application.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 

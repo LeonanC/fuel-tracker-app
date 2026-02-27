@@ -1,21 +1,29 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:fuel_tracker_app/controllers/language_controller.dart';
+import 'package:fuel_tracker_app/modules/fuel/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/routes/app_pages.dart';
 import 'package:fuel_tracker_app/routes/initial_binding.dart';
-import 'package:fuel_tracker_app/services/notification_service.dart';
-import 'package:fuel_tracker_app/theme/app_theme.dart';
+import 'package:fuel_tracker_app/data/services/notification_service.dart';
+import 'package:fuel_tracker_app/core/app_theme.dart';
 import 'package:get/get.dart';
 
 final NotificationService notificationService = NotificationService();
 
-void main() async {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
   WidgetsFlutterBinding.ensureInitialized();
 
   await notificationService.initialize();
 
   final languageProvider = Get.put(LanguageController());
-  await languageProvider.initialize();  
+  await languageProvider.initialize();
 
   runApp(MyApp(languageProvider: languageProvider));
 }
@@ -31,31 +39,31 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    final LanguageController languageController = Get.find<LanguageController>();
+    final LanguageController languageController =
+        Get.find<LanguageController>();
 
     return GetMaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Controle de Combustível',
-        theme: AppTheme.darkTheme(languageController.currentLanguage.code),
-        locale: languageController.locale,
-        localizationsDelegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [
-          Locale('en'),
-          Locale('pt'),
-          Locale('es'),
-          Locale('fr'),
-          Locale('de'),
-          Locale('it'),
-          Locale('ru'),
-        ],
-        initialRoute: AppPages.INITIAL,
-        getPages: AppPages.routes,
-        initialBinding: InitialBinding(),
-      
+      debugShowCheckedModeBanner: false,
+      title: 'Controle de Combustível',
+      theme: AppTheme.darkTheme(languageController.currentLanguage.code),
+      locale: languageController.locale,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('pt'),
+        Locale('es'),
+        Locale('fr'),
+        Locale('de'),
+        Locale('it'),
+        Locale('ru'),
+      ],
+      initialRoute: AppPages.INITIAL,
+      getPages: AppPages.routes,
+      initialBinding: InitialBinding(),
     );
   }
 }

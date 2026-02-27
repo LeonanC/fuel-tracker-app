@@ -3,7 +3,7 @@ abstract class Routes {
   static const home_screen = '/main_navigation';
   static const fuel_list = '/fuel_list';
   static const fuel_entry = '/fuel_entry';
-  static const maintenance_list = '/maintenace_list';
+  static const postos_list = '/postos_list';
   static const maintenance_entry = '/maintenace_entry';
   static const gas_station = '/gas_station';
   static const language_settings = '/language_settings';
