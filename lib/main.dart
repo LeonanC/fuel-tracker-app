@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/routes/app_pages.dart';
 import 'package:fuel_tracker_app/routes/initial_binding.dart';
@@ -42,28 +43,45 @@ class _MyAppState extends State<MyApp> {
     final LanguageController languageController =
         Get.find<LanguageController>();
 
-    return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Controle de Combustível',
-      theme: AppTheme.darkTheme(languageController.currentLanguage.code),
-      locale: languageController.locale,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('pt'),
-        Locale('es'),
-        Locale('fr'),
-        Locale('de'),
-        Locale('it'),
-        Locale('ru'),
-      ],
-      initialRoute: AppPages.INITIAL,
-      getPages: AppPages.routes,
-      initialBinding: InitialBinding(),
+    return ScreenUtilInit(
+      designSize: const Size(375, 812),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return Obx(() {
+          return GetMaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Controle de Combustível',
+            theme: AppTheme.darkTheme(languageController.currentLanguage.code),
+            locale: languageController.locale,
+            builder: (context, widget) {
+              return MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(0.9)),
+                child: widget!,
+              );
+            },
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+              Locale('pt'),
+              Locale('es'),
+              Locale('fr'),
+              Locale('de'),
+              Locale('it'),
+              Locale('ru'),
+            ],
+            initialRoute: AppPages.INITIAL,
+            getPages: AppPages.routes,
+            initialBinding: InitialBinding(),
+          );
+        });
+      },
     );
   }
 }

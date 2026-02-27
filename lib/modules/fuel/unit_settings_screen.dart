@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/theme_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/core/app_theme.dart';
@@ -192,47 +193,57 @@ class UnitSettingsScreen extends GetView<UnitController> {
       children: [
         Text(
           context.tr(TranslationKeys.fontSizeSectionTitle),
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w500,
+            color: textColor,
+          ),
         ),
-        Slider(
-          value: themeController.fontScale.value,
-          min: 0.8,
-          max: 1.2,
-          divisions: 4,
-          label: '${(themeController.fontScale.value * 100).round()}%',
-          activeColor: AppTheme.primaryFuelColor,
-          onChanged: themeController.setFontScale,
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        SizedBox(height: 8.h),
+        Obx(
+          () => Column(
             children: [
-              Text(
-                'Pequena'.tr,
-                style: TextStyle(
-                  color: textColor.withOpacity(0.5),
-                  fontSize: 12,
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: AppTheme.primaryFuelColor,
+                  thumbColor: AppTheme.primaryFuelColor,
+                  overlayColor: AppTheme.primaryFuelColor.withOpacity(0.2),
+                  valueIndicatorTextStyle: TextStyle(fontSize: 12.sp),
                 ),
-              ),
-              Text(
-                'Padrão'.tr,
-                style: TextStyle(
-                  color: textColor.withOpacity(0.5),
-                  fontSize: 12,
-                ),
-              ),
-              Text(
-                'Grande'.tr,
-                style: TextStyle(
-                  color: textColor.withOpacity(0.5),
-                  fontSize: 12,
+                child: Slider(
+                  value: themeController.fontScale.value,
+                  min: 0.8,
+                  max: 1.2,
+                  divisions: 4,
+                  label: '${(themeController.fontScale.value * 100).round()}%',
+                  activeColor: AppTheme.primaryFuelColor,
+                  onChanged: (newValue) {
+                    themeController.setFontScale(newValue);
+                  },
                 ),
               ),
             ],
           ),
         ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12.w),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildScaleLabel('Pequena', textColor),
+              _buildScaleLabel('Padrão', textColor),
+              _buildScaleLabel('Grande', textColor),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Text _buildScaleLabel(String label, Color textColor) {
+    return Text(
+      label.tr,
+      style: TextStyle(color: textColor.withOpacity(0.5), fontSize: 12.sp),
     );
   }
 }
