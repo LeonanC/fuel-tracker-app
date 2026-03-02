@@ -47,16 +47,20 @@ class FuelEntryModel {
   }
 
   factory FuelEntryModel.fromFirestore(Map<String, dynamic> map, String id) {
-    DateTime? dataDateTime;
+    String dateStr = '';
+
     if (map['data'] is Timestamp) {
-      dataDateTime = (map['data'] as Timestamp).toDate();
+      dateStr = (map['data'] as Timestamp).toDate().toIso8601String();
+    } else if (map['data'] is String) {
+      dateStr = map['data'] as String;
     }
+
     return FuelEntryModel(
-      id: map['pk_fuel'] as String?,
+      id: (map['pk_fuel'] as String?) ?? id,
       vehicleId: map['fk_veiculo'] as int,
       fuelTypeId: map['fk_tipo'] as int,
       gasStationId: map['fk_posto'] as int,
-      entryDate: dataDateTime?.toIso8601String() ?? '',
+      entryDate: dateStr,
       odometerKm: (map['velocimetro'] as num?)?.toDouble() ?? 0.0,
       volumeLiters: (map['litros_volume'] as num?)?.toDouble() ?? 0.0,
       pricePerLiter: (map['preco_litro'] as num?)?.toDouble() ?? 0.0,

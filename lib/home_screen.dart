@@ -58,6 +58,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNav(LanguageController langController) {
+    double screenWidth = MediaQuery.of(context).size.width;
+
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.primaryDark,
@@ -71,10 +73,10 @@ class _HomePageState extends State<HomePage> {
       ),
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
           child: GNav(
-            gap: 8,
-            iconSize: 24,
+            gap: screenWidth < 360 ? 4 : 8,
+            iconSize: screenWidth < 360 ? 20 : 24,
             curve: Curves.easeOutExpo,
             rippleColor: Colors.grey[300]!,
             hoverColor: Colors.grey[200]!,
@@ -82,7 +84,10 @@ class _HomePageState extends State<HomePage> {
             tabBorderRadius: 28,
 
             activeColor: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth < 360 ? 10 : 20,
+              vertical: 12,
+            ),
             tabBackgroundColor: Colors.blue.withOpacity(0.7),
             textStyle: GoogleFonts.lato(color: Colors.white, fontSize: 14),
             selectedIndex: _selectedIndex,
@@ -96,6 +101,10 @@ class _HomePageState extends State<HomePage> {
                 text: langController.translate(
                   TranslationKeys.navigationFuelEntries,
                 ),
+                textStyle: GoogleFonts.lato(
+                  color: Colors.white,
+                  fontSize: screenWidth < 360 ? 11.sp : 13.sp,
+                ),
               ),
               GButton(
                 icon: _selectedIndex == 1
@@ -104,12 +113,20 @@ class _HomePageState extends State<HomePage> {
                 text: langController.translate(
                   TranslationKeys.navigationSearch,
                 ),
+                textStyle: GoogleFonts.lato(
+                  color: Colors.white,
+                  fontSize: screenWidth < 360 ? 11.sp : 13.sp,
+                ),
               ),
               GButton(
                 icon: _selectedIndex == 2
                     ? RemixIcons.map_2_fill
                     : RemixIcons.map_2_line,
                 text: langController.translate(TranslationKeys.navigationMap),
+                textStyle: GoogleFonts.lato(
+                  color: Colors.white,
+                  fontSize: screenWidth < 360 ? 11.sp : 13.sp,
+                ),
               ),
               GButton(
                 icon: _selectedIndex == 3
@@ -117,6 +134,10 @@ class _HomePageState extends State<HomePage> {
                     : RemixIcons.settings_2_line,
                 text: langController.translate(
                   TranslationKeys.navigationFuelTools,
+                ),
+                textStyle: GoogleFonts.lato(
+                  color: Colors.white,
+                  fontSize: screenWidth < 360 ? 11.sp : 13.sp,
                 ),
               ),
             ],

@@ -30,8 +30,8 @@ class GasStationModel {
       'endereco': address,
       'brand': brand,
       'preco': price,
-      'hasConvenientStore': hasConvenientStore ? 1 : 0,
-      'is24Hours': is24Hours ? 1 : 0,
+      'hasConvenientStore': hasConvenientStore ? true : false,
+      'is24Hours': is24Hours ? true : false,
     };
   }
 
@@ -44,8 +44,8 @@ class GasStationModel {
       address: map['endereco'] as String?,
       brand: map['brand'] as String,
       price: (map['preco'] as num?)?.toDouble() ?? 0.0,
-      hasConvenientStore: map['hasConvenientStore'] as bool,
-      is24Hours: map['is24Hours'] as bool,
+      hasConvenientStore: map['hasConvenientStore'] == true,
+      is24Hours: map['is24Hours'] == true,
     );
   }
 

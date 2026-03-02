@@ -8,7 +8,6 @@ import 'package:fuel_tracker_app/modules/fuel/controllers/fuel_list_controller.d
 import 'package:fuel_tracker_app/modules/fuel/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/fuel/about_screen.dart';
-import 'package:fuel_tracker_app/core/app_theme.dart';
 import 'package:fuel_tracker_app/core/app_localizations.dart';
 import 'package:fuel_tracker_app/core/unit_nums.dart';
 import 'package:get/get.dart';

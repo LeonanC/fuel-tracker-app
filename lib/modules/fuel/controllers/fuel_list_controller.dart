@@ -1,12 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/fuel/widgets/fuel_entry_screen.dart';
 import 'package:fuel_tracker_app/core/unit_nums.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:http/http.dart';
 import 'package:remixicon/remixicon.dart';
 
 class FuelListController extends GetxController {
@@ -77,10 +81,18 @@ class FuelListController extends GetxController {
       final id = data['pk_vehicle'] ?? doc.id;
       veiculosMap[id] = {
         'pk_vehicle': id,
+        'imagem_url': data['imagem_url'] ?? '',
         'nickname': data['nickname'] ?? '',
-        'tank_capacity': (data['tank_capacity'] as num? ?? 0.0).toDouble(),
-        'city': data['city'] ?? '',
         'plate': data['plate'] ?? '',
+        'is_mercosul': data['is_mercosul'] ? true : false,
+        'city': data['city'] ?? '',
+        'make': data['make'] ?? '',
+        'model': data['model'] ?? '',
+        'year': data['year'] ?? 0,
+        'fk_type_fuel': data['fk_type_fuel'] ?? 0,
+        'initial_odometer': (data['initial_odometer'] as num? ?? 0.0)
+            .toDouble(),
+        'tank_capacity': (data['tank_capacity'] as num? ?? 0.0).toDouble(),
       };
     }
 
@@ -110,6 +122,37 @@ class FuelListController extends GetxController {
         'abbr': data['abbr'] ?? '',
         'default_frequency_km': (data['default_frequency_km'] as num? ?? 0.0)
             .toDouble(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> getCurrentAddress() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      String address = "Endereço não encontrado";
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        address =
+            "${place.thoroughfare}, ${place.subThoroughfare}, ${place.subLocality}, ${place.locality}";
+      }
+
+      return {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+        'address': address,
+      };
+    } catch (e) {
+      return {
+        'latitude': 0.0,
+        'longitude': 0.0,
+        'address': "Erro ao obter localização",
       };
     }
   }
@@ -186,6 +229,95 @@ class FuelListController extends GetxController {
       await loadFuel();
     } catch (e) {
       Get.snackbar('Erro', "Falha ao atualizar: $e");
+    }
+  }
+
+  Future<void> saveOrUpdate(GasStationModel posto) async {
+    try {
+      isLoading.value = true;
+
+      var collection = _firestore.collection('postos');
+      int idFinal = posto.id!;
+
+      if (idFinal == 0) {
+        final idsExistentes = postosMap.values
+            .map((p) => int.tryParse(p['pk_posto']?.toString() ?? '0') ?? 0)
+            .toList();
+
+        idFinal = idsExistentes.isEmpty
+            ? 1
+            : idsExistentes.reduce((a, b) => a > b ? a : b) + 1;
+
+        final postoComId = GasStationModel(
+          id: idFinal,
+          nome: posto.nome,
+          brand: posto.brand,
+          address: posto.address,
+          latitude: posto.latitude,
+          longitude: posto.longitude,
+          price: posto.price,
+          hasConvenientStore: posto.hasConvenientStore,
+          is24Hours: posto.is24Hours,
+        );
+
+        await collection
+            .doc(idFinal.toString())
+            .set(postoComId.toMap(), SetOptions(merge: true));
+
+        postosMap[idFinal] = postoComId.toMap();
+      } else {
+        await collection
+            .doc(posto.id.toString())
+            .set(posto.toMap(), SetOptions(merge: true));
+
+        postosMap[posto.id] = posto.toMap();
+      }
+
+      postosMap.refresh();
+      Get.snackbar(
+        "Sucesso",
+        "Posto ${posto.nome} salvo com sucesso!",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.withOpacity(0.7),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        "Erro",
+        "Falha ao salva/atualizar: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.7),
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> deletePosto(dynamic id) async {
+    try {
+      isLoading.value = true;
+      await _firestore.collection('postos').doc(id.toString()).delete();
+      postosMap.remove(id);
+      postosMap.refresh();
+
+      Get.snackbar(
+        "Excluído",
+        "Posto removido com sucesso!",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.withOpacity(0.7),
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      Get.snackbar(
+        "Erro",
+        "Não foi possível excluir: $e",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.withOpacity(0.7),
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
     }
   }
 

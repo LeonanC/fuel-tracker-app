@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/modules/fuel/controllers/unit_controller.dart';
-import 'package:fuel_tracker_app/data/models/maintenance_entry_model.dart';
-import 'package:fuel_tracker_app/modules/fuel/controllers/fuel_list_controller.dart';
-import 'package:fuel_tracker_app/modules/fuel/controllers/maintenance_controller.dart';
-import 'package:fuel_tracker_app/core/app_theme.dart';
-import 'package:fuel_tracker_app/core/app_localizations.dart';
 import 'package:fuel_tracker_app/modules/fuel/widgets/searchList.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 class PostosList extends StatefulWidget {

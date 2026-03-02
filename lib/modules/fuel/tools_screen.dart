@@ -4,9 +4,11 @@ import 'package:fuel_tracker_app/modules/fuel/controllers/update_controller.dart
 import 'package:fuel_tracker_app/data/models/app_update.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/backup_restore_screen.dart';
+import 'package:fuel_tracker_app/modules/fuel/gas_station_screen.dart';
 import 'package:fuel_tracker_app/modules/fuel/language_settings_screen.dart';
 import 'package:fuel_tracker_app/modules/fuel/notificationReminders_settings_screen.dart';
 import 'package:fuel_tracker_app/modules/fuel/unit_settings_screen.dart';
+import 'package:fuel_tracker_app/modules/fuel/vehicle_screen.dart';
 import 'package:fuel_tracker_app/modules/fuel/widgets/vehicle_entry_screen.dart';
 import 'package:fuel_tracker_app/core/app_localizations.dart';
 import 'package:get/get.dart';
@@ -134,9 +136,7 @@ class ToolsScreen extends GetView<FuelListController> {
                             ),
                             icon: RemixIcons.gas_station_line,
                             iconColor: Colors.green,
-                            onTap: () {
-                              print("Em Desenvolvimento");
-                            },
+                            onTap: () => Get.to(() => GasStationScreen()),
                           ),
                           _buildListTile(
                             context,
@@ -148,9 +148,7 @@ class ToolsScreen extends GetView<FuelListController> {
                             ),
                             icon: RemixIcons.car_line,
                             iconColor: Colors.indigo,
-                            onTap: () {
-                              print("Em Desenvolvimento");
-                            },
+                            onTap: () => Get.to(() => VehicleScreen()),
                           ),
                         ],
                       ),

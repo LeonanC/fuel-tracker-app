@@ -36,7 +36,7 @@ class VehicleModel {
       'pk_vehicle': id,
       'nickname': nickname,
       'plate': plate,
-      'is_mercosul': isMercosul ? 1 : 0,
+      'is_mercosul': isMercosul ? true : false,
       'city': city,
       'make': make,
       'model': model,

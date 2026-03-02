@@ -1,4 +1,6 @@
 import 'package:fuel_tracker_app/modules/fuel/bindings/fuel_bindings.dart';
+import 'package:fuel_tracker_app/modules/fuel/gas_station_screen.dart';
+import 'package:fuel_tracker_app/modules/fuel/vehicle_screen.dart';
 import 'package:fuel_tracker_app/routes/app_routes.dart';
 import 'package:fuel_tracker_app/routes/initial_binding.dart';
 import 'package:fuel_tracker_app/modules/fuel/widgets/fuel_entry_screen.dart';
@@ -50,8 +52,13 @@ class AppPages {
       binding: FuelBindings(),
     ),
     GetPage(
-      name: Routes.vehicles_settings,
-      page: () => LanguageSettingsScreen(),
+      name: Routes.gas_station,
+      page: () => GasStationScreen(),
+      binding: FuelBindings(),
+    ),
+    GetPage(
+      name: Routes.vehicles_screen,
+      page: () => VehicleScreen(),
       binding: FuelBindings(),
     ),
     GetPage(
