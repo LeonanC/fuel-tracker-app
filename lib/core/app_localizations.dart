@@ -74,20 +74,6 @@ class TranslationKeys {
   static const String appSubtitle = 'app.subtitle';
 
   // About Screen
-  static const String aboutTitle = 'about.title';
-  static const String aboutCurrentVersion = 'about.currentVersion';
-  static const String aboutTagline = 'about.tagline';
-  static const String aboutDevelopedBy = 'about.developed_by';
-  static const String aboutDeveloper = 'about.developer';
-  static const String aboutDescription = 'about.description';
-  static const String aboutGithubSource = 'about.githubSource';
-  static const String aboutPrivacyPolicy = 'about.privacyPolicy';
-  static const String aboutTermsOfService = 'about.termsOfService';
-  static const String aboutCopyright = 'about.copyright';
-  static const String aboutUpdateService = 'about.updateServiceCheckForUpdates';
-  static const String errorTitle = 'about.errorTitle';
-  static const String errorTitleDesc = 'about.errorTitle';
-  static const String aboutFailedToLaunchUrl = 'about.errorFailedToLaunchUrl';
 
   // Navigation
   static const String navigation = 'navigation';
@@ -97,16 +83,6 @@ class TranslationKeys {
   static const String navigationFuelTools = 'navigation.fuel_tools';
 
   // List Screen
-  static const String listScreen = 'list_screen';
-  static const String listScreenAppBarTitle = 'list_screen.app_bar_title';
-  static const String listScreenRefresh = 'list_screen.refresh';
-  static const String listScreenRefreshing = 'list_screen.refreshing';
-  static const String listScreenSnackbarEntryAdded =
-      'list_screen.snackbar_entry_added';
-  static const String listScreenSnackbarEntryUpdated =
-      'list_screen.snackbar_entry_updated';
-  static const String listScreenSnackbarEntryRemoved =
-      'list_screen.snackbar_entry_removed';
 
   static const String mapPlaceholder = 'map_screen.map_placeholder';
   static const String mapPlaceholderTip = 'map_screen.map_placeholder_tip';

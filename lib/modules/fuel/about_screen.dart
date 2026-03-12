@@ -7,6 +7,24 @@ import 'package:fuel_tracker_app/core/app_localizations.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+abstract class TranslationKeysAbout {
+  static const String appTitle = 'app.title';
+  static const String aboutTitle = 'about.title';
+  static const String aboutCurrentVersion = 'about.currentVersion';
+  static const String aboutTagline = 'about.tagline';
+  static const String aboutDevelopedBy = 'about.developed_by';
+  static const String aboutDeveloper = 'about.developer';
+  static const String aboutDescription = 'about.description';
+  static const String aboutGithubSource = 'about.githubSource';
+  static const String aboutPrivacyPolicy = 'about.privacyPolicy';
+  static const String aboutTermsOfService = 'about.termsOfService';
+  static const String aboutCopyright = 'about.copyright';
+  static const String aboutUpdateService = 'about.updateServiceCheckForUpdates';
+  static const String errorTitle = 'about.errorTitle';
+  static const String errorTitleDesc = 'about.errorTitle';
+  static const String aboutFailedToLaunchUrl = 'about.errorFailedToLaunchUrl';
+}
+
 class AboutScreen extends StatelessWidget {
   AboutScreen({super.key});
 
@@ -22,8 +40,8 @@ class AboutScreen extends StatelessWidget {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       Get.snackbar(
-        TranslationKeys.errorTitle,
-        TranslationKeys.errorTitleDesc,
+        TranslationKeysAbout.errorTitle,
+        TranslationKeysAbout.errorTitleDesc,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -45,7 +63,7 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildAboutScreen(BuildContext context, ThemeData theme) {
     return Obx(() {
-      final versionLabel = context.tr(TranslationKeys.aboutCurrentVersion);
+      final versionLabel = context.tr(TranslationKeysAbout.aboutCurrentVersion);
       final fullVersionText =
           '$versionLabel ${aboutController.appVersion.value}';
       final isChecking = aboutController.isCheckingForUpdate.value;
@@ -55,7 +73,7 @@ class AboutScreen extends StatelessWidget {
             ? AppTheme.backgroundColorDark
             : AppTheme.backgroundColorLight,
         appBar: AppBar(
-          title: Text(context.tr(TranslationKeys.aboutTitle)),
+          title: Text(context.tr(TranslationKeysAbout.aboutTitle)),
           backgroundColor: theme.brightness == Brightness.dark
               ? AppTheme.backgroundColorDark
               : AppTheme.backgroundColorLight,
@@ -80,8 +98,8 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                'Fuel Tracker',
+              Text(
+                context.tr(TranslationKeysAbout.appTitle),
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -91,7 +109,7 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                context.tr(TranslationKeys.aboutTagline),
+                context.tr(TranslationKeysAbout.aboutTagline),
                 style: const TextStyle(
                   fontSize: 16,
                   fontStyle: FontStyle.italic,
@@ -101,12 +119,12 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 30),
               Text(
-                context.tr(TranslationKeys.aboutDevelopedBy),
+                context.tr(TranslationKeysAbout.aboutDevelopedBy),
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 4),
               Text(
-                context.tr(TranslationKeys.aboutDeveloper),
+                context.tr(TranslationKeysAbout.aboutDeveloper),
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
               const SizedBox(height: 40),
@@ -124,7 +142,7 @@ class AboutScreen extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  context.tr(TranslationKeys.aboutDescription),
+                  context.tr(TranslationKeysAbout.aboutDescription),
                   style: const TextStyle(fontSize: 16, height: 1.5),
                 ),
               ),
@@ -164,7 +182,9 @@ class AboutScreen extends StatelessWidget {
                     _launchUrl('https://github.com/LeonanC/fuel-tracker-app');
                   },
                   icon: const Icon(Icons.code),
-                  label: Text(context.tr(TranslationKeys.aboutGithubSource)),
+                  label: Text(
+                    context.tr(TranslationKeysAbout.aboutGithubSource),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueGrey,
                     foregroundColor: Colors.white,
@@ -185,7 +205,9 @@ class AboutScreen extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.privacy_tip_outlined),
-                  label: Text(context.tr(TranslationKeys.aboutPrivacyPolicy)),
+                  label: Text(
+                    context.tr(TranslationKeysAbout.aboutPrivacyPolicy),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.teal,
                     foregroundColor: Colors.white,
@@ -206,7 +228,9 @@ class AboutScreen extends StatelessWidget {
                     );
                   },
                   icon: const Icon(Icons.gavel_outlined),
-                  label: Text(context.tr(TranslationKeys.aboutTermsOfService)),
+                  label: Text(
+                    context.tr(TranslationKeysAbout.aboutTermsOfService),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
                     foregroundColor: Colors.white,
@@ -219,7 +243,7 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               Text(
-                context.tr(TranslationKeys.aboutCopyright),
+                context.tr(TranslationKeysAbout.aboutCopyright),
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 textAlign: TextAlign.center,
               ),

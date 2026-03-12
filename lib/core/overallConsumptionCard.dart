@@ -11,126 +11,95 @@ import 'package:remixicon/remixicon.dart';
 class OverallConsumptionCard extends StatelessWidget {
   OverallConsumptionCard({super.key});
 
-  final FuelListController controller = Get.find<FuelListController>();
-  final UnitController unitController = Get.find<UnitController>();
-  final CurrencyController currencyController = Get.find<CurrencyController>();
+  final controller = Get.find<FuelListController>();
+  final currencyController = Get.find<CurrencyController>();
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final currencySymbol = currencyController.currencySymbol.value;
-      final overallConsumptionValue = controller.overallConsumption.value;
-      final overallCostPerDistance = controller.overallCostPerDistance;
+      final avgCons = controller.averageConsumption;
+      final avgCost = controller.averageCostPerKm;
+      final distUnit = controller.getDistanceUnitString();
+      final currency = currencyController.currencySymbol.value;
 
-      final isZero = overallConsumptionValue <= 0;
-      final isCostZero = overallCostPerDistance <= 0;
-
-      final String formattedValue = controller.formatConsumption(
-        overallConsumptionValue,
-      );
-      final String unitString = controller.getConsumptionUnitString();
-
-      final bool isMiles =
-          unitController.distanceUnit.value == DistanceUnit.miles;
-      final double costPerDistanceToDisplay = isMiles
-          ? (overallCostPerDistance / controller.kmToMileFactor)
-          : overallCostPerDistance;
-
-      final String distanceUnitStr = controller.getDistanceUnitString();
-      final String costPerDistanceUnit = '$currencySymbol/$distanceUnitStr';
-
-      return Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    RemixIcons.dashboard_line,
-                    color: Colors.indigo,
-                    size: 30,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.tr(
-                            TranslationKeys.consumptionCardsOverallAverage,
-                          ),
-                          style: GoogleFonts.lato(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.indigo,
-                          ),
-                        ),
-                        Text(
-                          isZero
-                              ? context.tr(
-                                  TranslationKeys
-                                      .consumptionCardsNotAvailableShort,
-                                )
-                              : '$formattedValue $unitString',
-                          style: GoogleFonts.lato(
-                            fontWeight: FontWeight.w800,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32),
-
-              Row(
-                children: [
-                  Icon(
-                    RemixIcons.money_dollar_box_line,
-                    color: Colors.redAccent,
-                    size: 30,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          context.tr(
-                            TranslationKeys
-                                .consumptionCardsOverallCostPerDistance,
-                          ),
-                          style: GoogleFonts.lato(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.redAccent,
-                          ),
-                        ),
-                        Text(
-                          isCostZero
-                              ? context.tr(
-                                  TranslationKeys
-                                      .consumptionCardsNotAvailableShort,
-                                )
-                              : '${costPerDistanceToDisplay.toStringAsFixed(2)} $costPerDistanceUnit',
-                          style: GoogleFonts.lato(
-                            fontWeight: FontWeight.w800,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF252525),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildStatRow(
+              icon: RemixIcons.layout_grid_line,
+              iconColor: Colors.blueAccent,
+              label: "Consumo Médio Geral",
+              value: "${avgCons.toStringAsFixed(2)} $distUnit/L",
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(color: Colors.white10, height: 1),
+            ),
+            _buildStatRow(
+              icon: RemixIcons.money_dollar_box_line,
+              iconColor: Colors.redAccent,
+              label: "Custo por Distância Total",
+              value: "$currency ${avgCost.toStringAsFixed(2)}/$distUnit",
+            ),
+          ],
         ),
       );
     });
+  }
+
+  Widget _buildStatRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: iconColor, size: 24),
+        ),
+        const SizedBox(width: 16),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: iconColor.withOpacity(0.8),
+                fontSize: 13,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: GoogleFonts.firaCode(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

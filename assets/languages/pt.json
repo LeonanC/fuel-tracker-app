@@ -19,6 +19,7 @@
         "app_bar_title": "Meus Abastecimentos",
         "refresh": "Botão de recarregar dados",
         "refreshing": "Atualizando lista de abastecimentos",
+        "vehicle_label": "Veículo:",
         "snackbar_entry_added": "Abastecimento adicionado com sucesso!",
         "snackbar_entry_updated": "Abastecimento atualizado com sucesso!",
         "snackbar_entry_removed": "🗑️ Abastecimento removido com sucesso!"

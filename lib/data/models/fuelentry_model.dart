@@ -5,7 +5,7 @@ class FuelEntryModel {
   final int vehicleId;
   final int fuelTypeId;
   final int gasStationId;
-  final String entryDate;
+  final DateTime entryDate;
   final double odometerKm;
   final double volumeLiters;
   final double pricePerLiter;
@@ -29,13 +29,21 @@ class FuelEntryModel {
     this.receiptPath,
   });
 
+  double calculateConsumption(FuelEntryModel previousEntry) {
+    if (odometerKm <= previousEntry.odometerKm || volumeLiters <= 0) return 0.0;
+
+    final double distanceTraveled = odometerKm - previousEntry.odometerKm;
+
+    return distanceTraveled / volumeLiters;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'pk_fuel': id,
       'fk_veiculo': vehicleId,
       'fk_tipo': fuelTypeId,
       'fk_posto': gasStationId,
-      'data': entryDate,
+      'data': Timestamp.fromDate(entryDate),
       'velocimetro': odometerKm,
       'litros_volume': volumeLiters,
       'preco_litro': pricePerLiter,
@@ -46,44 +54,42 @@ class FuelEntryModel {
     };
   }
 
-  factory FuelEntryModel.fromFirestore(Map<String, dynamic> map, String id) {
-    String dateStr = '';
+  factory FuelEntryModel.fromFirestore(Map<String, dynamic> map, String docId) {
+    DateTime parsedDate;
 
     if (map['data'] is Timestamp) {
-      dateStr = (map['data'] as Timestamp).toDate().toIso8601String();
+      parsedDate = (map['data'] as Timestamp).toDate();
     } else if (map['data'] is String) {
-      dateStr = map['data'] as String;
+      parsedDate = DateTime.tryParse(map['data']) ?? DateTime.now();
+    } else {
+      parsedDate = DateTime.now();
     }
 
     return FuelEntryModel(
-      id: (map['pk_fuel'] as String?) ?? id,
-      vehicleId: map['fk_veiculo'] as int,
-      fuelTypeId: map['fk_tipo'] as int,
-      gasStationId: map['fk_posto'] as int,
-      entryDate: dateStr,
-      odometerKm: (map['velocimetro'] as num?)?.toDouble() ?? 0.0,
-      volumeLiters: (map['litros_volume'] as num?)?.toDouble() ?? 0.0,
-      pricePerLiter: (map['preco_litro'] as num?)?.toDouble() ?? 0.0,
-      totalCost: (map['custo_total'] as num?)?.toDouble() ?? 0.0,
-      tankCapacity: (map['tank_capacity'] as num?)?.toDouble() ?? 0.0,
+      id: docId,
+      vehicleId: _toInt(map['fk_veiculo']),
+      fuelTypeId: _toInt(map['fk_tipo']),
+      gasStationId: _toInt(map['fk_posto']),
+      entryDate: parsedDate,
+      odometerKm: _toDouble(map['velocimetro']),
+      volumeLiters: _toDouble(map['litros_volume']),
+      pricePerLiter: _toDouble(map['preco_litro']),
+      totalCost: _toDouble(map['custo_total']),
+      tankCapacity: _toDouble(map['tank_capacity']),
       tankFull: map['tanque_cheio'] ?? false,
       receiptPath: map['receipt_path'] as String?,
     );
   }
 
-  double calculateConsumption(FuelEntryModel previousEntry) {
-    if (previousEntry.tankFull == false) {
-      return 0.0;
-    }
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
-    final double distanceKM = this.odometerKm - previousEntry.odometerKm;
-
-    if (this.volumeLiters <= 0 || distanceKM <= 0) {
-      return 0.0;
-    }
-
-    final double consumption = distanceKM / this.volumeLiters;
-
-    return double.parse(consumption.toStringAsFixed(2));
+  static int _toInt(dynamic value) {
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }

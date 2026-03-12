@@ -5,7 +5,7 @@ import 'package:fuel_tracker_app/core/app_localizations.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
-abstract class TranslationKeys_2 {
+abstract class TranslationKeysBackup {
   static const String backupRestoreAppBarTitle = 'Título Backup/Restaurar';
   static const String backupRestoreExportCardTitle = 'Fazer Backup';
   static const String backupRestoreExportCardDescription =
@@ -49,7 +49,7 @@ class BackupRestoreScreen extends GetView<BackupController> {
           ? AppTheme.backgroundColorDark
           : AppTheme.backgroundColorLight,
       appBar: AppBar(
-        title: Text(context.tr(TranslationKeys_2.backupRestoreAppBarTitle)),
+        title: Text(context.tr(TranslationKeysBackup.backupRestoreAppBarTitle)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -57,7 +57,7 @@ class BackupRestoreScreen extends GetView<BackupController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(context.tr(TranslationKeys_2.backupRestoreScopeTitle)),
+            Text(context.tr(TranslationKeysBackup.backupRestoreScopeTitle)),
             const SizedBox(height: 12),
             _buildScopeSelector(),
             const SizedBox(height: 24),
@@ -99,25 +99,25 @@ class BackupRestoreScreen extends GetView<BackupController> {
         children: [
           _buildScopeItem(
             'fuel_entries',
-            TranslationKeys_2.scopeFuelEntries,
+            TranslationKeysBackup.scopeFuelEntries,
             RemixIcons.gas_station_line,
           ),
           const Divider(height: 1),
           _buildScopeItem(
             'manutencao',
-            TranslationKeys_2.scopeManutencao,
+            TranslationKeysBackup.scopeManutencao,
             RemixIcons.tools_line,
           ),
           const Divider(height: 1),
           _buildScopeItem(
             'vehicles',
-            TranslationKeys_2.scopeVehicles,
+            TranslationKeysBackup.scopeVehicles,
             RemixIcons.car_line,
           ),
           const Divider(height: 1),
           _buildScopeItem(
             'lookups',
-            TranslationKeys_2.scopeLookups,
+            TranslationKeysBackup.scopeLookups,
             RemixIcons.table_line,
           ),
         ],

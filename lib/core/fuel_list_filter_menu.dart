@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/fuel_list_controller.dart';
+import 'package:fuel_tracker_app/modules/fuel/controllers/gasStation_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
@@ -7,7 +8,7 @@ import 'package:remixicon/remixicon.dart';
 class FuelListFilterMenu extends StatelessWidget {
   FuelListFilterMenu({super.key});
 
-  final FuelListController controller = Get.find<FuelListController>();
+  final fuelController = Get.find<FuelListController>();
 
   PopupMenuItem<String> _buildFilterItem({
     required String value,
@@ -43,19 +44,21 @@ class FuelListFilterMenu extends StatelessWidget {
       icon: Icon(RemixIcons.filter_3_line, color: theme.colorScheme.onSurface),
       onSelected: (value) {
         if (value == 'ClearAll') {
-          controller.clearAllFilters();
+          // fuelController.clearAllFilters();
         } else if (value.startsWith('SetVeiculo:')) {
-          controller.selectedVehicleID.value = int.parse(value.split(':')[1]);
+          fuelController.selectedVehicleID.value = int.parse(
+            value.split(':')[1],
+          );
         } else if (value == 'ClearVeiculo') {
-          controller.selectedVehicleID.value = null;
+          fuelController.selectedVehicleID.value = null;
         } else if (value.startsWith('SetFuel:')) {
-          controller.selectedTipoID.value = int.parse(value.split(':')[1]);
+          fuelController.selectedTipoID.value = int.parse(value.split(':')[1]);
         } else if (value == 'ClearFuel') {
-          controller.selectedTipoID.value = null;
+          fuelController.selectedTipoID.value = null;
         } else if (value.startsWith('SetStation:')) {
-          controller.selectedPostoID.value = int.parse(value.split(':')[1]);
+          fuelController.selectedPostoID.value = int.parse(value.split(':')[1]);
         } else if (value == 'ClearStation') {
-          controller.selectedPostoID.value = null;
+          fuelController.selectedPostoID.value = null;
         }
       },
       itemBuilder: (BuildContext context) {
@@ -86,12 +89,12 @@ class FuelListFilterMenu extends StatelessWidget {
             ),
           ),
         );
-        controller.veiculosMap.forEach((id, name) {
+        fuelController.veiculosMap.forEach((id, name) {
           items.add(
             _buildFilterItem(
               value: 'SetVeiculo:$id',
-              label: '${controller.veiculosMap[id]?['nickname']}',
-              isSelected: controller.selectedVehicleID.value == id,
+              label: '${fuelController.veiculosMap[id]?['nickname']}',
+              isSelected: fuelController.selectedVehicleID.value == id,
             ),
           );
         });
@@ -122,12 +125,12 @@ class FuelListFilterMenu extends StatelessWidget {
           ),
         );
 
-        controller.tiposMap.forEach((id, name) {
+        fuelController.tiposMap.forEach((id, name) {
           items.add(
             _buildFilterItem(
               value: 'SetFuel:$id',
-              label: '${controller.tiposMap[id]?['nome']}',
-              isSelected: controller.selectedTipoID.value == id,
+              label: '${fuelController.tiposMap[id]?['nome']}',
+              isSelected: fuelController.selectedTipoID.value == id,
             ),
           );
         });
@@ -159,12 +162,12 @@ class FuelListFilterMenu extends StatelessWidget {
           ),
         );
 
-        controller.postosMap.forEach((id, nome) {
+        fuelController.postosMap.forEach((id, nome) {
           items.add(
             _buildFilterItem(
               value: 'SetStation:$id',
-              label: '${controller.postosMap[id]?['nome']}',
-              isSelected: controller.selectedPostoID.value == id,
+              label: '${fuelController.postosMap[id]?['nome']}',
+              isSelected: fuelController.selectedPostoID.value == id,
             ),
           );
         });

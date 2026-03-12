@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/core/fuel_alert_card.dart';
 import 'package:fuel_tracker_app/core/fuel_list_filter_menu.dart';
@@ -5,6 +7,7 @@ import 'package:fuel_tracker_app/core/overallConsumptionCard.dart';
 import 'package:fuel_tracker_app/data/services/application.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/fuel_list_controller.dart';
+import 'package:fuel_tracker_app/modules/fuel/controllers/gasStation_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/unit_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/fuel/about_screen.dart';
@@ -14,6 +17,25 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
 
+abstract class TranslationKeysFuel {
+  static const String listScreen = 'list_screen';
+  static const String listScreenAppBarTitle = 'list_screen.app_bar_title';
+  static const String listScreenRefresh = 'list_screen.refresh';
+  static const String listScreenRefreshing = 'list_screen.refreshing';
+
+  static const String listScreenSyncing = 'list_screen.syncing';
+  static const String listScreenVehicleLabel = 'list_screen.vehicle_label';
+  static const String listScreenNoVehicleFound = 'list_screen.no_vehicle_found';
+  static const String listScreenNoRefuelYet = 'list_screen.no_refuel_yet';
+
+  static const String listScreenSnackbarEntryAdded =
+      'list_screen.snackbar_entry_added';
+  static const String listScreenSnackbarEntryUpdated =
+      'list_screen.snackbar_entry_updated';
+  static const String listScreenSnackbarEntryRemoved =
+      'list_screen.snackbar_entry_removed';
+}
+
 class FuelListScreen extends GetView<FuelListController> {
   const FuelListScreen({super.key});
 
@@ -22,29 +44,29 @@ class FuelListScreen extends GetView<FuelListController> {
     return Scaffold(
       backgroundColor: Color(0xFF1A1A1A),
       appBar: AppBar(
-        title: Text(context.tr(TranslationKeys.listScreenAppBarTitle)),
+        title: Text(context.tr(TranslationKeysFuel.listScreenAppBarTitle)),
         elevation: 0,
         centerTitle: true,
         actions: [
           IconButton(
             icon: Icon(RemixIcons.refresh_line),
-            tooltip: context.tr(TranslationKeys.listScreenRefresh),
+            tooltip: context.tr(TranslationKeysFuel.listScreenRefresh),
             onPressed: () async {
               Get.snackbar(
-                context.tr(TranslationKeys.listScreenRefreshing),
+                context.tr(TranslationKeysFuel.listScreenRefreshing),
                 'Sincronizando com a nuvem...',
                 duration: const Duration(seconds: 2),
                 snackPosition: SnackPosition.TOP,
                 backgroundColor: Colors.green,
                 colorText: Colors.white,
               );
-              await controller.loadFuel();
+              controller.setupFuelStream();
             },
           ),
           FuelListFilterMenu(),
           IconButton(
             icon: Icon(Icons.info_outline),
-            tooltip: context.tr(TranslationKeys.aboutTitle),
+            tooltip: context.tr(TranslationKeysAbout.aboutTitle),
             onPressed: () => Get.to(() => AboutScreen()),
           ),
         ],
@@ -54,13 +76,25 @@ class FuelListScreen extends GetView<FuelListController> {
           return const Center(child: CircularProgressIndicator());
 
         final filteredEntries = controller.filteredFuelEntries;
-        final lastEntry = filteredEntries.isNotEmpty
-            ? filteredEntries.last
-            : null;
-        final bool isLastTankFull = lastEntry?.tankFull == true;
+
+        final hasData = filteredEntries.isNotEmpty;
+        final lastEntry = hasData ? filteredEntries.last : null;
+
+        String vehicleName = "Todos os Veículos";
+        if (controller.selectedVehicleID.value != null) {
+          vehicleName =
+              controller.veiculosMap[controller
+                  .selectedVehicleID
+                  .value]?['nickname'] ??
+              "---";
+        } else if (lastEntry != null) {
+          vehicleName =
+              controller.veiculosMap[lastEntry.vehicleId]?['nickname'] ?? "---";
+        }
+
         final double fuelLevel = lastEntry?.tankCapacity ?? 0.0;
-        final vehicleInfo = controller.veiculosMap[lastEntry?.vehicleId];
-        final String vehicleName = vehicleInfo?['nickname'] ?? '';
+        final double progressValue = (fuelLevel / 100).clamp(0.0, 1.0);
+        final bool isLastTankFull = lastEntry?.tankFull ?? false;
 
         return Column(
           children: [
@@ -79,24 +113,36 @@ class FuelListScreen extends GetView<FuelListController> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Veículo: $vehicleName',
+                          '${context.tr(TranslationKeysFuel.listScreenVehicleLabel)}: $vehicleName',
                           style: GoogleFonts.lato(color: Colors.indigo),
                         ),
                         Text(
-                          '$fuelLevel',
-                          style: GoogleFonts.lato(color: Colors.indigoAccent),
+                          '${fuelLevel.toStringAsFixed(1)}%',
+                          style: GoogleFonts.lato(color: Colors.white70),
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: fuelLevel,
-                        minHeight: 10,
-                        backgroundColor: Colors.orange,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isLastTankFull ? Colors.green : Colors.orangeAccent,
+                    ShaderMask(
+                      shaderCallback: (rect) => LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.redAccent,
+                          Colors.orangeAccent,
+                          isLastTankFull ? Colors.greenAccent : Colors.orange,
+                        ],
+                        stops: const [0.0, 0.5, 1.0],
+                      ).createShader(rect),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: LinearProgressIndicator(
+                          value: progressValue,
+                          minHeight: 12,
+                          backgroundColor: Colors.white10,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -108,8 +154,12 @@ class FuelListScreen extends GetView<FuelListController> {
                   ? Center(
                       child: Text(
                         filteredEntries.isEmpty
-                            ? 'Nenhum veiculo encontrado.'
-                            : 'Ainda não abasteceu',
+                            ? context.tr(
+                                TranslationKeysFuel.listScreenNoVehicleFound,
+                              )
+                            : context.tr(
+                                TranslationKeysFuel.listScreenNoRefuelYet,
+                              ),
                       ),
                     )
                   : ListView.builder(
@@ -161,6 +211,7 @@ class FuelCard extends StatelessWidget {
   });
 
   final controller = Get.find<FuelListController>();
+  final gasController = Get.find<GasStationController>();
   final unitController = Get.find<UnitController>();
   final currencyController = Get.find<CurrencyController>();
 
@@ -172,271 +223,293 @@ class FuelCard extends StatelessWidget {
     final double odometerDisplay = isMiles
         ? entry.odometerKm * controller.kmToMileFactor
         : entry.odometerKm.toDouble();
+    final vehicleData = controller.veiculosMap[entry.vehicleId];
+    final String nickname = vehicleData?['nickname'] ?? "---";
+    final String plate = vehicleData?['plate'] ?? "";
 
-    return Card(
-      color: const Color(0xFF1A1A1A),
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => controller.navigateToEditEntry(context, entry),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      controller.veiculosMap[entry.vehicleId]?['nickname'] ??
-                          "Veículo não identificado",
-                      style: GoogleFonts.lato(fontWeight: FontWeight.bold),
-                      overflow: TextOverflow.ellipsis,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: () => controller.navigateToEditEntry(context, entry),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Cabeçalho
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        nickname,
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                  if (controller.veiculosMap[entry.vehicleId]?['plate'] != true)
-                    _buildNewMiniPlate(
-                      '${controller.veiculosMap[entry.vehicleId]?['plate']!}',
-                    )
-                  else
-                    _buildMiniPlate(
-                      '${controller.veiculosMap[entry.vehicleId]?['city']!}',
-                      '${controller.veiculosMap[entry.vehicleId]?['plate']!}',
+                    Text(
+                      context.tr(TranslationKeysFuel.listScreenVehicleLabel),
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
-                ],
-              ),
-              const Divider(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
+                    if (plate.isNotEmpty)
+                      _buildPlateTag(
+                        plate,
+                        vehicleData?['is_mercosul'] ?? false,
+                      ),
+                  ],
+                ),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Divider(color: Colors.white10, height: 1),
+                ),
+
+                // INFO DE lOCALIZAÇÃO E COMBUSTÍVEL
+                Row(
                   children: [
                     Icon(
-                      RemixIcons.map_pin_line,
-                      size: 14,
-                      color: Colors.white,
+                      RemixIcons.map_pin_2_fill,
+                      size: 16,
+                      color: Colors.blueAccent,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${controller.postosMap[entry.gasStationId]?['nome']} - ${doubleToCurrency(controller.postosMap[entry.gasStationId]?['preco'])}',
-                      style: GoogleFonts.lato(color: Colors.white),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${controller.postosMap[entry.gasStationId]?['nome']}',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const Spacer(),
-                    _buildBadge(
+                    _buildFuelTypeBadge(
                       '${controller.tiposMap[entry.fuelTypeId]?['nome']}',
                     ),
                   ],
                 ),
-              ),
-              const Divider(height: 20),
-              Row(
-                children: [
-                  _buildInfoItem(
-                    RemixIcons.dashboard_3_line,
-                    "${odometerDisplay.toStringAsFixed(0)} $distUnit",
-                  ),
-                  _buildInfoItem(
-                    RemixIcons.drop_line,
-                    "${entry.volumeLiters.toStringAsFixed(2)} L",
-                  ),
-                  SizedBox(width: 10),
-                  if (entry.tankFull == true)
-                    _buildInfoItem(
-                      RemixIcons.gas_station_fill,
-                      "Cheio",
-                      color: Colors.orange,
+
+                const SizedBox(height: 16),
+
+                // GRID DE DADOS
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatItem(
+                      RemixIcons.dashboard_3_line,
+                      "Odómetro",
+                      "${odometerDisplay.toStringAsFixed(0)} $distUnit",
                     ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Preço/L: ${currencyController.currencySymbol.value} ${entry.pricePerLiter.toStringAsFixed(2)}",
-                        style: GoogleFonts.lato(color: Colors.white),
+                    _buildStatItem(
+                      RemixIcons.drop_line,
+                      "Volume",
+                      "${entry.volumeLiters.toStringAsFixed(2)} L",
+                    ),
+                    if (consumptionForThisPeriod > 0)
+                      _buildConsumptionIndicator(consumptionForThisPeriod)
+                    else if (entry.tankFull == true)
+                      _buildStatItem(
+                        RemixIcons.gas_station_fill,
+                        "Tanque",
+                        "Cheio",
+                        color: Colors.orange,
                       ),
-                      if (consumptionForThisPeriod > 0)
-                        Text(
-                          '${controller.formatConsumption(consumptionForThisPeriod)} ${controller.getConsumptionUnitString()}',
-                          style: GoogleFonts.lato(color: Colors.green),
-                        ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Preço p/ Litro: ",
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            "${currencyController.currencySymbol.value} ${entry.pricePerLiter.toStringAsFixed(2)}",
+                            style: GoogleFonts.firaCode(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Custo Total',
+                            style: TextStyle(color: Colors.grey, fontSize: 11),
+                          ),
+                          Text(
+                            '${currencyController.currencySymbol.value} ${entry.totalCost.toStringAsFixed(2)}',
+                            style: GoogleFonts.inter(
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                  Obx(
-                    () => Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Total',
-                          style: GoogleFonts.lato(color: Colors.grey),
-                        ),
-                        Text(
-                          '${currencyController.currencySymbol.value} ${entry.totalCost.toStringAsFixed(2)}',
-                          style: GoogleFonts.lato(color: Colors.indigo),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-}
 
-Widget _buildNewMiniPlate(String plateText) {
-  return Container(
-    width: 80,
-    height: 30,
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: Colors.black, width: 1.5),
-      boxShadow: [
-        BoxShadow(color: Colors.black12, blurRadius: 2, offset: Offset(0, 2)),
-      ],
-    ),
-    child: Column(
-      children: [
-        Container(
-          height: 6,
-          decoration: const BoxDecoration(
-            color: Colors.blue,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(2),
-              topRight: Radius.circular(2),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: Text(
-              plateText,
-              style: const TextStyle(
-                color: Colors.black,
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-                letterSpacing: 1,
-                fontFamily: 'Monospace',
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildMiniPlate(String plateText, String city) {
-  return Container(
-    width: 80,
-    height: 35,
-    padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-    decoration: BoxDecoration(
-      color: Color(0xFFB0B0B0),
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: Color(0xFF9EA7A7), width: 2),
-      boxShadow: const [
-        BoxShadow(color: Colors.black26, blurRadius: 1, offset: Offset(0, 1)),
-      ],
-    ),
-    child: Column(
-      children: [
-        Container(
-          height: 8,
-          margin: const EdgeInsets.only(bottom: 2),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Color(0xFF8A9393), width: 0.5),
-            ),
-            borderRadius: BorderRadius.circular(1),
-          ),
-          child: Row(
-            children: [
-              _buildParafuso(),
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    city.toUpperCase(),
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              _buildParafuso(),
-            ],
-          ),
-        ),
-        Expanded(
-          child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                plateText.toUpperCase(),
-                style: const TextStyle(
-                  color: Color(0xFF1A1A1A),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildParafuso() {
-  return Container(
-    margin: const EdgeInsets.symmetric(horizontal: 1.5),
-    width: 1.5,
-    height: 1.5,
-    decoration: const BoxDecoration(
-      color: Colors.black45,
-      shape: BoxShape.circle,
-    ),
-  );
-}
-
-Widget _buildBadge(String text) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-    decoration: BoxDecoration(
-      color: Colors.indigo,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: Text(
-      text.toUpperCase(),
-      style: TextStyle(
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
+  Widget _buildPlateTag(String plate, bool isMercosul) {
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.black, width: 1),
       ),
-    ),
-  );
-}
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isMercosul)
+            Container(
+              width: 12,
+              height: 8,
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue[900],
+                borderRadius: BorderRadius.circular(1),
+              ),
+              child: Center(
+                child: Icon(Icons.public, size: 6, color: Colors.white),
+              ),
+            ),
+          Text(
+            plate.toUpperCase(),
+            style: GoogleFonts.robotoMono(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-Widget _buildInfoItem(IconData icon, String label, {Color? color}) {
-  return Row(
-    children: [
-      Icon(icon, size: 16, color: color ?? Colors.grey),
-      const SizedBox(width: 4),
-      Text(label, style: const TextStyle(fontSize: 14)),
-    ],
-  );
+  Widget _buildFuelTypeBadge(String text) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blueAccent.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.blueAccent.withOpacity(0.5)),
+      ),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: Colors.blueAccent,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(
+    IconData icon,
+    String label,
+    String value, {
+    Color? color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 14, color: color ?? Colors.blueGrey),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.grey, fontSize: 11),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConsumptionIndicator(double value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '${value.toStringAsFixed(2)}',
+            style: GoogleFonts.inter(
+              color: Colors.greenAccent,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          Text(
+            controller.getConsumptionUnitString(),
+            style: TextStyle(
+              color: Colors.green,
+              fontWeight: FontWeight.bold,
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

@@ -84,7 +84,7 @@ class _FuelEntryScreenState extends State<FuelEntryScreen> {
       selectedStations = fuel.gasStationId;
       isTankFull = fuel.tankFull;
 
-      selectedDate = DateTime.tryParse(fuel.entryDate) ?? DateTime.now();
+      selectedDate = fuel.entryDate;
       comprovantePath = fuel.receiptPath ?? '';
     } else {
       kmController = TextEditingController(

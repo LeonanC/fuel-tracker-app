@@ -4,11 +4,11 @@ import 'package:fuel_tracker_app/core/app_theme.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/data/services/application.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/fuel_list_controller.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:fuel_tracker_app/modules/fuel/controllers/gasStation_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
-class GasStationScreen extends GetView<FuelListController> {
+class GasStationScreen extends GetView<GasStationController> {
   const GasStationScreen({super.key});
 
   @override

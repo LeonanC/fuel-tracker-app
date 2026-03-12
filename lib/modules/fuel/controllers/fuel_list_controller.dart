@@ -1,70 +1,49 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/core/unit_nums.dart';
+import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/language_controller.dart';
 import 'package:fuel_tracker_app/modules/fuel/controllers/unit_controller.dart';
-import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/fuel/widgets/fuel_entry_screen.dart';
-import 'package:fuel_tracker_app/core/unit_nums.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart';
 import 'package:remixicon/remixicon.dart';
 
 class FuelListController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final unitController = Get.find<UnitController>();
+  final currencyController = Get.find<CurrencyController>();
+  final languageController = Get.find<LanguageController>();
+
+  double alertThresholdKm = 80.0;
+  double kmToMileFactor = 80.0;
+  double kmPerLiterToMPGFactor = 80.0;
 
   // Observáveis
   final _fuelEntries = <FuelEntryModel>[].obs;
   final isLoading = false.obs;
-  final errorMessage = ''.obs;
-
-  List<FuelEntryModel> get fuelEntries => _fuelEntries;
-
-  static const double _alertThresholdKm = 80.0;
-  static const double _kmToMileFactor = 0.621371;
-  static const double _kmPerLiterToMPGFactor = 2.3521458;
-
-  final UnitController unitController = Get.find<UnitController>();
-  final CurrencyController currencyController = Get.find<CurrencyController>();
-  final LanguageController languageController = Get.find<LanguageController>();
-
-  var lastOdometer = Rxn<double>();
-  var overallConsumption = 0.0.obs;
+  final veiculosMap = <dynamic, Map<String, dynamic>>{}.obs;
+  final postosMap = <dynamic, Map<String, dynamic>>{}.obs;
+  final tiposMap = <dynamic, Map<String, dynamic>>{}.obs;
+  final servicesMap = <dynamic, Map<String, dynamic>>{}.obs;
 
   var selectedVehicleID = Rxn<dynamic>();
-  var selectedTipoID = Rxn<dynamic>();
   var selectedPostoID = Rxn<dynamic>();
-
-  final RxMap<dynamic, Map<String, dynamic>> veiculosMap =
-      <dynamic, Map<String, dynamic>>{}.obs;
-  final RxMap<dynamic, Map<String, dynamic>> tiposMap =
-      <dynamic, Map<String, dynamic>>{}.obs;
-  final RxMap<dynamic, Map<String, dynamic>> postosMap =
-      <dynamic, Map<String, dynamic>>{}.obs;
-  final RxMap<dynamic, Map<String, dynamic>> servicesMap =
-      <dynamic, Map<String, dynamic>>{}.obs;
+  var selectedTipoID = Rxn<dynamic>();
+  var lastOdometer = Rxn<double>();
 
   @override
   void onInit() {
     super.onInit();
-    refreshAllData();
+    _loadAuxiliaryData();
+    setupFuelStream();
   }
 
-  Future<void> refreshAllData() async {
-    isLoading.value = true;
-    try {
-      await loadAuxiliaryData();
-      await loadFuel();
-    } finally {
-      isLoading.value = false;
-    }
-  }
-
-  Future<void> loadAuxiliaryData() async {
+  Future<void> _loadAuxiliaryData() async {
     var tipSnap = await _firestore.collection('tipo_combustivel').get();
+    var vecSnap = await _firestore.collection('veiculos').get();
+    var postSnap = await _firestore.collection('postos').get();
+
     for (var doc in tipSnap.docs) {
       final data = doc.data();
       final id = data['pk_tipo'] ?? doc.id;
@@ -75,13 +54,11 @@ class FuelListController extends GetxController {
         'octane_rating': (data['octane_rating'] as num? ?? 0.0).toDouble(),
       };
     }
-    var vecSnap = await _firestore.collection('veiculos').get();
     for (var doc in vecSnap.docs) {
       final data = doc.data();
       final id = data['pk_vehicle'] ?? doc.id;
       veiculosMap[id] = {
         'pk_vehicle': id,
-        'imagem_url': data['imagem_url'] ?? '',
         'nickname': data['nickname'] ?? '',
         'plate': data['plate'] ?? '',
         'is_mercosul': data['is_mercosul'] ? true : false,
@@ -95,9 +72,7 @@ class FuelListController extends GetxController {
         'tank_capacity': (data['tank_capacity'] as num? ?? 0.0).toDouble(),
       };
     }
-
-    var potSnap = await _firestore.collection('postos').get();
-    for (var doc in potSnap.docs) {
+    for (var doc in postSnap.docs) {
       final data = doc.data();
       final id = data['pk_posto'] ?? doc.id;
       postosMap[id] = {
@@ -112,113 +87,44 @@ class FuelListController extends GetxController {
         'is24Hours': data['is24Hours'] ?? false,
       };
     }
-    var sevSnap = await _firestore.collection('service_type').get();
-    for (var doc in sevSnap.docs) {
-      final data = doc.data();
-      final id = data['pk_posto'] ?? doc.id;
-      servicesMap[id] = {
-        'pk_service': id,
-        'nome': data['nome'] ?? '',
-        'abbr': data['abbr'] ?? '',
-        'default_frequency_km': (data['default_frequency_km'] as num? ?? 0.0)
-            .toDouble(),
-      };
-    }
   }
 
-  Future<Map<String, dynamic>> getCurrentAddress() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
+  void setupFuelStream() {
+    isLoading.value = true;
 
-      String address = "Endereço não encontrado";
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks[0];
-        address =
-            "${place.thoroughfare}, ${place.subThoroughfare}, ${place.subLocality}, ${place.locality}";
-      }
-
-      return {
-        'latitude': position.latitude,
-        'longitude': position.longitude,
-        'address': address,
-      };
-    } catch (e) {
-      return {
-        'latitude': 0.0,
-        'longitude': 0.0,
-        'address': "Erro ao obter localização",
-      };
-    }
-  }
-
-  Future<void> loadFuel() async {
-    try {
-      errorMessage.value = '';
-      final snapshot = await _firestore
-          .collection('fuels')
-          .orderBy('data', descending: true)
-          .get();
-
-      final entries = snapshot.docs
-          .map((doc) => FuelEntryModel.fromFirestore(doc.data(), doc.id))
-          .toList();
-
-      fuelEntries.assignAll(entries);
-
-      if (entries.isNotEmpty) {
-        lastOdometer.value = entries
-            .map((e) => e.odometerKm)
-            .reduce((a, b) => a > b ? a : b);
-      }
-
-      final consumptionData = calculateOverallAverageConsumption();
-      overallConsumption.value = consumptionData['overall'] as double;
-    } catch (e) {
-      errorMessage.value =
-          'Não foi possível carregar os dados. Verifique sua conexão.';
-    }
-  }
-
-  List<FuelEntryModel> get filteredFuelEntries {
-    return fuelEntries.where((entry) {
-      final vehicleInfo = veiculosMap[entry.vehicleId];
-      final tipoInfo = tiposMap[entry.fuelTypeId];
-      final postoInfo = postosMap[entry.gasStationId];
-
-      final int vehicleID = vehicleInfo?['pk_vehicle'];
-      final int tipoID = tipoInfo?['pk_tipo'];
-      final int postoID = postoInfo?['pk_posto'];
-
-      bool matchVehicle =
-          selectedVehicleID.value == null ||
-          vehicleID == selectedVehicleID.value;
-      bool matchFuel =
-          selectedTipoID.value == null || tipoID == selectedTipoID.value;
-      bool matchPosto =
-          selectedPostoID.value == null || postoID == selectedPostoID.value;
-      return matchVehicle && matchFuel && matchPosto;
-    }).toList();
+    _firestore
+        .collection('fuels')
+        .orderBy('velocimetro', descending: true)
+        .snapshots()
+        .listen(
+          (snapshot) {
+            _fuelEntries.assignAll(
+              snapshot.docs
+                  .map(
+                    (doc) => FuelEntryModel.fromFirestore(doc.data(), doc.id),
+                  )
+                  .toList(),
+            );
+            isLoading.value = false;
+          },
+          onError: (e) {
+            isLoading.value = false;
+            Get.snackbar(
+              "Erro",
+              "Falha ao sincronizar: $e",
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.redAccent,
+            );
+          },
+        );
   }
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
-      isLoading.value = true;
-      DocumentReference docRef = _firestore.collection('fuels').doc();
-      data['pk_fuel'] = docRef.id;
-      data['data'] ??= FieldValue.serverTimestamp();
-
-      await docRef.set(data);
-      await loadFuel();
+      await _firestore.collection('fuels').add(data);
+      Get.back();
     } catch (e) {
-      Get.snackbar('Erro', "Falha ao salvar: $e");
-    } finally {
-      isLoading.value = false;
+      Get.snackbar('Erro ao salvar', e.toString());
     }
   }
 
@@ -226,239 +132,84 @@ class FuelListController extends GetxController {
     if (fuel.id == null) return;
     try {
       await _firestore.collection('fuels').doc(fuel.id).update(fuel.toMap());
-      await loadFuel();
     } catch (e) {
       Get.snackbar('Erro', "Falha ao atualizar: $e");
     }
   }
 
-  Future<void> saveOrUpdate(GasStationModel posto) async {
-    try {
-      isLoading.value = true;
-
-      var collection = _firestore.collection('postos');
-      int idFinal = posto.id!;
-
-      if (idFinal == 0) {
-        final idsExistentes = postosMap.values
-            .map((p) => int.tryParse(p['pk_posto']?.toString() ?? '0') ?? 0)
-            .toList();
-
-        idFinal = idsExistentes.isEmpty
-            ? 1
-            : idsExistentes.reduce((a, b) => a > b ? a : b) + 1;
-
-        final postoComId = GasStationModel(
-          id: idFinal,
-          nome: posto.nome,
-          brand: posto.brand,
-          address: posto.address,
-          latitude: posto.latitude,
-          longitude: posto.longitude,
-          price: posto.price,
-          hasConvenientStore: posto.hasConvenientStore,
-          is24Hours: posto.is24Hours,
-        );
-
-        await collection
-            .doc(idFinal.toString())
-            .set(postoComId.toMap(), SetOptions(merge: true));
-
-        postosMap[idFinal] = postoComId.toMap();
-      } else {
-        await collection
-            .doc(posto.id.toString())
-            .set(posto.toMap(), SetOptions(merge: true));
-
-        postosMap[posto.id] = posto.toMap();
-      }
-
-      postosMap.refresh();
-      Get.snackbar(
-        "Sucesso",
-        "Posto ${posto.nome} salvo com sucesso!",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green.withOpacity(0.7),
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      Get.snackbar(
-        "Erro",
-        "Falha ao salva/atualizar: $e",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.7),
-        colorText: Colors.white,
-      );
-    } finally {
-      isLoading.value = false;
-    }
+  List<FuelEntryModel> get filteredFuelEntries {
+    if (selectedVehicleID.value == null) return _fuelEntries;
+    return _fuelEntries
+        .where((e) => e.vehicleId == selectedVehicleID.value)
+        .toList();
   }
 
-  Future<void> deletePosto(dynamic id) async {
-    try {
-      isLoading.value = true;
-      await _firestore.collection('postos').doc(id.toString()).delete();
-      postosMap.remove(id);
-      postosMap.refresh();
+  double get averageConsumption {
+    final entries = filteredFuelEntries;
+    if (entries.length < 2) return 0.0;
 
-      Get.snackbar(
-        "Excluído",
-        "Posto removido com sucesso!",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.orange.withOpacity(0.7),
-        colorText: Colors.white,
-      );
-    } catch (e) {
-      Get.snackbar(
-        "Erro",
-        "Não foi possível excluir: $e",
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red.withOpacity(0.7),
-        colorText: Colors.white,
-      );
-    } finally {
-      isLoading.value = false;
+    final double dist = (entries.first.odometerKm - entries.last.odometerKm)
+        .toDouble();
+
+    double liters = 0.0;
+    for (int i = 0; i < entries.length - 1; i++) {
+      liters += entries[i].volumeLiters;
     }
+
+    return (dist > 0 && liters > 0) ? dist / liters : 0.0;
   }
 
-  Future<void> deleteEntry(int id) async {
-    // await _db.deleteFuelEntrie(id);
-    await loadFuel();
+  double get averageCostPerKm {
+    final entries = filteredFuelEntries;
+    if (entries.isEmpty) return 0.0;
+
+    double totalCost = entries.fold(0.0, (sum, item) => sum + item.totalCost);
+    double totalKm = (entries.first.odometerKm - entries.last.odometerKm)
+        .toDouble();
+
+    return totalKm > 0 ? totalCost / totalKm : 0.0;
+  }
+
+  double get overallCostPerDistance {
+    final entries = filteredFuelEntries;
+    if (entries.isEmpty) return 0.0;
+
+    double totalCost = entries.fold(0.0, (sum, item) => sum + item.totalCost);
+    double totalDist = entries.length >= 2
+        ? (entries.first.odometerKm - entries.last.odometerKm).toDouble()
+        : 1.0;
+
+    return totalCost / totalDist;
   }
 
   Map<String, String>? get fuelAlertData {
-    if (fuelEntries.length < 2 || overallConsumption <= 0) {
-      return null;
-    }
+    if (filteredFuelEntries.isEmpty) return null;
 
-    final lastEntry = fuelEntries.first;
-    final vehicleInfo = veiculosMap[lastEntry.vehicleId];
+    final last = filteredFuelEntries.first;
+    final double level = last.tankCapacity ?? 0.0;
 
-    final String vehicleName = vehicleInfo?['nickname'] ?? 'Veículo';
+    if (level > 15.0) return null;
 
-    final double tankSize =
-        (vehicleInfo?['tank_capacity'] as double?) ?? lastEntry.tankCapacity;
-
-    if (tankSize <= 0) return null;
-
-    final previousEntry = fuelEntries[1];
-    final distanceSinceLastFill =
-        lastEntry.odometerKm - previousEntry.odometerKm;
-    final double avgConsump = overallConsumption.value;
-
-    final double totalEstimatedRange = tankSize * avgConsump;
-    final double estimatedRange = totalEstimatedRange - distanceSinceLastFill;
-
-    if (estimatedRange < _alertThresholdKm) {
-      final bool isMiles =
-          unitController.distanceUnit.value == DistanceUnit.miles;
-      final double rangeToDisplay = isMiles
-          ? (estimatedRange * _kmToMileFactor)
-          : estimatedRange;
-
-      final String distUnit = getDistanceUnitString();
-      final String consUnit = getConsumptionUnitString();
-      final String displayRange = rangeToDisplay.toStringAsFixed(0);
-
-      final double trajetConsump = lastEntry.volumeLiters > 0
-          ? distanceSinceLastFill / lastEntry.volumeLiters
-          : 0.0;
-
-      return {
-        'alertText':
-            'Autonomia restante: $displayRange $distUnit, Consumo no trajeto: ${formatConsumption(trajetConsump)} $consUnit',
-        'displayRange': displayRange,
-        'distanceUnit': distUnit,
-        'consumptionValue': formatConsumption(trajetConsump),
-        'consumptionUnit': consUnit,
-        'vehicleName': vehicleName,
-        'tankCapcity': tankSize.toString(),
-      };
-    }
-    return null;
-  }
-
-  Map<String, dynamic> calculateOverallAverageConsumption() {
-    final entriesToCalculate = filteredFuelEntries;
-
-    if (entriesToCalculate.length < 2) {
-      return {'overall': 0.0, 'periods': <double>[]};
-    }
-
-    final sorted = List<FuelEntryModel>.from(entriesToCalculate)
-      ..sort((a, b) => a.odometerKm.compareTo(b.odometerKm));
-
-    double totalDistance = 0.0;
-    double totalLiters = 0.0;
-    List<double> periods = [];
-
-    for (int i = 1; i < sorted.length; i++) {
-      final current = sorted[i];
-      final previous = sorted[i - 1];
-      final dist = current.odometerKm - previous.odometerKm;
-
-      if (dist > 0 && previous.tankFull == true) {
-        double periodAvg = dist / current.volumeLiters;
-        periods.add(periodAvg);
-
-        totalDistance += dist;
-        totalLiters += current.volumeLiters;
-      }
-    }
-
-    double overall = totalLiters > 0 ? totalDistance / totalLiters : 0.0;
-
-    return {'overall': overall, 'periods': periods};
-  }
-
-  String formatConsumption(double value) {
-    final unit = unitController.consumptionUnit.value;
-    if (unit == ConsumptionUnit.litersPer100km)
-      return (value > 0 ? 100 / value : 0).toStringAsFixed(2);
-    if (unit == ConsumptionUnit.milesPerGallon)
-      return (value * _kmPerLiterToMPGFactor).toStringAsFixed(2);
-    return value.toStringAsFixed(2);
+    return {
+      'vehicleName':
+          'controller.veiculosMap[entry.vehicleId]?[nickname] ?? "---"',
+      'displayRange': (level * averageConsumption).toStringAsFixed(0),
+      'level': '$level',
+    };
   }
 
   String getDistanceUnitString() =>
       unitController.distanceUnit.value == DistanceUnit.miles
       ? 'Milhas (mi)'
-      : 'Quilômetros (km)'.replaceAll(RegExp(r'\(.*\)'), '').trim();
+      : 'Quilômetro (km)'.replaceAll(RegExp(r'\(.*\)'), '').trim();
 
   String getConsumptionUnitString() {
     final unit = unitController.consumptionUnit.value;
     String key = 'km/L';
     if (unit == ConsumptionUnit.litersPer100km) key = 'L/100km';
-    if (unit == ConsumptionUnit.milesPerGallon) key = 'Milhas por Galão (MPG)';
-    return tr(key).replaceAll(RegExp(r'\(.*\)'), '').trim();
+    if (unit == ConsumptionUnit.milesPerGallon) key = 'Milhas Galão';
+    return key.replaceAll(RegExp(r'\(.*\)'), '').trim();
   }
-
-  void clearAllFilters() {
-    selectedVehicleID.value = null;
-    selectedTipoID.value = null;
-    selectedPostoID.value = null;
-  }
-
-  double get overallTotalCost =>
-      fuelEntries.fold(0.0, (sum, entry) => sum + entry.totalCost);
-  double get overallTotalDistance {
-    if (fuelEntries.length < 2) return 0.0;
-    final double latestKm = fuelEntries.first.odometerKm;
-    final double oldestKm = fuelEntries.last.odometerKm;
-
-    return latestKm > oldestKm ? latestKm - oldestKm : 0.0;
-  }
-
-  double get overallCostPerDistance {
-    final double totalDistance = overallTotalDistance;
-    if (totalDistance <= 0) return 0.0;
-    return overallTotalCost / totalDistance;
-  }
-
-  String tr(String key, {Map<String, String>? parameters}) =>
-      languageController.translate(key, parameters: parameters);
-
-  double get kmToMileFactor => _kmToMileFactor;
 
   void navigateToAddEntry(BuildContext context) async {
     final currentOdometer = lastOdometer.value;
@@ -479,7 +230,6 @@ class FuelListController extends GetxController {
       arguments: entry,
     );
     if (result == true || result != null) {
-      await loadFuel();
       Get.snackbar(
         "Sucesso",
         "Abastecido com sucesso!",
