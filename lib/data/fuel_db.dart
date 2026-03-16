@@ -1,10 +1,8 @@
 import 'package:fuel_tracker_app/data/database_helper.dart';
-import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/data/models/maintenance_entry_model.dart';
 import 'package:fuel_tracker_app/data/models/services_type_model.dart';
 import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
-import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/data/services/application.dart';
 import 'package:sqflite/sqflite.dart';
 

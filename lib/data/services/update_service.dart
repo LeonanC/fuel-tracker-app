@@ -1,8 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/modules/fuel/controllers/language_controller.dart';
-import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:fuel_tracker_app/data/models/app_update.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -10,8 +8,6 @@ import 'package:url_launcher/url_launcher.dart' as launcher;
 import 'package:version/version.dart';
 
 class UpdateService {
-  final LanguageController languageController = Get.find<LanguageController>();
-
   static const String updateUrl =
       'https://raw.githubusercontent.com/LeonanC/fuel-tracker-app/main/config/update.json';
 

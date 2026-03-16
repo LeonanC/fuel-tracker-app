@@ -1,86 +1,125 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:fuel_tracker_app/modules/fuel/controllers/language_controller.dart';
-import 'package:fuel_tracker_app/routes/app_pages.dart';
-import 'package:fuel_tracker_app/routes/initial_binding.dart';
+import 'package:fuel_tracker_app/data/services/app_translations.dart';
+import 'package:fuel_tracker_app/main_screen.dart';
+import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
+import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
+import 'package:fuel_tracker_app/modules/home/binding/home_bindings.dart';
+import 'package:fuel_tracker_app/modules/home/pages/home_page.dart';
+import 'package:fuel_tracker_app/modules/registro/pages/home_entry_page.dart';
+import 'package:fuel_tracker_app/modules/maintenance/pages/maintenance_entry_screen.dart';
+import 'package:fuel_tracker_app/modules/remider/pages/reminders_screen.dart';
+import 'package:fuel_tracker_app/modules/vehicle/pages/vehicle_screen.dart';
 import 'package:fuel_tracker_app/data/services/notification_service.dart';
-import 'package:fuel_tracker_app/core/app_theme.dart';
 import 'package:get/get.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 final NotificationService notificationService = NotificationService();
 
 Future<void> main() async {
+  await initializeDateFormatting('pt_BR', null);
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await NotificationService.init();
+  await NotificationService.requestPermissions();
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
-  WidgetsFlutterBinding.ensureInitialized();
+  String rotaInitial = '/main';
 
-  await notificationService.initialize();
-
-  final languageProvider = Get.put(LanguageController());
-  await languageProvider.initialize();
-
-  runApp(MyApp(languageProvider: languageProvider));
+  runApp(MyApp(rotaInitial: rotaInitial));
 }
 
-class MyApp extends StatefulWidget {
-  final LanguageController languageProvider;
-  const MyApp({super.key, required this.languageProvider});
+class MyApp extends StatelessWidget {
+  final String rotaInitial;
+  const MyApp({super.key, required this.rotaInitial});
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
-    final LanguageController languageController =
-        Get.find<LanguageController>();
-
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
-        return Obx(() {
-          return GetMaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'Controle de Combustível',
-            theme: AppTheme.darkTheme(languageController.currentLanguage.code),
-            locale: languageController.locale,
-            builder: (context, widget) {
-              return MediaQuery(
-                data: MediaQuery.of(
-                  context,
-                ).copyWith(textScaler: const TextScaler.linear(0.9)),
-                child: widget!,
-              );
-            },
-            localizationsDelegates: const [
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [
-              Locale('en'),
-              Locale('pt'),
-              Locale('es'),
-              Locale('fr'),
-              Locale('de'),
-              Locale('it'),
-              Locale('ru'),
-            ],
-            initialRoute: AppPages.INITIAL,
-            getPages: AppPages.routes,
-            initialBinding: InitialBinding(),
-          );
-        });
+        return GetMaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Controle de Combustível',
+          initialRoute: rotaInitial,
+          translations: AppTranslations(),
+          locale: Get.deviceLocale,
+          fallbackLocale: Locale('pt_BR', 'BR'),
+          themeMode: ThemeMode.system,
+          getPages: [
+            GetPage(
+              name: '/main',
+              page: () => MainPage(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/home',
+              page: () => HomePage(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/fuel_entry',
+              page: () => HomeEntryPage(),
+              binding: HomeBindings(),
+              transition: Transition.rightToLeftWithFade,
+            ),
+            GetPage(
+              name: '/postos_pages',
+              page: () => HomePage(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/maintenance_entry',
+              page: () => MaintenanceEntryScreen(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/notification_pages',
+              page: () => RemindersPages(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/gas_station',
+              page: () => GasStationScreen(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/vehicles_pages',
+              page: () => VehicleScreen(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/backup_pages',
+              page: () => BackupRestoreScreen(),
+              binding: HomeBindings(),
+            ),
+          ],
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorSchemeSeed: Colors.blueAccent,
+          ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            colorSchemeSeed: Colors.blueAccent,
+            scaffoldBackgroundColor: const Color(0xFF0F172A),
+          ),
+          builder: (context, widget) {
+            return MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(0.9)),
+              child: widget!,
+            );
+          },
+        );
       },
     );
   }

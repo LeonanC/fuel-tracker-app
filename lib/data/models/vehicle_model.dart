@@ -13,7 +13,7 @@ class VehicleModel {
   final double initialOdometer;
   final double tankCapacity;
   final String? imageUrl;
-  final String createdAt;
+  final DateTime createdAt;
 
   VehicleModel({
     this.id,
@@ -45,29 +45,43 @@ class VehicleModel {
       'initial_odometer': initialOdometer,
       'tank_capacity': tankCapacity,
       'imagem_url': imageUrl,
-      'created_at': createdAt,
+      'created_at': Timestamp.fromDate(createdAt),
     };
   }
 
-  factory VehicleModel.fromFirestore(Map<String, dynamic> map, String id) {
-    DateTime? dataDateTime;
+  factory VehicleModel.fromFirestore(Map<String, dynamic> map, int id) {
+    DateTime parsedData;
     if (map['created_at'] is Timestamp) {
-      dataDateTime = (map['created_at'] as Timestamp).toDate();
+      parsedData = (map['created_at'] as Timestamp).toDate();
+    } else if (map['created_at'] is String) {
+      parsedData = DateTime.tryParse(map['created_at']) ?? DateTime.now();
+    } else {
+      parsedData = DateTime.now();
     }
+
     return VehicleModel(
-      id: int.tryParse(id) ?? 0,
+      id: id,
       nickname: map['nickname'] as String,
       plate: map['plate'] as String? ?? '',
-      isMercosul: map['is_mercosul'] as bool,
+      isMercosul: map['is_mercosul'] == true,
       city: map['city'] as String,
       make: map['make'] as String,
       model: map['model'] as String,
-      fuelType: map['fk_type_fuel'] as int,
+      fuelType: map['fk_type_fuel'] ?? 0,
       year: map['year'] as int,
-      initialOdometer: (map['initial_odometer'] as num).toDouble(),
-      tankCapacity: (map['tank_capacity'] as num? ?? 0.0).toDouble(),
+      initialOdometer: (map['initial_odometer'] as num?)?.toDouble() ?? 0.0,
+      tankCapacity: (map['tank_capacity'] as num?)?.toDouble() ?? 0.0,
       imageUrl: map['imagem_url'] as String? ?? '',
-      createdAt: dataDateTime?.toIso8601String() ?? '',
+      createdAt: parsedData,
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is VehicleModel && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
