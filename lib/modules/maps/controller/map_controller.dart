@@ -75,7 +75,6 @@ class MapNavigationController extends GetxController {
     await _tts.setLanguage("pt-BR");
     await _tts.setSpeechRate(0.5);
     await _tts.setPitch(1.0);
-    await _tts.setVolume(1.0);
   }
 
   Future<void> speak(String text) async {
@@ -123,7 +122,7 @@ class MapNavigationController extends GetxController {
   void _startLocationTracking() {
     final locationSettings = AndroidSettings(
       accuracy: LocationAccuracy.high,
-      distanceFilter: 0,
+      distanceFilter: 2,
       intervalDuration: const Duration(milliseconds: 500),
       foregroundNotificationConfig: const ForegroundNotificationConfig(
         notificationText: "Fuel Tracker está rastreando sua rota",
@@ -196,7 +195,6 @@ class MapNavigationController extends GetxController {
 
     if (isNavigationMode.value) {
       mapController.move(currentLocation.value!, 18.0);
-      ;
     } else {
       mapController.rotate(0);
     }
@@ -205,6 +203,7 @@ class MapNavigationController extends GetxController {
   void clearNavigation() {
     speak("Navegação cancelada.");
     routePoints.clear();
+    routeSteps.clear();
     destinationPoint.value = null;
     currentDestinationStation.value = null;
     isNavigationMode.value = false;
@@ -263,22 +262,13 @@ class MapNavigationController extends GetxController {
 
     switch (type) {
       case 'turn':
-        String direction = "vire ";
-        if (modifier.contains('left'))
-          direction += "à esquerda";
-        else if (modifier.contains('left'))
-          direction += "à direita";
-        else if (modifier.contains('sharp left'))
-          direction += "vire acentuadamente à esquerda";
-        else if (modifier.contains('sharp right'))
-          direction += "vire acentuadamente à direita";
-        else
-          direction += "na direção indicada";
-        return "$direction$streetInfo";
+        if (modifier.contains('left')) return "vire à esquerda$streetInfo";
+        if (modifier.contains('right')) return "vire à direita$streetInfo";
+        return "vire$streetInfo";
       case 'new name':
-        return "continue em frente para entrar $streetInfo";
+        return "continue em frente para entrar$streetInfo";
       case 'on ramp':
-        return "pegue a rampa de acesso $streetInfo";
+        return "pegue a rampa de acesso$streetInfo";
       case 'roundabout':
         int? exit = maneuver['exit'];
         String exitText = exit != null ? " e pegue a saída número $exit" : "";
@@ -329,9 +319,6 @@ class MapNavigationController extends GetxController {
   String calculateETA(double seconds) {
     final minutes = (seconds / 60).ceil();
     if (minutes < 60) return '$minutes min';
-    final hours = minutes ~/ 60;
-    final remainingMinutes = minutes % 60;
-
-    return '${hours}h ${remainingMinutes}m';
+    return '${minutes ~/ 60}h ${minutes % 60}m';
   }
 }

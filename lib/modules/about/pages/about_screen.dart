@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/modules/about/controller/about_controller.dart';
 import 'package:fuel_tracker_app/modules/backup/controller/update_controller.dart';
 import 'package:get/get.dart';
+import 'package:remixicon/remixicon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -10,8 +11,13 @@ class AboutScreen extends StatelessWidget {
   final UpdateController updateController = Get.put(UpdateController());
   final AboutController aboutController = Get.put(AboutController());
 
-  Future<void> _checkForUpdate(BuildContext context) async {
-    await updateController.checkForUpdate();
+  Future<void> _checkForUpdate() async {
+    aboutController.setChecking(true);
+    try {
+      await updateController.checkForUpdate();
+    } finally {
+      aboutController.setChecking(false);
+    }
   }
 
   Future<void> _launchUrl(String url) async {
@@ -28,41 +34,31 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final theme = Theme.of(context);
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('ab_about'.tr),
+        foregroundColor: theme.colorScheme.onSurface,
+        elevation: 0,
+      ),
+      body: Obx(() {
+        final isChecking = aboutController.isCheckingForUpdate.value;
 
-      return _buildAboutScreen(context, theme);
-    });
-  }
-
-  Widget _buildAboutScreen(BuildContext context, ThemeData theme) {
-    return Obx(() {
-      final versionLabel = 'ab_currentVersion'.tr;
-      final fullVersionText =
-          '$versionLabel ${aboutController.appVersion.value}';
-      final isChecking = aboutController.isCheckingForUpdate.value;
-
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('ab_about'.tr),
-          foregroundColor: theme.colorScheme.onBackground,
-          elevation: theme.appBarTheme.elevation,
-        ),
-        body: SingleChildScrollView(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
+              Center(
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                ),
-                child: Image.asset(
-                  'assets/app_icon/icon.png',
-                  fit: BoxFit.contain,
+                  child: Image.asset(
+                    'assets/app_icon/icon.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -72,7 +68,7 @@ class AboutScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                fullVersionText,
+                '${'ab_currentVersion'.tr} ${aboutController.appVersion.value}',
                 style: const TextStyle(fontSize: 16, color: Colors.grey),
               ),
               const SizedBox(height: 8),
@@ -112,90 +108,28 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: isChecking ? null : () => _checkForUpdate(context),
-                  icon: isChecking
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.cloud_download),
-                  label: Text('up_check_for_updates'.tr),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
+              _buildActionButton(
+                label: 'up_check_for_updates'.tr,
+                icon: isChecking ? null : RemixIcons.download_line,
+                color: Colors.orange,
+                isLoading: isChecking,
+                onPressed: isChecking ? null : _checkForUpdate,
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    _launchUrl('https://github.com/LeonanC/fuel-tracker-app');
-                  },
-                  icon: const Icon(Icons.code),
-                  label: Text('ab_githubSource'.tr),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueGrey,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
+              _buildActionButton(
+                label: 'ab_githubSource'.tr,
+                icon: RemixIcons.code_line,
+                color: Colors.blueAccent,
+                onPressed: () =>
+                    _launchUrl('https://github.com/LeonanC/fuel-tracker-app'),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    _launchUrl(
-                      'https://github.com/LeonanC/fuel-tracker-app/blob/main/privacy.md',
-                    );
-                  },
-                  icon: const Icon(Icons.privacy_tip_outlined),
-                  label: Text('ab_privacyPolicy'.tr),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    _launchUrl(
-                      'https://github.com/LeonanC/fuel-tracker-app/blob/main/terms.md',
-                    );
-                  },
-                  icon: const Icon(Icons.gavel_outlined),
-                  label: Text('ab_termsOfService'.tr),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+              _buildActionButton(
+                label: 'ab_privacyPolicy'.tr,
+                icon: RemixIcons.chat_private_line,
+                color: Colors.teal,
+                onPressed: () => _launchUrl(
+                  'https://github.com/LeonanC/fuel-tracker-app/blob/main/privacy.md',
                 ),
               ),
               const SizedBox(height: 40),
@@ -207,8 +141,40 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 20),
             ],
           ),
+        );
+      }),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String label,
+    IconData? icon,
+    required Color color,
+    required VoidCallback? onPressed,
+    bool isLoading = false,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : Icon(icon),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-      );
-    });
+      ),
+    );
   }
 }

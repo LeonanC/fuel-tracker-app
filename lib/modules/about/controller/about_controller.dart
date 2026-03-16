@@ -14,13 +14,13 @@ class AboutController extends GetxController {
   Future<void> _loadAppVersion() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      appVersion.value = packageInfo.version;
+      appVersion.value = "${packageInfo.version}+${packageInfo.buildNumber}";
     } catch (e) {
       appVersion.value = 'Erro ao carregar';
     }
   }
 
-  void setCheckingForUpdate(bool value) {
+  void setChecking(bool value) {
     isCheckingForUpdate.value = value;
   }
 }

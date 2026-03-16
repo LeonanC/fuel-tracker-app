@@ -21,9 +21,7 @@ class MapScreen extends GetView<MapNavigationController> {
     final isDarkMode = theme.brightness == Brightness.dark;
 
     return Obx(() {
-      final center =
-          controller.currentLocation.value ??
-          const LatLng(-23.55052, -46.63330);
+      final center = controller.currentLocation.value ?? defaultCenter;
       final isNavigation = controller.destinationPoint.value != null;
       final bool loading =
           controller.isLoading.value || controller.isRouting.value;
@@ -36,22 +34,15 @@ class MapScreen extends GetView<MapNavigationController> {
         body: Stack(
           children: [
             _buildMap(controller, isDarkMode, center),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 300,
-              child: IgnorePointer(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.5),
-                      ],
-                    ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
                   ),
                 ),
               ),
@@ -94,7 +85,6 @@ class MapScreen extends GetView<MapNavigationController> {
                 points: navCtrl.routePoints.toList(),
                 strokeWidth: 5.0,
                 color: Colors.blueAccent,
-                gradientColors: [Colors.blue, Colors.lightBlueAccent],
               ),
             ],
           ),
@@ -102,7 +92,7 @@ class MapScreen extends GetView<MapNavigationController> {
           markers: [
             if (navCtrl.currentLocation.value != null)
               _buildUserMarker(navCtrl),
-            ...navCtrl.stationMarkers.toList(),
+            ...navCtrl.stationMarkers,
           ],
         ),
       ],
@@ -112,13 +102,16 @@ class MapScreen extends GetView<MapNavigationController> {
   Marker _buildUserMarker(MapNavigationController navCtrl) {
     return Marker(
       point: navCtrl.currentLocation.value!,
-      width: 80,
-      height: 80,
-      child: Obx(
-        () => Transform.rotate(
-          angle: (navCtrl.isCompassMode.value || navCtrl.isNavigationMode.value)
-              ? 0
-              : (navCtrl.currentHeading.value * (math.pi / 180)),
+      width: 60,
+      height: 60,
+      child: Obx(() {
+        double rotation =
+            (navCtrl.isCompassMode.value || navCtrl.isNavigationMode.value)
+            ? 0
+            : (navCtrl.currentHeading.value * (math.pi / 180));
+
+        return Transform.rotate(
+          angle: rotation,
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -137,8 +130,8 @@ class MapScreen extends GetView<MapNavigationController> {
               ),
             ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
