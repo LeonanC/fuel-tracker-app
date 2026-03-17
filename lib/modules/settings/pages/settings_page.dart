@@ -3,6 +3,7 @@ import 'package:fuel_tracker_app/modules/backup/controller/update_controller.dar
 import 'package:fuel_tracker_app/data/models/app_update.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
+import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/remider/pages/reminders_screen.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:fuel_tracker_app/modules/vehicle/pages/vehicle_screen.dart';
@@ -138,6 +139,8 @@ class ToolsScreen extends GetView<SettingController> {
                 icon: RemixIcons.customer_service_2_line,
                 onTap: () => _sendFeedback(),
               ),
+              const SizedBox(height: 30),
+              _buildLogoutButton(theme),
               const SizedBox(height: 40),
               Obx(
                 () => Center(
@@ -359,5 +362,29 @@ class ToolsScreen extends GetView<SettingController> {
         );
       }
     }
+  }
+
+  Widget _buildLogoutButton(ThemeData theme) {
+    final perfilController = Get.find<PerfilController>();
+    const logoutColor = Color(0xFFFB7185);
+
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => perfilController.logout(),
+        icon: Icon(RemixIcons.logout_box_r_line, color: logoutColor),
+        label: const Text(
+          'SAIR DA CONTA',
+          style: TextStyle(color: logoutColor, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: logoutColor.withOpacity(0.1),
+          padding: const EdgeInsets.symmetric(vertical: 15),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+      ),
+    );
   }
 }

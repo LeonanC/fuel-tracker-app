@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:fuel_tracker_app/data/global/fuel_alert_card.dart';
 import 'package:fuel_tracker_app/data/global/fuel_list_filter_menu.dart';
-import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
-import 'package:fuel_tracker_app/modules/gas/controller/gasStation_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/about/pages/about_screen.dart';
 import 'package:get/get.dart';

@@ -18,7 +18,7 @@ class RemindersPages extends GetView<ReminderController> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Noficações e Lembretes'),
+        title: Text('rem_titulo'.tr),
         elevation: 0,
         centerTitle: true,
       ),
@@ -32,12 +32,10 @@ class RemindersPages extends GetView<ReminderController> {
           children: [
             SwitchListTile(
               title: Text(
-                'Lembretes de Registro',
+                'rem_enable_titulo'.tr,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: const Text(
-                'Receba notificações para registrar seu abastecimento.',
-              ),
+              subtitle: Text('rem_enable_desc'.tr),
               value: isEnabled,
               onChanged: (value) => controller.toggleReminder(value),
               secondary: Icon(
@@ -50,7 +48,7 @@ class RemindersPages extends GetView<ReminderController> {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
-                'Frequência do Lembrete',
+                'rem_frequency_titulo'.tr,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: isEnabled ? theme.colorScheme.primary : Colors.grey,
                   fontWeight: FontWeight.bold,
@@ -74,8 +72,10 @@ class RemindersPages extends GetView<ReminderController> {
             ListTile(
               enabled: isEnabled,
               leading: Icon(RemixIcons.time_line),
-              title: const Text('Hora de Lembrete'),
-              subtitle: Text('Notificar às ${selectedTime.format(context)}'),
+              title: Text('rem_time_titulo'.tr),
+              subtitle: Text(
+                'rem_time_subtitulo'.tr + '${selectedTime.format(context)}',
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: isEnabled ? () => _selectTime(context) : null,
             ),
@@ -100,7 +100,7 @@ class RemindersPages extends GetView<ReminderController> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'A entrega das notificações depende das configurações de economa de bateria do seu sistema.',
+                        'rem_battery_info'.tr,
                         style: theme.textTheme.bodySmall,
                       ),
                     ),

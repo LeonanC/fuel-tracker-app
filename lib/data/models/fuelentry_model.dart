@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FuelEntryModel {
   final String? id;
+  final String user;
   final int vehicleId;
   final int fuelTypeId;
   final int gasStationId;
@@ -16,6 +17,7 @@ class FuelEntryModel {
 
   FuelEntryModel({
     this.id,
+    required this.user,
     required this.vehicleId,
     required this.fuelTypeId,
     required this.gasStationId,
@@ -40,6 +42,7 @@ class FuelEntryModel {
   Map<String, dynamic> toMap() {
     return {
       'pk_fuel': id,
+      'fk_usuario': user,
       'fk_veiculo': vehicleId,
       'fk_tipo': fuelTypeId,
       'fk_posto': gasStationId,
@@ -67,6 +70,7 @@ class FuelEntryModel {
 
     return FuelEntryModel(
       id: docId,
+      user: map['fk_usuario'] as String,
       vehicleId: _toInt(map['fk_veiculo']),
       fuelTypeId: _toInt(map['fk_tipo']),
       gasStationId: _toInt(map['fk_posto']),

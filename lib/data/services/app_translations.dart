@@ -4,6 +4,25 @@ class AppTranslations extends Translations {
   @override
   Map<String, Map<String, String>> get keys => {
     'pt_BR': {
+      // LOGIN PAGE
+      'lg_titulo': 'Fuel Tracker',
+      'lg_nome_completo': 'Nome Completo',
+      'lg_placa': 'Placa do Veículo',
+      'lg_marca': 'Marca do Veículo',
+      'lg_modelo': 'Modelo do Veículo',
+      'lg_odometro': 'Hodômetro',
+      'lg_tanque': 'Tanque de Combustível',
+      'lg_city': 'Cidade do Usuário',
+      'lg_email': 'E-mail',
+      'lg_senha': 'Senha',
+      'lg_entrar': 'ENTRAR',
+      'lg_cadastrar': 'CADASTRAR',
+      'lg_nao_tem_conta': 'Não tem uma conta? Crie agora',
+      'lg_ja_tem_conta': 'Já possui conta? Faça login',
+      'lg_erro_campo': 'Este campo é obrigatório',
+      'lg_meu_painel': 'Meu Painel',
+      'lg_veiculo_ativo': 'Veículo Ativo',
+
       // ABOUT PAGE
       'ab_title': 'Fuel Tracker',
       'ab_about': 'Sobre o App',
@@ -47,6 +66,7 @@ class AppTranslations extends Translations {
       'nav_fuel_entries': 'Abastecimentos',
       'nav_search': 'Procurar',
       'nav_map': 'Postos Próximos',
+      'nav_perfil': 'Perfil',
       'nav_tools': 'Ferramentas',
 
       // MAP PAGE
@@ -271,8 +291,34 @@ class AppTranslations extends Translations {
       'gs_btn_cancel': 'Cancelar',
       'gs_btn_save': 'Salvar Alterações',
       'gs_required': 'Campo obrigatório',
+
+      // LEMBRETES
+      'rem_titulo': 'Noficações e Lembretes',
+      'rem_enable_titulo': 'Lembretes de Registro',
+      'rem_enable_desc':
+          'Receba notificações para registrar seu abastecimento.',
+      'rem_frequency_titulo': 'Frequência do Lembrete',
+      'rem_time_titulo': 'Hora de Lembrete',
+      'rem_time_subtitulo': 'Notificar às ',
+      'rem_battery_info':
+          'A entrega das notificações depende das configurações de economa de bateria do seu sistema.',
     },
     'en_US': {
+      // LOGIN PAGE
+      'lg_titulo': 'Fuel Tracker',
+      'lg_nome_completo': 'Full Name',
+      'lg_placa': 'Vehicle License Plate',
+      'lg_modelo': 'Vehicle Model',
+      'lg_email': 'Email',
+      'lg_senha': 'Password',
+      'lg_entrar': 'Log in',
+      'lg_cadastrar': 'Register',
+      'lg_nao_tem_conta': "Don't have an account? Create one now",
+      'lg_ja_tem_conta': 'Already have an account? Log in',
+      'lg_erro_campo': 'This field is required',
+      'lg_meu_painel': 'My Dashboard',
+      'lg_veiculo_ativo': 'Active Vehicle',
+
       'ab_title': 'Fuel Tracker',
       'ab_about': 'About the App',
       'ab_currentVersion': 'Current Version',
@@ -310,6 +356,7 @@ class AppTranslations extends Translations {
       'nav_fuel_entries': 'Fuel Stations',
       'nav_search': 'Search',
       'nav_map': 'Nearby Gas Stations',
+      'nav_perfil': 'Profile',
       'nav_tools': 'Tools',
 
       "map_placeholder": "This map will display locations near you.",
@@ -530,8 +577,37 @@ class AppTranslations extends Translations {
       'gs_btn_cancel': 'Cancel',
       'gs_btn_save': 'Save Changes',
       'gs_required': 'Required Field',
+
+      // REMINDERS
+      'rem_titulo': 'Notifications and Reminders',
+      'rem_enable_titulo': 'Registration Reminders',
+      'rem_enable_desc': 'Receive notifications to register your refueling.',
+      'rem_frequency_titulo': 'Reminder Frequency',
+      'rem_time_titulo': 'Reminder Time',
+      'rem_time_subtitulo': 'Notify at ',
+      'rem_battery_info':
+          "Notification delivery depends on your system's battery saving settings.",
     },
     'es_ES': {
+      // PÁGINA DE INICIO DE SESIÓN
+      'lg_titulo': 'Rastreador de combustible',
+      'lg_nome_completo': 'Nombre completo',
+      'lg_placa': 'Matrícula del vehículo',
+      'lg_marca': 'Marca del vehículo',
+      'lg_modelo': 'Modelo de vehículo',
+      'lg_odometro': 'Odómetro',
+      'lg_tanque': 'Tanque de combustible',
+      'lg_city': 'Ciudad del usuario',
+      'lg_email': 'Correo electrónico',
+      'lg_senha': 'Contraseña',
+      'lg_entrar': 'INICIAR SESIÓN',
+      'lg_cadastrar': 'REGISTRARSE',
+      'lg_nao_tem_conta': '¿No tienes una cuenta? Crea uno ahora',
+      'lg_ja_tem_conta': '¿Ya tienes una cuenta? Iniciar sesión',
+      'lg_erro_campo': "Este campo es obligatorio",
+      'lg_meu_painel': 'Mi Panel',
+      'lg_veiculo_ativo': "Vehículo Activo",
+
       'ab_title': 'Fuel Tracker',
       'ab_about': 'Acerca de la aplicación',
       'ab_currentVersion': 'Versión actual',
@@ -571,6 +647,7 @@ class AppTranslations extends Translations {
       'nav_fuel_entries': 'Estaciones de servicio',
       'nav_search': 'Buscar',
       'nav_map': 'Gasolineras cercanas',
+      'nav_perfil': 'Perfil',
       'nav_tools': 'Herramientas',
 
       "map_placeholder": "Este mapa mostrará ubicaciones cercanas.",
@@ -795,6 +872,17 @@ class AppTranslations extends Translations {
       'gs_btn_cancel': 'Cancelar',
       'gs_btn_save': 'Guardar cambios',
       'gs_required': 'Campo obligatorio',
+
+      // RECORDATORIOS
+      'rem_titulo': 'Notificaciones y recordatorios',
+      'rem_enable_titulo': 'Recordatorios de registro',
+      'rem_enable_desc':
+          'Reciba notificaciones para registrar su suministro de combustible.',
+      'rem_frequency_titulo': 'Frecuencia de recordatorios',
+      'rem_time_titulo': 'Hora de recordatorios',
+      'rem_time_subtitulo': 'Notificar a las ',
+      'rem_battery_info':
+          'La entrega de notificaciones depende de la configuración de ahorro de batería de su sistema.',
     },
   };
 }

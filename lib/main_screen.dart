@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/modules/home/pages/home_page.dart';
 import 'package:fuel_tracker_app/modules/maps/pages/map_screen.dart';
+import 'package:fuel_tracker_app/modules/perfil/pages/perfil_pages.dart';
 import 'package:fuel_tracker_app/modules/settings/pages/settings_page.dart';
 import 'package:get/get.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
@@ -18,7 +19,7 @@ class _MainPageState extends State<MainPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
 
-  List<Widget> _pages = [HomePage(), MapScreen(), ToolsScreen()];
+  List<Widget> _pages = [HomePage(), MapScreen(), PerfilPage(), ToolsScreen()];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -104,6 +105,18 @@ class _MainPageState extends State<MainPage> {
               ),
               GButton(
                 icon: _selectedIndex == 2
+                    ? RemixIcons.user_2_fill
+                    : RemixIcons.user_2_line,
+                text: 'nav_perfil'.tr,
+                textStyle: TextStyle(
+                  fontFamily: 'Montserrat',
+                  color: Colors.blueAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: screenWidth < 360 ? 11.sp : 13.sp,
+                ),
+              ),
+              GButton(
+                icon: _selectedIndex == 3
                     ? RemixIcons.settings_2_fill
                     : RemixIcons.settings_2_line,
                 text: 'nav_tools'.tr,

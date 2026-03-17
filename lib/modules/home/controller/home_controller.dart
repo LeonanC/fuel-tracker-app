@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
@@ -8,7 +10,9 @@ import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class HomeController extends GetxController {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final lookupController = Get.find<LookupController>();
   final settingsController = Get.find<SettingController>();
   final currencyController = Get.find<CurrencyController>();
 
@@ -105,8 +109,12 @@ class HomeController extends GetxController {
   }
 
   Future<void> setupFuelStream() async {
+    final userUID = _auth.currentUser?.uid;
+    if (userUID == null) return;
+
     _firestore
         .collection('fuels')
+        .where('fk_usuario', isEqualTo: userUID)
         .orderBy('velocimetro', descending: true)
         .snapshots()
         .listen(
@@ -137,11 +145,48 @@ class HomeController extends GetxController {
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
-      await _firestore.collection('fuels').add(data);
-      Get.back();
+      isLoading.value = true;
+      final userUID = _auth.currentUser?.uid;
+
+      if (userUID != null) {
+        data['fk_usuario'] = userUID;
+
+        await _firestore.collection('fuels').add(data);
+
+        double litrosAtuais = (data['litros_volume'] as num? ?? 0.0).toDouble();
+        double odoAtual = (data['velocimetro'] as num? ?? 0.0).toDouble();
+        double odoAnterior = lastOdometer.value ?? odoAtual;
+
+        int xpGanho = _calcularXP(litrosAtuais, odoAtual, odoAnterior);
+
+        await _firestore.collection('usuarios').doc(userUID).update({
+          'xp': FieldValue.increment(xpGanho),
+          'quilometragem': odoAtual,
+        });
+
+        Get.back();
+        Get.snackbar(
+          "Combustível Registrado!",
+          "Você ganhou +$xpGanho de XP!",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Color(0xFF00FF85),
+          colorText: Colors.black,
+          icon: Icon(RemixIcons.medal_2_line),
+          duration: const Duration(seconds: 4),
+        );
+      }
     } catch (e) {
       Get.snackbar('Erro ao salvar', e.toString());
+    } finally {
+      isLoading.value = false;
     }
+  }
+
+  int _calcularXP(double litros, double odoAtual, double odoAnterior) {
+    int xpPorLitro = litros.toInt();
+    double kmPercorrido = odoAtual - odoAnterior;
+    int xpPorKm = kmPercorrido > 0 ? (kmPercorrido ~/ 10) * 5 : 0;
+    return xpPorLitro + xpPorKm;
   }
 
   Future<void> updateFuel(FuelEntryModel fuel) async {
