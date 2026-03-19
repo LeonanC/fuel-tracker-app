@@ -257,7 +257,7 @@ class HomeController extends GetxController {
     final novo = fuelEntries[0];
     final anterior = fuelEntries[1];
 
-    double somaOdometro = novo.odometerKm + anterior.odometerKm;
+    double somaOdometro = novo.odometerKm - anterior.odometerKm;
     double volumeLitros = novo.volumeLiters;
 
     return (volumeLitros > 0) ? somaOdometro / volumeLitros : 0.0;
@@ -273,7 +273,9 @@ class HomeController extends GetxController {
     double kmNoTrecho = novo.odometerKm - anterior.odometerKm;
     double custoTotal = novo.totalCost;
 
-    return (kmNoTrecho > 0) ? custoTotal / kmNoTrecho : 0.0;
+    if (kmNoTrecho <= 0) return 0.0;
+
+    return (custoTotal / kmNoTrecho) * 100;
   }
 
   Map<String, String>? get fuelAlertData {

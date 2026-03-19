@@ -210,7 +210,7 @@ class HomePage extends GetView<HomeController> {
 
       return Container(
         margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF252525),
           borderRadius: BorderRadius.circular(20),
@@ -222,23 +222,42 @@ class HomePage extends GetView<HomeController> {
             ),
           ],
         ),
-        child: Column(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatRow(
-              icon: RemixIcons.calculator_line,
-              iconColor: Colors.blueAccent,
-              label: "Média Ponderada (Soma/L)",
-              value: controller.settingsController.formatarCurrency(avgCons),
+            Expanded(
+              child: _buildStatRow(
+                icon: RemixIcons.calculator_line,
+                iconColor: Colors.blueAccent,
+                label: "Consumo Médio",
+                value: controller.settingsController.formatarConsumo(avgCons),
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Divider(color: Colors.white10, height: 1),
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(vertical: 12),
+            //   child: Divider(color: Colors.white10, height: 1),
+            // ),
+            Expanded(
+              child: _buildStatRow(
+                icon: RemixIcons.money_dollar_box_line,
+                iconColor: Colors.redAccent,
+                label: "Custo por 100Km",
+                value: controller.settingsController.formatarCurrency(avgCost),
+              ),
             ),
-            _buildStatRow(
-              icon: RemixIcons.money_dollar_box_line,
-              iconColor: Colors.redAccent,
-              label: "Gasto Real por KM",
-              value: controller.settingsController.formatarCurrency(avgCost),
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(vertical: 12),
+            //   child: Divider(color: Colors.white10, height: 1),
+            // ),
+            Expanded(
+              child: _buildStatRow(
+                icon: RemixIcons.gas_station_line,
+                iconColor: Colors.orangeAccent,
+                label: "Custo por KM",
+                value: controller.settingsController.formatarCurrency(
+                  avgCost / 100,
+                ),
+              ),
             ),
           ],
         ),
@@ -252,38 +271,37 @@ class HomePage extends GetView<HomeController> {
     required String label,
     required String value,
   }) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: iconColor, size: 24),
         ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                color: iconColor.withOpacity(0.8),
-                fontSize: 13,
-                fontWeight: FontWeight.w300,
-              ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            color: iconColor.withOpacity(0.8),
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: GoogleFonts.firaCode(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: GoogleFonts.firaCode(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

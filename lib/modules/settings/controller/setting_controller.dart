@@ -95,6 +95,11 @@ class SettingController extends GetxController {
     return "${kmL.toStringAsFixed(1)} km/L";
   }
 
+  double calcularCustoPor100Km(double precoLitro, double consumoKmK) {
+    if (consumoKmK <= 0) return 0.0;
+    return (100 / consumoKmK) * precoLitro;
+  }
+
   String formatarCurrency(double valor) {
     return "${useCurrency.value} ${valor.toStringAsFixed(2)}";
   }
