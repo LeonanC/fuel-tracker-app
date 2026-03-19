@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/modules/auth/completar_perfil_controller.dart';
 import 'package:get/get.dart';
-import 'package:path/path.dart';
 import 'package:remixicon/remixicon.dart';
 
 class CompletarPerfilPage extends GetView<CompletarPerfilController> {
@@ -56,11 +55,14 @@ class CompletarPerfilPage extends GetView<CompletarPerfilController> {
                     value: controller.selectedVeiculo.value,
                     dropdownColor: Theme.of(context).cardColor,
                     style: const TextStyle(color: Colors.white),
-                    items: [
-                      DropdownMenuItem(value: 1, child: Text("Honda City")),
-                      DropdownMenuItem(value: 2, child: Text("Chevrolet Onix")),
-                      DropdownMenuItem(value: 3, child: Text("Outro")),
-                    ],
+                    items: controller.lookupController.veiculosDrop
+                        .map(
+                          (v) => DropdownMenuItem(
+                            value: v.id,
+                            child: Text(v.nickname),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (v) => controller.selectedVeiculo.value = v,
                     decoration: _inputDecoration(
                       context,
@@ -87,7 +89,7 @@ class CompletarPerfilPage extends GetView<CompletarPerfilController> {
                   child: controller.isLoading.value
                       ? const LinearProgressIndicator(color: Colors.white)
                       : Text(
-                          "lg_finalizar",
+                          "lg_finalizar".tr,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),

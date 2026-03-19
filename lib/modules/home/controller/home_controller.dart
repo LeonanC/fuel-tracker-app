@@ -187,6 +187,16 @@ class HomeController extends GetxController {
     }
   }
 
+  double getLatestOdometerForVehicle(dynamic vehicleId) {
+    try {
+      final lastEntry = fuelEntries.firstWhere((e) => e.vehicleId == vehicleId);
+      return lastEntry.odometerKm;
+    } catch (e) {
+      final veiculoData = veiculosMap[vehicleId];
+      return (veiculoData?['initial_odometer'] as num? ?? 0.0).toDouble();
+    }
+  }
+
   int _calcularXP(double litros, double odoAtual, double odoAnterior) {
     int xpPorLitro = litros.toInt();
     double kmPercorrido = odoAtual - odoAnterior;
@@ -283,9 +293,12 @@ class HomeController extends GetxController {
   }
 
   void navigateToAddEntry(BuildContext context) async {
-    final currentOdometer = lastOdometer.value;
+    double odometerToSend = selectedVehicleID.value != null
+        ? getLatestOdometerForVehicle(selectedVehicleID.value)
+        : (lastOdometer.value ?? 0.0);
+
     final result = await Get.to(
-      () => HomeEntryPage(lastOdometer: currentOdometer),
+      () => HomeEntryPage(lastOdometer: odometerToSend),
     );
     if (result != null) {
       if (result is Map<String, dynamic>) {
@@ -295,9 +308,10 @@ class HomeController extends GetxController {
   }
 
   void navigateToEditEntry(BuildContext context, FuelEntryModel entry) async {
-    final currentOdometer = lastOdometer.value;
+    double odometerToSend = getLatestOdometerForVehicle(entry.vehicleId);
+
     final result = await Get.to(
-      () => HomeEntryPage(lastOdometer: currentOdometer, entry: entry),
+      () => HomeEntryPage(lastOdometer: odometerToSend, entry: entry),
       arguments: entry,
     );
     if (result == true || result != null) {

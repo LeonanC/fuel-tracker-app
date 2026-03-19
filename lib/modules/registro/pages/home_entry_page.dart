@@ -169,6 +169,10 @@ class HomeEntryPage extends StatelessWidget {
             .map((v) => DropdownMenuItem(value: v.id, child: Text(v.nickname)))
             .toList(),
         "Veículo",
+        onChanged: (novoId) {
+          c.selectedVeiculos.value = novoId;
+          c.atualizarHodometroPorVeiculo(novoId);
+        },
       ),
       const Divider(),
       _dropdown(
@@ -192,14 +196,21 @@ class HomeEntryPage extends StatelessWidget {
   Widget _dropdown(
     RxnInt val,
     List<DropdownMenuItem<int>> items,
-    String label,
-  ) {
+    String label, {
+    Function(int?)? onChanged,
+  }) {
     return Obx(
       () => DropdownButtonFormField<int>(
         value: val.value,
         decoration: InputDecoration(labelText: label, border: InputBorder.none),
         items: items,
-        onChanged: (v) => val.value = v,
+        onChanged: (v) {
+          if (onChanged != null) {
+            onChanged(v);
+          } else {
+            val.value = v;
+          }
+        },
       ),
     );
   }

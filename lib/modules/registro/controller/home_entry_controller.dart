@@ -97,6 +97,12 @@ class HomeEntryController extends GetxController {
     }
   }
 
+  void atualizarHodometroPorVeiculo(int? vehicleId) {
+    if (vehicleId == null) return;
+    double ultimoKm = controller.getLatestOdometerForVehicle(vehicleId);
+    kmController.text = ultimoKm.toStringAsFixed(0);
+  }
+
   Future<void> pickComprovante() async {
     final source = await Get.dialog<ImageSource>(
       SimpleDialog(
