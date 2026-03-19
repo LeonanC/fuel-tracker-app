@@ -96,6 +96,6 @@ class SettingController extends GetxController {
   }
 
   String formatarCurrency(double valor) {
-    return "${useCurrency.value} ${valor.toStringAsFixed(3)}";
+    return "${useCurrency.value} ${valor.toStringAsFixed(2)}";
   }
 }

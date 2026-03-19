@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
+import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
@@ -10,8 +12,8 @@ import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class HomeController extends GetxController {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
   final lookupController = Get.find<LookupController>();
   final settingsController = Get.find<SettingController>();
   final currencyController = Get.find<CurrencyController>();
@@ -29,6 +31,7 @@ class HomeController extends GetxController {
   final tiposMap = <dynamic, Map<String, dynamic>>{}.obs;
   final servicesMap = <dynamic, Map<String, dynamic>>{}.obs;
 
+  var searchText = ''.obs;
   var selectedPostoID = Rxn<dynamic>();
   var selectedVehicleID = Rxn<dynamic>();
   var selectedTipoID = Rxn<dynamic>();
@@ -147,34 +150,36 @@ class HomeController extends GetxController {
     try {
       isLoading.value = true;
       final userUID = _auth.currentUser?.uid;
+      if (userUID == null) return;
 
-      if (userUID != null) {
-        data['fk_usuario'] = userUID;
+      data['fk_usuario'] = userUID;
+      data['data'] = FieldValue.serverTimestamp();
 
-        await _firestore.collection('fuels').add(data);
+      await _firestore.collection('fuels').add(data);
 
-        double litrosAtuais = (data['litros_volume'] as num? ?? 0.0).toDouble();
-        double odoAtual = (data['velocimetro'] as num? ?? 0.0).toDouble();
-        double odoAnterior = lastOdometer.value ?? odoAtual;
+      double odoAtual = (data['velocimetro'] as num).toDouble();
+      double odoAnterior = lastOdometer.value ?? odoAtual;
+      int xpGanho = _calcularXP(
+        (data['litros_volume'] as num).toDouble(),
+        odoAtual,
+        odoAnterior,
+      );
 
-        int xpGanho = _calcularXP(litrosAtuais, odoAtual, odoAnterior);
+      await _firestore.collection('usuarios').doc(userUID).update({
+        'xp': FieldValue.increment(xpGanho),
+        'quilometragem': odoAtual,
+      });
 
-        await _firestore.collection('usuarios').doc(userUID).update({
-          'xp': FieldValue.increment(xpGanho),
-          'quilometragem': odoAtual,
-        });
-
-        Get.back();
-        Get.snackbar(
-          "Combustível Registrado!",
-          "Você ganhou +$xpGanho de XP!",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Color(0xFF00FF85),
-          colorText: Colors.black,
-          icon: Icon(RemixIcons.medal_2_line),
-          duration: const Duration(seconds: 4),
-        );
-      }
+      Get.back();
+      Get.snackbar(
+        "Combustível Registrado!",
+        "Você ganhou +$xpGanho de XP!",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Color(0xFF00FF85),
+        colorText: Colors.black,
+        icon: Icon(RemixIcons.medal_2_line),
+        duration: const Duration(seconds: 4),
+      );
     } catch (e) {
       Get.snackbar('Erro ao salvar', e.toString());
     } finally {
@@ -199,36 +204,66 @@ class HomeController extends GetxController {
   }
 
   List<FuelEntryModel> get filteredFuelEntries {
-    if (selectedVehicleID.value == null) return fuelEntries;
-    return fuelEntries
-        .where((e) => e.vehicleId == selectedVehicleID.value)
-        .toList();
+    List<FuelEntryModel> list = fuelEntries;
+    if (selectedVehicleID.value != null) {
+      list = list.where((e) => e.vehicleId == selectedVehicleID.value).toList();
+    }
+
+    if (selectedTipoID.value != null) {
+      list = list.where((e) => e.fuelTypeId == selectedTipoID.value).toList();
+    }
+
+    if (selectedPostoID.value != null) {
+      list = list
+          .where((e) => e.gasStationId == selectedPostoID.value)
+          .toList();
+    }
+
+    if (searchText.value.isNotEmpty) {
+      final query = searchText.value.toLowerCase();
+      list = list.where((e) {
+        final dadosPosto = postosMap[e.gasStationId];
+        final nomePosto = dadosPosto?['nome']?.toString().toLowerCase() ?? "";
+
+        final dadosVeiculo = veiculosMap[e.vehicleId];
+        final nomeVeiculo =
+            dadosVeiculo?['nickname']?.toString().toLowerCase() ?? "";
+
+        final dadosTipo = tiposMap[e.fuelTypeId];
+        final nomeTipo = dadosTipo?['nome']?.toString().toLowerCase() ?? "";
+
+        return nomePosto.contains(query) ||
+            nomeVeiculo.contains(query) ||
+            nomeTipo.contains(query);
+      }).toList();
+    }
+    return list;
   }
 
-  double get averageConsumption {
+  double get gastoPorKmReal {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
 
-    final double dist = (entries.first.odometerKm - entries.last.odometerKm)
-        .toDouble();
+    final novo = fuelEntries[0];
+    final anterior = fuelEntries[1];
 
-    double liters = 0.0;
-    for (int i = 0; i < entries.length - 1; i++) {
-      liters += entries[i].volumeLiters;
-    }
+    double somaOdometro = novo.odometerKm + anterior.odometerKm;
+    double volumeLitros = novo.volumeLiters;
 
-    return (dist > 0 && liters > 0) ? dist / liters : 0.0;
+    return (volumeLitros > 0) ? somaOdometro / volumeLitros : 0.0;
   }
 
   double get averageCostPerKm {
     final entries = filteredFuelEntries;
-    if (entries.isEmpty) return 0.0;
+    if (entries.length < 2) return 0.0;
 
-    double totalCost = entries.fold(0.0, (sum, item) => sum + item.totalCost);
-    double totalKm = (entries.first.odometerKm - entries.last.odometerKm)
-        .toDouble();
+    final novo = entries[0];
+    final anterior = entries[1];
 
-    return totalKm > 0 ? totalCost / totalKm : 0.0;
+    double kmNoTrecho = novo.odometerKm - anterior.odometerKm;
+    double custoTotal = novo.totalCost;
+
+    return (kmNoTrecho > 0) ? custoTotal / kmNoTrecho : 0.0;
   }
 
   Map<String, String>? get fuelAlertData {
@@ -242,7 +277,7 @@ class HomeController extends GetxController {
     return {
       'vehicleName':
           'controller.veiculosMap[entry.vehicleId]?[nickname] ?? "---"',
-      'displayRange': (level * averageConsumption).toStringAsFixed(0),
+      'displayRange': (level).toStringAsFixed(0),
       'level': '$level',
     };
   }

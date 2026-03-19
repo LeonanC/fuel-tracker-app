@@ -12,11 +12,13 @@ class GasStationScreen extends GetView<GasStationController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          'Postos de Combustível',
+          'gs_titulo'.tr,
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w600,
@@ -27,22 +29,22 @@ class GasStationScreen extends GetView<GasStationController> {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: colorScheme.primary,
         onPressed: () => Get.to(() => GasEntryScreen()),
         label: Text(
-          "Novo Posto",
+          "gs_novo_posto".tr,
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        icon: Icon(RemixIcons.add_line, color: Colors.black),
+        icon: Icon(RemixIcons.add_line, color: Colors.white),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
           return Center(
-            child: CircularProgressIndicator(color: theme.cardColor),
+            child: CircularProgressIndicator(color: colorScheme.primary),
           );
         }
         final postos = controller.postosMap.values.toList();
@@ -54,15 +56,15 @@ class GasStationScreen extends GetView<GasStationController> {
               children: [
                 Icon(
                   RemixIcons.gas_station_line,
-                  size: 64,
-                  color: Colors.white10,
+                  size: 64.sp,
+                  color: colorScheme.onSurface.withOpacity(0.1),
                 ),
                 SizedBox(height: 16.h),
                 Text(
-                  "Nenhum posto cadastrado",
+                  "gs_nenhum_posto".tr,
                   style: TextStyle(
                     fontFamily: 'Montserrat',
-                    color: Colors.white38,
+                    color: colorScheme.onSurface.withOpacity(0.4),
                   ),
                 ),
               ],
@@ -72,8 +74,7 @@ class GasStationScreen extends GetView<GasStationController> {
 
         return RefreshIndicator(
           onRefresh: () => controller.fetchPosto(),
-          color: theme.colorScheme.primary,
-          backgroundColor: theme.cardColor,
+          color: colorScheme.primary,
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
@@ -94,14 +95,17 @@ class GasStationScreen extends GetView<GasStationController> {
   }
 
   Widget _buildPostoCard(GasStationModel posto, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(20.r),
         onTap: () => Get.to(() => GasEntryScreen(data: posto)),
         child: Padding(
           padding: EdgeInsets.all(16.w),
@@ -113,12 +117,12 @@ class GasStationScreen extends GetView<GasStationController> {
                   Container(
                     padding: EdgeInsets.all(10.w),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00A3FF).withOpacity(0.1),
+                      color: colorScheme.primary.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       RemixIcons.gas_station_fill,
-                      color: Color(0xFF00A3FF),
+                      color: colorScheme.primary,
                       size: 24.sp,
                     ),
                   ),
@@ -131,7 +135,7 @@ class GasStationScreen extends GetView<GasStationController> {
                           posto.nome,
                           style: TextStyle(
                             fontFamily: 'Montserrat',
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                           ),
@@ -140,7 +144,7 @@ class GasStationScreen extends GetView<GasStationController> {
                           posto.brand,
                           style: TextStyle(
                             fontFamily: 'Montserrat',
-                            color: Colors.white60,
+                            color: colorScheme.onSurface.withOpacity(0.6),
                             fontSize: 12.sp,
                           ),
                         ),
@@ -150,20 +154,23 @@ class GasStationScreen extends GetView<GasStationController> {
                   IconButton(
                     icon: Icon(
                       RemixIcons.delete_bin_line,
-                      color: Colors.redAccent,
-                      size: 20,
+                      color: colorScheme.error,
+                      size: 20.sp,
                     ),
-                    onPressed: () => _confirmDelete(posto),
+                    onPressed: () => _confirmDelete(posto, theme),
                   ),
                 ],
               ),
-              Divider(height: 24.h, color: Colors.white10),
+              Divider(
+                height: 24.h,
+                color: colorScheme.onSurface.withOpacity(0.05),
+              ),
               Row(
                 children: [
                   Icon(
                     RemixIcons.map_pin_2_line,
                     size: 14.sp,
-                    color: Colors.white38,
+                    color: colorScheme.onSurface.withOpacity(0.4),
                   ),
                   SizedBox(width: 4.w),
                   Expanded(
@@ -173,7 +180,7 @@ class GasStationScreen extends GetView<GasStationController> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'Montserrat',
-                        color: Colors.white70,
+                        color: colorScheme.onSurface.withOpacity(0.7),
                         fontSize: 13.sp,
                       ),
                     ),
@@ -185,11 +192,17 @@ class GasStationScreen extends GetView<GasStationController> {
                 children: [
                   _buildBadge(
                     RemixIcons.shopping_basket_line,
-                    "Loja",
+                    "gs_loja".tr,
                     posto.hasConvenientStore,
+                    theme,
                   ),
                   SizedBox(width: 8.w),
-                  _buildBadge(RemixIcons.time_line, "24h", posto.is24Hours),
+                  _buildBadge(
+                    RemixIcons.time_line,
+                    "gs_24h".tr,
+                    posto.is24Hours,
+                    theme,
+                  ),
                 ],
               ),
             ],
@@ -199,13 +212,21 @@ class GasStationScreen extends GetView<GasStationController> {
     );
   }
 
-  Widget _buildBadge(IconData icon, String label, bool active) {
+  Widget _buildBadge(
+    IconData icon,
+    String label,
+    bool active,
+    ThemeData theme,
+  ) {
+    final colorSheme = theme.colorScheme;
+    final Color activeColor = Colors.greenAccent;
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
         color: active
-            ? Colors.green.withOpacity(0.1)
-            : Colors.white.withOpacity(0.05),
+            ? activeColor.withOpacity(0.1)
+            : colorSheme.onSurface.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
@@ -213,14 +234,16 @@ class GasStationScreen extends GetView<GasStationController> {
           Icon(
             icon,
             size: 12.sp,
-            color: active ? Colors.greenAccent : Colors.white24,
+            color: active ? activeColor : colorSheme.onSurface.withOpacity(0.2),
           ),
           SizedBox(width: 4.w),
           Text(
             label,
             style: TextStyle(
               fontFamily: 'Montserrat',
-              color: active ? Colors.greenAccent : Colors.white24,
+              color: active
+                  ? activeColor
+                  : colorSheme.onSurface.withOpacity(0.2),
               fontSize: 11.sp,
             ),
           ),
@@ -229,15 +252,15 @@ class GasStationScreen extends GetView<GasStationController> {
     );
   }
 
-  void _confirmDelete(GasStationModel posto) {
+  void _confirmDelete(GasStationModel posto, ThemeData theme) {
     Get.defaultDialog(
-      title: "Excluir Posto",
-      middleText: "Deseja remover ${posto.nome}?",
+      title: "gs_excluir_titulo".tr,
+      middleText: "gs_excluir_confirm".tr,
       backgroundColor: const Color(0xFF1A1A1A),
       titleStyle: const TextStyle(color: Colors.white),
       middleTextStyle: const TextStyle(color: Colors.white70),
-      textConfirm: 'Sim',
-      textCancel: 'Não',
+      textConfirm: 'gs_sim'.tr,
+      textCancel: 'gs_nao'.tr,
       confirmTextColor: Colors.white,
       buttonColor: Colors.redAccent,
       onConfirm: () {

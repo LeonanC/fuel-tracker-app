@@ -1,14 +1,20 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
 import 'package:fuel_tracker_app/data/models/user_model.dart';
 import 'package:fuel_tracker_app/data/services/auth_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class LoginController extends GetxController {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final AuthService _authService = AuthService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final lookupController = Get.find<LookupController>();
 
   var isLogin = true.obs;
@@ -31,6 +37,12 @@ class LoginController extends GetxController {
   void toggleAuthMode() => isLogin.value = !isLogin.value;
   void toggleObscure() => obscureText.value = !obscureText.value;
 
+  final maskTelefone = MaskTextInputFormatter(
+    mask: '(##) # ####-####',
+    filter: {"#": RegExp(r'[0-9]')},
+    type: MaskAutoCompletionType.lazy,
+  );
+
   void realizarAuth() async {
     if (!formKey.currentState!.validate()) return;
     isLoading.value = true;
@@ -45,6 +57,7 @@ class LoginController extends GetxController {
       } else {
         final novoUsuario = UserModel2(
           id: '',
+          fotoUrl: '',
           nome: nomeController.text.trim(),
           email: emailController.text.trim(),
           telefone: telefoneController.text.trim(),
@@ -77,6 +90,74 @@ class LoginController extends GetxController {
     }
   }
 
+  Future<void> loginWithGoogle() async {
+    try {
+      isLoading.value = true;
+      await _googleSignIn.initialize(
+        serverClientId:
+            '391534008822-tg5rhcoir6a3k8nag3pf6kgtf6q0uopo.apps.googleusercontent.com',
+      );
+      final GoogleSignInAccount? googleUser = await _googleSignIn
+          .authenticate();
+      if (googleUser != null) {
+        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: null,
+          idToken: googleAuth.idToken,
+        );
+
+        UserCredential userCredential = await _auth.signInWithCredential(
+          credential,
+        );
+
+        if (userCredential.user != null) {
+          User user = userCredential.user!;
+
+          DocumentSnapshot doc = await _firestore
+              .collection('usuarios')
+              .doc(user.uid)
+              .get();
+
+          if (doc.exists) {
+            _showCustomSnackbar(
+              titulo: "Erro",
+              mensagem: "Usuário já cadastrado.",
+              isError: true,
+            );
+            UserModel2 usuarioExistente = UserModel2.fromFirestore(doc);
+            if (usuarioExistente.vehicle == null) {
+              Get.offAllNamed('/completar-perfil', arguments: usuarioExistente);
+            } else {
+              Get.offAllNamed('/main');
+            }
+          } else {
+            UserModel2 novoUsuario = UserModel2(
+              id: user.uid,
+              fotoUrl: user.photoURL ?? '',
+              nome: user.displayName ?? "Usuário",
+              email: user.email ?? '',
+              telefone: user.phoneNumber ?? '',
+              vehicle: null,
+              criadoEm: DateTime.now(),
+              xp: 0.0,
+            );
+
+            Get.offAllNamed('/completar-perfil', arguments: novoUsuario);
+          }
+        }
+      }
+    } catch (e) {
+      print("Erro detalhado: $e");
+      _showCustomSnackbar(
+        titulo: "Erro",
+        mensagem: "Falha ao autenticar com google",
+        isError: true,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   void _handleAuthError(FirebaseAuthException e) {
     String mensagem = "Erro ao processar autenticação.";
     if (e.code == 'user-not_found') mensagem = "E-mail não encontrado.";
@@ -101,7 +182,7 @@ class LoginController extends GetxController {
   void _showCustomSnackbar({
     required String titulo,
     required String mensagem,
-    required bool isError,
+    bool isError = false,
   }) {
     Get.snackbar(
       titulo,

@@ -24,16 +24,7 @@ class HomePage extends GetView<HomeController> {
         children: [
           _buildHeader(),
           FuelAlertCard(),
-          Obx(() {
-            if (controller.filteredFuelEntries.isEmpty)
-              return const SizedBox.shrink();
-
-            return _buildVehicleProgress(
-              theme,
-              controller,
-              controller.filteredFuelEntries.first,
-            );
-          }),
+          _buildSearchBar(theme),
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => controller.setupFuelStream(),
@@ -46,6 +37,46 @@ class HomePage extends GetView<HomeController> {
       ),
 
       floatingActionButton: _buildFAB(context, theme),
+    );
+  }
+
+  Widget _buildSearchBar(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: theme.cardColor,
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
+              ),
+              child: TextField(
+                onChanged: (value) => controller.searchText.value = value,
+                style: TextStyle(
+                  color: theme.textTheme.bodyLarge?.color,
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  hintText: "hp_buscar_hint".tr,
+                  hintStyle: TextStyle(
+                    color: theme.textTheme.bodyLarge?.color?.withOpacity(0.4),
+                  ),
+                  prefixIcon: Icon(
+                    RemixIcons.search_2_line,
+                    color: Colors.blueAccent,
+                    size: 20,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -174,7 +205,7 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildHeader() {
     return Obx(() {
-      final avgCons = controller.averageConsumption;
+      final avgCons = controller.gastoPorKmReal;
       final avgCost = controller.averageCostPerKm;
 
       return Container(
@@ -194,10 +225,10 @@ class HomePage extends GetView<HomeController> {
         child: Column(
           children: [
             _buildStatRow(
-              icon: RemixIcons.layout_grid_line,
+              icon: RemixIcons.calculator_line,
               iconColor: Colors.blueAccent,
-              label: "Consumo Médio Geral",
-              value: controller.settingsController.formatarConsumo(avgCons),
+              label: "Média Ponderada (Soma/L)",
+              value: controller.settingsController.formatarCurrency(avgCons),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -206,7 +237,7 @@ class HomePage extends GetView<HomeController> {
             _buildStatRow(
               icon: RemixIcons.money_dollar_box_line,
               iconColor: Colors.redAccent,
-              label: "Custo por Distância Total",
+              label: "Gasto Real por KM",
               value: controller.settingsController.formatarCurrency(avgCost),
             ),
           ],

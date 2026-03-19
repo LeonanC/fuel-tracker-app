@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 class UserModel2 {
   final String? id;
+  final String? fotoUrl;
   final String nome;
   final String email;
   final String telefone;
@@ -13,6 +14,7 @@ class UserModel2 {
   UserModel2({
     this.id,
     required this.nome,
+    this.fotoUrl,
     required this.email,
     required this.telefone,
     required this.vehicle,
@@ -24,6 +26,7 @@ class UserModel2 {
     Map<String, dynamic> map = doc.data() as Map<String, dynamic>;
     return UserModel2(
       id: doc.id,
+      fotoUrl: map['foto_url'] ?? '',
       nome: map['nome'] ?? '',
       email: map['email'] ?? '',
       telefone: map['telefone'] ?? '',
@@ -37,6 +40,7 @@ class UserModel2 {
     return {
       'id': id,
       'nome': nome,
+      'foto_url': fotoUrl,
       'email': email,
       'telefone': telefone,
       'fk_vehicle': vehicle,

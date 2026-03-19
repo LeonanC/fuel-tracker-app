@@ -25,7 +25,7 @@ class GasEntryScreen extends StatelessWidget {
         centerTitle: false,
         elevation: 0,
         title: Text(
-          c.editingEntry != null ? 'gs_title_edit'.tr : 'gs_title_new'.tr,
+          c.editingEntry != null ? 'gs_title_edit'.tr : 'gs_novo_posto'.tr,
         ),
         actions: [
           IconButton(

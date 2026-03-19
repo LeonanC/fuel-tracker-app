@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/data/services/app_translations.dart';
 import 'package:fuel_tracker_app/main_screen.dart';
+import 'package:fuel_tracker_app/modules/auth/completar_perfil.dart';
 import 'package:fuel_tracker_app/modules/auth/login_binding.dart';
 import 'package:fuel_tracker_app/modules/auth/login_page.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
@@ -66,6 +67,11 @@ class MyApp extends StatelessWidget {
             GetPage(
               name: '/login',
               page: () => LoginPage(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/completar-perfil',
+              page: () => CompletarPerfilPage(),
               binding: HomeBindings(),
             ),
             GetPage(

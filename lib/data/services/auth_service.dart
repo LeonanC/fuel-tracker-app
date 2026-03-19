@@ -17,6 +17,7 @@ class AuthService {
 
     UserModel2 novoUsuario = UserModel2(
       id: userCredential.user!.uid,
+      fotoUrl: userModel.fotoUrl,
       nome: userModel.nome,
       email: userModel.email,
       telefone: userModel.telefone,

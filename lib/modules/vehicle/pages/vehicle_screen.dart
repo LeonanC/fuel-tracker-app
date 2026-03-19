@@ -14,11 +14,13 @@ class VehicleScreen extends GetView<VehicleController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
-          'Meus Veículos',
+          'veh_titulo'.tr,
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.w600,
@@ -29,17 +31,17 @@ class VehicleScreen extends GetView<VehicleController> {
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: theme.colorScheme.primary,
+        backgroundColor: colorScheme.primary,
         onPressed: () => Get.to(() => VehicleEntryScreen()),
         label: Text(
-          "Novo Veículo",
+          "veh_novo_veiculo".tr,
           style: TextStyle(
             fontFamily: 'Montserrat',
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
         ),
-        icon: Icon(RemixIcons.add_line, color: Colors.black),
+        icon: Icon(RemixIcons.add_line, color: Colors.white),
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
@@ -54,13 +56,17 @@ class VehicleScreen extends GetView<VehicleController> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(RemixIcons.car_line, size: 64, color: Colors.white10),
+                Icon(
+                  RemixIcons.car_line,
+                  size: 64,
+                  color: colorScheme.onSurface.withOpacity(0.1),
+                ),
                 SizedBox(height: 16.h),
                 Text(
-                  "Nenhum veiculo cadastrado",
+                  "veh_nenhum_veiculo".tr,
                   style: TextStyle(
                     fontFamily: 'Montserrat',
-                    color: Colors.white38,
+                    color: colorScheme.onSurface.withOpacity(0.4),
                   ),
                 ),
               ],
@@ -70,7 +76,7 @@ class VehicleScreen extends GetView<VehicleController> {
 
         return RefreshIndicator(
           onRefresh: () => controller.fetchVehicle(),
-          color: theme.colorScheme.primary,
+          color: colorScheme.primary,
           backgroundColor: theme.cardColor,
           child: ListView.builder(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -92,46 +98,32 @@ class VehicleScreen extends GetView<VehicleController> {
   }
 
   Widget _buildvecCard(VehicleModel veiculo, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
         color: theme.cardColor,
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
       ),
       child: InkWell(
+        borderRadius: BorderRadius.circular(20.r),
         onTap: () => Get.to(() => VehicleEntryScreen(data: veiculo)),
         child: Padding(
           padding: EdgeInsets.all(16.w),
           child: Row(
             children: [
               Container(
-                width: 60.w,
-                height: 60.w,
+                padding: EdgeInsets.all(10.w),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(15.r),
+                  color: colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(15.r),
-                  child:
-                      (veiculo.imageUrl != null && veiculo.imageUrl!.isNotEmpty)
-                      ? Image.file(
-                          File(veiculo.imageUrl!),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              RemixIcons.car_fill,
-                              color: theme.colorScheme.primary,
-                              size: 30.sp,
-                            );
-                          },
-                        )
-                      : Icon(
-                          RemixIcons.car_fill,
-                          color: theme.colorScheme.primary,
-                          size: 30.sp,
-                        ),
+                child: Icon(
+                  RemixIcons.car_fill,
+                  color: colorScheme.primary,
+                  size: 24.sp,
                 ),
               ),
               SizedBox(width: 12.w),
@@ -142,14 +134,17 @@ class VehicleScreen extends GetView<VehicleController> {
                     Text(
                       veiculo.nickname,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: colorScheme.onSurface,
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       "${veiculo.make} ${veiculo.model} ${veiculo.year}",
-                      style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+                      style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 12.sp,
+                      ),
                     ),
                   ],
                 ),
@@ -157,10 +152,10 @@ class VehicleScreen extends GetView<VehicleController> {
               IconButton(
                 icon: Icon(
                   RemixIcons.delete_bin_line,
-                  color: Colors.redAccent,
-                  size: 20,
+                  color: colorScheme.error,
+                  size: 20.sp,
                 ),
-                onPressed: () => _confirmDelete(veiculo),
+                onPressed: () => _confirmDelete(veiculo, theme),
               ),
             ],
           ),
@@ -169,15 +164,15 @@ class VehicleScreen extends GetView<VehicleController> {
     );
   }
 
-  void _confirmDelete(VehicleModel veiculo) {
+  void _confirmDelete(VehicleModel veiculo, ThemeData theme) {
     Get.defaultDialog(
-      title: "Excluir Veiculo",
-      middleText: "Deseja remover ${veiculo.nickname}",
+      title: "veh_excluir_titulo".tr,
+      middleText: "veh_excluir_confirm".tr,
       backgroundColor: const Color(0xFF1A1A1A),
       titleStyle: const TextStyle(color: Colors.white),
       middleTextStyle: const TextStyle(color: Colors.white70),
-      textConfirm: 'Sim',
-      textCancel: 'Não',
+      textConfirm: 'veh_sim'.tr,
+      textCancel: 'veh_nao'.tr,
       confirmTextColor: Colors.white,
       buttonColor: Colors.redAccent,
       onConfirm: () {

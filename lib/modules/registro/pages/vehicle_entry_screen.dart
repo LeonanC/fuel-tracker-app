@@ -25,7 +25,9 @@ class VehicleEntryScreen extends StatelessWidget {
         centerTitle: false,
         elevation: 0,
         title: Text(
-          c.editingEntry != null ? 'veh_edit_vehicle'.tr : 'veh_add_vehicle'.tr,
+          c.editingEntry != null
+              ? 'veh_edit_vehicle'.tr
+              : 'veh_novo_veiculo'.tr,
         ),
         actions: [
           IconButton(

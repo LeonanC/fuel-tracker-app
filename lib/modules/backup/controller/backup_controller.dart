@@ -1,32 +1,19 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
-import 'package:fuel_tracker_app/data/database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart';
 
 class BackupController extends GetxController {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   var isLoading = false.obs;
   var statusMessage = RxnString();
-  var selectedGroupKey = 'all'.obs;
-  Database? _database;
 
-  final List<String> allTableNames = [
-    'fuel_entries',
-    'manutencao',
-    'vehicles',
-    'gas_stations',
-    'fuel_types',
-    'service_types',
-  ];
-
-  final Map<String, List<String>> scopeToTables = {
-    'fuel_entries': ['fuel_entries'],
-    'manutencao': ['manutencao'],
-    'vehicles': ['vehicles'],
-    'lookups': ['gas_stations', 'fuel_types', 'service_types'],
+  final Map<String, String> scopeToCollection = {
+    'fuel_entries': 'fuels',
+    'manutencao': 'service_type',
+    'vehicles': 'veiculos',
+    'lookups': 'postos',
   };
 
   var selectedScopes = {
@@ -36,115 +23,59 @@ class BackupController extends GetxController {
     'lookups': true,
   }.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    _initializeDatabase();
-  }
-
-  Future<void> _initializeDatabase() async {
-    try {
-      _database = await DatabaseHelper.instance.database;
-    } catch (e) {
-      statusMessage.value = "Erro ao conectar ao banco.";
-    }
-  }
-
   void toggleScope(String scope) {
     selectedScopes[scope] = !(selectedScopes[scope] ?? false);
   }
 
-  Future<void> exportData() async {
-    if (_database == null) return;
+  Future<void> syncData() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      statusMessage.value = "Usuário não encontrado.";
+      return;
+    }
 
     try {
       isLoading.value = true;
-      statusMessage.value = "Preparando dados...";
+      statusMessage.value = "Sincronizando com o Firebase...";
 
-      Map<String, dynamic> backupPayload = {
-        'version': '1.0',
-        'export_date': DateTime.now().toIso8601String(),
-        'data': <String, List<Map<String, dynamic>>>{},
-      };
+      await Future.delayed(const Duration(seconds: 1));
 
-      for (var entry in selectedScopes.entries) {
-        if (entry.value) {
-          final tables = scopeToTables[entry.key] ?? [];
-          for (var table in tables) {
-            final List<Map<String, dynamic>> rows = await _database!.query(table);
-            backupPayload['data'][table] = rows;
-          }
-        }
-      }
-
-      if ((backupPayload['data'] as Map).isEmpty) {
-        statusMessage.value = "Selecione ao menos un item para backup.";
-        return;
-      }
-
-      final jsonString = jsonEncode(backupPayload);
-      final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:.]'), '-');
-      final fileName = 'Fuel-${selectedGroupKey.value.toUpperCase()}-$timestamp.json';
-
-      Directory? directory = Platform.isAndroid
-          ? Directory('storage/emulated/0/Download')
-          : await getApplicationDocumentsDirectory();
-
-      if (Platform.isAndroid && !await directory.exists()) {
-        directory = await getExternalStorageDirectory();
-      }
-
-      final file = File('${directory!.path}/$fileName');
-      await file.writeAsString(jsonString);
-
-      statusMessage.value = "Backup salvo: $fileName";
+      statusMessage.value = "Dados sincronizados em tempo real.";
     } catch (e) {
-      statusMessage.value = "Erro ao exportar: $e";
+      statusMessage.value = "Erro ao sincronização: $e";
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> importData() async {
-    if (_database == null) return;
+  Future<void> clearCloudData() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
 
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-      );
-      if (result == null) return;
-
       isLoading.value = true;
-      statusMessage.value = "Restaurando dados...";
+      statusMessage.value = "Removendo dados selecionados...";
 
-      final file = File(result.files.single.path!);
-      final Map<String, dynamic> decoded = jsonDecode(await file.readAsString());
+      final batch = _firestore.batch();
 
-      if (!decoded.containsKey('data')) {
-        throw "Arquivo de backup inválido.";
-      }
+      for (var entry in selectedScopes.entries) {
+        if (entry.value) {
+          final collection = scopeToCollection[entry.key]!;
+          final snapshots = await _firestore
+              .collection(collection)
+              .where('fk_usuario', isEqualTo: user.uid)
+              .get();
 
-      final Map<String, dynamic> data = decoded['data'];
-
-      await _database!.transaction((txn) async {
-        for (var tableName in data.keys) {
-          await txn.delete(tableName);
-
-          final List<dynamic> rows = data[tableName];
-
-          for (var row in rows) {
-            await txn.insert(
-              tableName, 
-              Map<String, dynamic>.from(row), 
-              conflictAlgorithm: ConflictAlgorithm.replace,
-            );
+          for (var doc in snapshots.docs) {
+            batch.delete(doc.reference);
           }
         }
-      });
-      statusMessage.value = "Dados restaurados com sucesso!";
+      }
+
+      await batch.commit();
+      statusMessage.value = "Dados removidos da nuvem.";
     } catch (e) {
-      statusMessage.value = "Erro ao importar: $e";
+      statusMessage.value = "Erro ao limpar: $e";
     } finally {
       isLoading.value = false;
     }

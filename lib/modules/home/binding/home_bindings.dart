@@ -1,5 +1,6 @@
 import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
+import 'package:fuel_tracker_app/modules/auth/completar_perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/auth/login_controller.dart';
 import 'package:fuel_tracker_app/modules/backup/controller/backup_controller.dart';
 import 'package:fuel_tracker_app/modules/backup/controller/update_controller.dart';
@@ -28,6 +29,10 @@ class HomeBindings implements Bindings {
     );
     Get.lazyPut<VehicleController>(() => VehicleController(), fenix: true);
     Get.lazyPut<LoginController>(() => LoginController(), fenix: true);
+    Get.lazyPut<CompletarPerfilController>(
+      () => CompletarPerfilController(),
+      fenix: true,
+    );
     Get.lazyPut<HomeController>(() => HomeController(), fenix: true);
     Get.lazyPut<HomeEntryController>(() => HomeEntryController(), fenix: true);
     Get.lazyPut<PerfilController>(() => PerfilController(), fenix: true);
