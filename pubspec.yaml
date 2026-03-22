@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: 'none'
 
-version: 9.1.0
+version: 9.2.0
 
 environment:
   sdk: ^3.8.1
@@ -12,7 +12,6 @@ dependencies:
   clipboard: ^3.0.14
   cloud_firestore: ^6.1.2
   csv: ^6.0.0
-  cupertino_icons: ^1.0.8
   file_picker: ^10.3.3
   firebase_auth: ^6.1.4
   firebase_core: ^4.4.0

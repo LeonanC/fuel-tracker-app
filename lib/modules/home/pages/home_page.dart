@@ -222,41 +222,25 @@ class HomePage extends GetView<HomeController> {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+        child: Column(
           children: [
-            Expanded(
-              child: _buildStatRow(
-                icon: RemixIcons.calculator_line,
-                iconColor: Colors.blueAccent,
-                label: "Consumo Médio",
-                value: controller.settingsController.formatarConsumo(avgCons),
-              ),
+            _buildStatRow(
+              icon: RemixIcons.calculator_line,
+              iconColor: Colors.blueAccent,
+              label: "Consumo",
+              value: controller.settingsController.formatarConsumo(avgCons),
             ),
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(vertical: 12),
-            //   child: Divider(color: Colors.white10, height: 1),
-            // ),
-            Expanded(
-              child: _buildStatRow(
-                icon: RemixIcons.money_dollar_box_line,
-                iconColor: Colors.redAccent,
-                label: "Custo por 100Km",
-                value: controller.settingsController.formatarCurrency(avgCost),
-              ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Divider(color: Colors.white10, height: 1),
             ),
-            // Padding(
-            //   padding: const EdgeInsets.symmetric(vertical: 12),
-            //   child: Divider(color: Colors.white10, height: 1),
-            // ),
-            Expanded(
-              child: _buildStatRow(
-                icon: RemixIcons.gas_station_line,
-                iconColor: Colors.orangeAccent,
-                label: "Custo por KM",
-                value: controller.settingsController.formatarCurrency(
-                  avgCost / 100,
-                ),
+
+            _buildStatRow(
+              icon: RemixIcons.gas_station_line,
+              iconColor: Colors.orangeAccent,
+              label: "Custo por KM",
+              value: controller.settingsController.formatarCurrency(
+                avgCost / 100,
               ),
             ),
           ],
@@ -271,8 +255,7 @@ class HomePage extends GetView<HomeController> {
     required String label,
     required String value,
   }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
+    return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
@@ -282,26 +265,31 @@ class HomePage extends GetView<HomeController> {
           ),
           child: Icon(icon, color: iconColor, size: 24),
         ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            color: iconColor.withOpacity(0.8),
-            fontSize: 11,
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 2),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            value,
-            style: GoogleFonts.firaCode(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                color: iconColor.withOpacity(0.8),
+                fontSize: 11,
+                fontWeight: FontWeight.w400,
+              ),
             ),
-          ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: GoogleFonts.firaCode(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -47,25 +47,26 @@ class AppTranslations extends Translations {
 
       // BACKUP PAGE
       'bk_title': 'Backup e Restauro',
-      'bk_scope_title': 'Selecione o que deseja incluir:',
-      'bk_scope_all': 'Tudo (Completo)',
-      'bk_scope_fuel_entries': 'Registros de Abastecimento',
-      'bk_scope_manutencao': 'Manutenções',
-      'bk_scope_vehicles': 'Veículos',
-      'bk_scope_lookups': 'Listas de Referência',
-      'bk_export_card_title': 'Fazer Backup',
+      'bk_scope_title': 'Selecione os dados para incluir:',
+      'bk_scope_all': 'Backup Completo (Recomendado)',
+      'bk_scope_fuel_entries': 'Histórico de Abastecimento',
+      'bk_scope_manutencao': 'Cronograma de Manutenções',
+      'bk_scope_types': 'Combustíveis',
+      'bk_scope_vehicles': 'Meus Veículos e Tanques',
+      'bk_scope_lookups': 'Serviços Personalizados',
+      'bk_export_card_title': 'Exportar Dados',
       'bk_action_export_desc':
-          'Cria um arquivo JSON com os dados selecionados.',
-      'bk_action_export_btn': 'Exportar Dados',
-      'bk_action_import_title': 'Restaurar Dados',
+          'Gere um arquivo de segurança (JSON) com seus dados.',
+      'bk_action_export_btn': 'Criar Backup Agora',
+      'bk_action_import_title': 'Restaurar Backup',
       'bk_action_import_desc':
-          'Substitui dados atuais pelo ficheiro selecionado.',
-      'bk_action_import_btn': 'Importar Dados',
-      'bk_error_export': 'Erro ao exportar:',
-      'bk_export_success_prefix': 'Sucesso! Aquivo salvo como',
-      'bk_import_no_file_selected': 'Nenhum arquivo selecionado.',
-      'bk_import_success': 'Restauração concluída com sucesso!',
-      'bk_error_import': 'Erro ao importar:',
+          'Atenção: Os dados atuais serão substituídos pelo arquivo selecionado.',
+      'bk_action_import_btn': 'Selecionar Arquivo e Importar',
+      'bk_error_export': 'Falha ao gerar backup:',
+      'bk_export_success_prefix': 'Backup concluído! Aquivo salvo como',
+      'bk_import_no_file_selected': 'Selecione um arquivo para continuar.',
+      'bk_import_success': 'Dados restaurados com sucesso!',
+      'bk_error_import': 'Falha na restauração dos dados:',
 
       // NAVIGATION PAGE
       'nav_fuel_entries': 'Abastecimentos',
@@ -139,6 +140,8 @@ class AppTranslations extends Translations {
       'sp_feedback_title': 'Feedback',
       'sp_feedback_desc': 'Enviar sugestões ou reportar problemas',
       'sp_update_available': 'Atualização Disponível',
+      'sp_ready_to_install': 'Pronta para Instalar',
+      'sp_update_new': 'Atualizar Agora',
       'sp_update_newVersion': 'Nova Versão',
 
       // UPDATE PAGE

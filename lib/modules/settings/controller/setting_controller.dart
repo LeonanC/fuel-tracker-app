@@ -76,7 +76,7 @@ class SettingController extends GetxController {
     //   double milhas = km * 0.621371;
     //   return "${milhas.toStringAsFixed(1)} mi";
     // }
-    return "${km.toStringAsFixed(1)} km";
+    return "${km.toStringAsFixed(0)} km";
   }
 
   String formatarVolume(double vol) {
@@ -92,7 +92,7 @@ class SettingController extends GetxController {
     //   double l100 = 100 / kmL;
     //   return "${l100.toStringAsFixed(1)} L/100km";
     // }
-    return "${kmL.toStringAsFixed(1)} km/L";
+    return "${kmL.toStringAsFixed(0)} km/L";
   }
 
   double calcularCustoPor100Km(double precoLitro, double consumoKmK) {

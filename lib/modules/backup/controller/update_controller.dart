@@ -2,60 +2,117 @@ import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/app_update.dart';
 import 'package:fuel_tracker_app/data/services/update_service.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 class UpdateController extends GetxController {
   final UpdateService _updateService = UpdateService();
+  final _box = GetStorage();
+
   Rxn<AppUpdate> latestUpdate = Rxn<AppUpdate>();
-  RxString installedVersion = ''.obs;
+  RxString installedVersion = '...'.obs;
+  RxBool isChecking = false.obs;
 
   @override
   void onInit() {
     super.onInit();
-    getInstalledAppVersion();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await getInstalledAppVersion();
+    checkForUpdate(showNoUpdateMessage: false);
   }
 
   Future<void> getInstalledAppVersion() async {
-    installedVersion.value = await _updateService.getInstalledAppVersion();
-  }
-
-  Future<void> checkForUpdate({bool showNoUpdateMessage = false}) async {
-    final AppUpdate? latest = await _updateService.fetchLatestVersion();
-
-    if (latest != null &&
-        _updateService.isNewerVersion(latest.version, installedVersion.value)) {
-      latestUpdate.value = latest;
-      _showUpdateDialog(latest);
-    } else {
-      latestUpdate.value = null;
-      if (showNoUpdateMessage) {
-        _showNoUpdateMessage(latest);
-      }
+    try {
+      installedVersion.value = await _updateService.getInstalledAppVersion();
+    } catch (e) {
+      installedVersion.value = "0.0.0";
     }
   }
 
-  void _showUpdateDialog(AppUpdate update) async {
-    final fullVersionText = 'Nova Versão: ${update.version}';
+  Future<void> checkForUpdate({bool showNoUpdateMessage = false}) async {
+    try {
+      isChecking.value = true;
+      final AppUpdate? latest = await _updateService.fetchLatestVersion();
 
+      if (latest != null) {
+        bool isNewer = _updateService.isNewerVersion(
+          latest.version,
+          installedVersion.value,
+        );
+
+        if (isNewer) {
+          latestUpdate.value = latest;
+          if (showNoUpdateMessage || _shouldShowDialog(latest.version)) {
+            _showwUpdateDialog(latest);
+          }
+        } else if (showNoUpdateMessage) {
+          _showNoUpdateSnackbar(isError: false);
+        }
+      }
+    } catch (e) {
+      if (showNoUpdateMessage) _showNoUpdateSnackbar(isError: true);
+    } finally {
+      isChecking.value = false;
+    }
+  }
+
+  bool _shouldShowDialog(String version) {
+    final lastIgnore = _box.read('ignore_version');
+    return lastIgnore != version;
+  }
+
+  void _showwUpdateDialog(AppUpdate update) async {
     Get.dialog(
       AlertDialog(
-        title: Text('Atualização Disponível!'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: const Color(0xFF252525),
+        title: Text(
+          'Atualização Disponível!',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(fullVersionText),
-            const SizedBox(height: 8),
-            Text(update.messText, style: Get.textTheme.bodyMedium),
+            Text(
+              'Versão: ${update.version}',
+              style: TextStyle(
+                color: Colors.blueAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(update.messText, style: TextStyle(color: Colors.white70)),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text("Mais Tarde")),
           TextButton(
+            onPressed: () {
+              _box.write('ignore_version', update.version);
+              Get.back();
+            },
+            child: Text(
+              "Mais Tarde",
+              style: TextStyle(color: Colors.white.withOpacity(0.5)),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
             onPressed: () async {
               Get.back();
               await _handleLaunchUrl(update.url.trim());
             },
-            child: Text("Baixar Agora"),
+            child: Text(
+              "Atualizar Agora",
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -63,25 +120,13 @@ class UpdateController extends GetxController {
     );
   }
 
-  void _showNoUpdateMessage(AppUpdate? latest) async {
-    if (latest != null) {
-      final fullVersionText = 'Sua Versão: ${installedVersion.value}';
-
-      Get.snackbar(
-        'Atualização Disponível!',
-        fullVersionText,
-        duration: const Duration(seconds: 2),
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } else {
-      Get.snackbar(
-        'Erro'.tr,
-        'Nenhuma atualização encontrada.',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-      );
-    }
+  void _showNoUpdateSnackbar({required bool isError}) async {
+    Get.snackbar(
+      'Atualização Disponível!',
+      '',
+      duration: const Duration(seconds: 2),
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   Future<void> _handleLaunchUrl(String url) async {

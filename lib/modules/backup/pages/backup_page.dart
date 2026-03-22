@@ -85,28 +85,35 @@ class BackupRestoreScreen extends GetView<BackupController> {
       child: Column(
         children: [
           _buildScopeItem(
-            'fuel_entries',
+            'fuels',
             'bk_scope_fuel_entries'.tr,
             RemixIcons.gas_station_line,
             theme,
           ),
           _divider(theme),
           _buildScopeItem(
-            'manutencao',
+            'service_type',
             'bk_scope_manutencao'.tr,
             RemixIcons.tools_line,
             theme,
           ),
           _divider(theme),
           _buildScopeItem(
-            'vehicles',
+            'tipo_combustivel',
+            'bk_scope_types'.tr,
+            RemixIcons.gas_station_fill,
+            theme,
+          ),
+          _divider(theme),
+          _buildScopeItem(
+            'veiculos',
             'bk_scope_vehicles'.tr,
             RemixIcons.car_line,
             theme,
           ),
           _divider(theme),
           _buildScopeItem(
-            'lookups',
+            'postos',
             'bk_scope_lookups'.tr,
             RemixIcons.table_line,
             theme,

@@ -231,50 +231,87 @@ class ToolsScreen extends GetView<SettingController> {
   ) {
     final isDark = theme.brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: isDark
-              ? [Colors.blue.shade900, Colors.blue.shade800]
-              : [Colors.blue.shade600, Colors.blue.shade400],
+              ? [Color(0xFF1E3C72), Color(0xFF2A5298)]
+              : [Colors.blue.shade700, Colors.blue.shade500],
         ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          const Icon(RemixIcons.rocket_2_fill, color: Colors.white, size: 30),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'sp_update_available'.tr,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'sp_update_newVersion.tr' +
-                      '${update.version} já pode ser instalada.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: isDark ? Colors.blue[200] : Colors.blue[700],
-                  ),
-                ),
-              ],
-            ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(isDark ? 0.3 : 0.2),
+            blurRadius: 12,
+            offset: Offset(0, 8),
           ),
-          ElevatedButton(
-            onPressed: () => _launchUrl(update.url),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.blue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  RemixIcons.rocket_2_fill,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
-              elevation: 0,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'sp_update_available'.tr,
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'v${update.version} • ${'sp_ready_to_install'.tr}',
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: () => _launchUrl(update.url),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.blue.shade800,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                "sp_update_new".tr,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
             ),
-            child: const Text("Atualizar"),
           ),
         ],
       ),
