@@ -97,7 +97,10 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
               ? null
               : () async {
                   _executarBackup(context);
-                  await BackupService().deletarDados(context);
+                  await BackupService().deletarDados(
+                    context,
+                    colecoes: _getSelecaoFinal,
+                  );
                   Get.back();
                 },
         ),

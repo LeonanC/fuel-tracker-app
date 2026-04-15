@@ -124,34 +124,32 @@ class BackupService {
     }
   }
 
-  Future<void> deletarDados(BuildContext context) async {
+  Future<void> deletarDados(
+    BuildContext context, {
+    List<String>? colecoes,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
     bool confirmar = await _mostrarConfirmacao(context);
     if (!confirmar) return;
 
+    final listaParaDeletar = colecoes ?? _modelFactories.keys.toList();
+
     try {
       _mostrarLoading(context);
 
-      final snapshotFuels = await _db
-          .collection('fuels')
-          .where('fk_usuario', isEqualTo: user.uid)
-          .get();
-      for (var doc in snapshotFuels.docs) {
-        await doc.reference.delete();
-      }
+      for (String nomeColecao in listaParaDeletar) {
+        QuerySnapshot snapshot;
+        if (nomeColecao == 'fuels') {
+          snapshot = await _db
+              .collection(nomeColecao)
+              .where('fk_usuario', isEqualTo: user.uid)
+              .get();
+        } else {
+          snapshot = await _db.collection(nomeColecao).get();
+        }
 
-      final colecoesGlobais = [
-        'manutencao',
-        'postos',
-        'service_type',
-        'tipo_combustivel',
-        'veiculos',
-      ];
-
-      for (String nomeColecao in colecoesGlobais) {
-        final snapshot = await _db.collection(nomeColecao).get();
         for (var doc in snapshot.docs) {
           await doc.reference.delete();
         }
