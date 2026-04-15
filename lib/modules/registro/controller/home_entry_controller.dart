@@ -72,9 +72,23 @@ class HomeEntryController extends GetxController {
       selectedDate.value = entry.entryDate;
       comprovantePath.value = entry.receiptPath ?? '';
     } else {
-      selectedStations.value = '1';
-      selectedGas.value = '1';
-      selectedVeiculos.value = '1';
+      if (lookupController.veiculosDrop.isNotEmpty) {
+        selectedVeiculos.value = lookupController.veiculosDrop.first.id
+            .toString();
+      } else {
+        selectedVeiculos.value = null;
+      }
+      if (lookupController.tipoDrop.isNotEmpty) {
+        selectedGas.value = lookupController.tipoDrop.first.id.toString();
+      } else {
+        selectedGas.value = null;
+      }
+      if (lookupController.postosDrop.isNotEmpty) {
+        selectedStations.value = lookupController.postosDrop.first.id
+            .toString();
+      } else {
+        selectedStations.value = null;
+      }
     }
 
     litrosController.addListener(() => _calculatePrice(from: 'litros'));
@@ -159,21 +173,25 @@ class HomeEntryController extends GetxController {
               as double?) ??
           0.0;
 
+      final String? currentUserId =
+          editingEntry?.user ?? controller.auth.currentUser!.uid;
+
       final Map<String, dynamic> fuelData = {
+        'fk_usuario': currentUserId,
         'fk_veiculo': selectedVeiculos.value,
         'fk_tipo': selectedGas.value,
         'fk_posto': selectedStations.value,
         'data': selectedDate.value,
-        'velocimetro': double.tryParse(kmController.text) ?? 0.0,
-        'litros_volume': double.tryParse(litrosController.text) ?? 0.0,
-        'preco_litro': double.tryParse(pricePerLiterController.text) ?? 0.0,
-        'custo_total': double.tryParse(totalPriceController.text) ?? 0.0,
+        'velocimetro': kmController.text,
+        'litros_volume': litrosController.numberValue,
+        'preco_litro': pricePerLiterController.numberValue,
+        'custo_total': totalPriceController.numberValue,
         'tanque_cheio': isTankFull.value,
         'tank_capacity': vehicleTankCapacity,
         'receipt_path': comprovantePath.value,
       };
 
-      print(fuelData);
+      print(selectedDate.value);
 
       if (editingEntry != null) {
         final updatedModel = FuelEntryModel.fromFirestore(
@@ -184,8 +202,6 @@ class HomeEntryController extends GetxController {
       } else {
         await controller.saveFuel(fuelData);
       }
-
-      Get.back();
     } catch (e) {
       Get.back();
       _showSnackbar(

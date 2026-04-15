@@ -62,6 +62,8 @@ class FuelEntryModel {
 
     if (map['data'] is Timestamp) {
       parsedDate = (map['data'] as Timestamp).toDate();
+    } else if (map['data'] is DateTime) {
+      parsedDate = map['data'];
     } else if (map['data'] is String) {
       parsedDate = DateTime.tryParse(map['data']) ?? DateTime.now();
     } else {
@@ -70,7 +72,7 @@ class FuelEntryModel {
 
     return FuelEntryModel(
       id: docId,
-      user: map['fk_usuario'] as String,
+      user: map['fk_usuario']?.toString() ?? '',
       vehicleId: map['fk_veiculo']?.toString() ?? '',
       fuelTypeId: map['fk_tipo']?.toString() ?? '',
       gasStationId: map['fk_posto']?.toString() ?? '',

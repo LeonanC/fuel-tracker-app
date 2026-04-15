@@ -10,7 +10,7 @@ import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class HomeController extends GetxController {
-  final _auth = FirebaseAuth.instance;
+  final auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
   final lookupController = Get.find<LookupController>();
   final settingsController = Get.find<SettingController>();
@@ -110,7 +110,7 @@ class HomeController extends GetxController {
   }
 
   Future<void> setupFuelStream() async {
-    final userUID = _auth.currentUser?.uid;
+    final userUID = auth.currentUser?.uid;
     if (userUID == null) return;
 
     _firestore
@@ -142,7 +142,7 @@ class HomeController extends GetxController {
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
       isLoading.value = true;
-      final userUID = _auth.currentUser?.uid;
+      final userUID = auth.currentUser?.uid;
       if (userUID == null) return;
 
       data['fk_usuario'] = userUID;
@@ -193,12 +193,19 @@ class HomeController extends GetxController {
   }
 
   Future<void> updateFuel(FuelEntryModel fuel) async {
-    if (fuel.id == null) return;
     try {
-      await _firestore.collection('fuels').doc(fuel.id).update(fuel.toMap());
+      isLoading.value = true;
+      final data = fuel.toMap();
+      data.remove('pk_fuel');
+
+      await _firestore.collection('fuels').doc(fuel.id).update(data);
+
+      Get.back();
       _showSnackbar("Sucesso", "Abastecimento atualizado com sucesso!");
     } catch (e) {
       _showSnackbar("Erro", "Falha ao atualizar: $e", isError: true);
+    } finally {
+      isLoading.value = false;
     }
   }
 
