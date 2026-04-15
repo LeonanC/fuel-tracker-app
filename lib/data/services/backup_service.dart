@@ -35,20 +35,23 @@ class BackupService {
     return value;
   }
 
-  Future<void> exportarBackup() async {
+  Future<void> exportarBackup({List<String>? colecoes}) async {
     final user = _auth.currentUser;
     if (user == null) return;
+
+    final listaParaProcessar = colecoes ?? _modelFactories.keys.toList();
 
     Map<String, dynamic> backupTotal = {
       'fk_usuario': user.uid,
       'data_exportacao': DateTime.now().toIso8601String(),
+      'colecoes_incluidas': listaParaProcessar,
     };
 
     try {
-      for (var entry in _modelFactories.entries) {
-        String colecao = entry.key;
-        QuerySnapshot snapshot;
+      for (String colecao in listaParaProcessar) {
+        if (!_modelFactories.containsKey(colecao)) continue;
 
+        QuerySnapshot snapshot;
         if (colecao == 'fuels') {
           snapshot = await _db
               .collection(colecao)
@@ -59,7 +62,7 @@ class BackupService {
         }
 
         backupTotal[colecao] = snapshot.docs.map((doc) {
-          var model = entry.value(doc.data(), doc.id);
+          var model = _modelFactories[colecao]!(doc.data(), doc.id);
           var map = model.toMap();
           map['id_firestore'] = doc.id;
           return _toJsonFormat(map);
