@@ -3,6 +3,7 @@ import 'package:fuel_tracker_app/data/models/app_update.dart';
 import 'package:fuel_tracker_app/data/services/update_service.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:remixicon/remixicon.dart';
 
 class UpdateController extends GetxController {
   final UpdateService _updateService = UpdateService();
@@ -122,14 +123,28 @@ class UpdateController extends GetxController {
 
   void _showNoUpdateSnackbar({required bool isError}) async {
     Get.snackbar(
-      'Atualização Disponível!',
-      '',
-      duration: const Duration(seconds: 2),
+      isError ? 'Erro' : 'App Atualizado',
+      isError
+          ? 'Não foi possível buscar atualizações'
+          : 'Você já está usando a versão mais recente',
       snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError
+          ? Colors.redAccent
+          : Colors.green.withOpacity(0.8),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(15),
+      icon: Icon(
+        isError
+            ? RemixIcons.error_warning_line
+            : RemixIcons.checkbox_circle_line,
+        color: Colors.white,
+      ),
     );
   }
 
   Future<void> _handleLaunchUrl(String url) async {
+    if (url.isEmpty) return;
+
     try {
       await _updateService.launchUrl(url);
     } catch (e) {

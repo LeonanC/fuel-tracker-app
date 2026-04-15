@@ -202,7 +202,10 @@ class VehicleEntryScreen extends StatelessWidget {
       _dropdown(
         c.selectedTipo,
         c.lookupController.tipoDrop
-            .map((v) => DropdownMenuItem(value: v.id, child: Text(v.nome)))
+            .map(
+              (v) =>
+                  DropdownMenuItem(value: v.id.toString(), child: Text(v.nome)),
+            )
             .toList(),
         "Combustível",
       ),
@@ -210,12 +213,12 @@ class VehicleEntryScreen extends StatelessWidget {
   }
 
   Widget _dropdown(
-    RxnInt val,
-    List<DropdownMenuItem<int>> items,
+    RxnString val,
+    List<DropdownMenuItem<String>> items,
     String label,
   ) {
     return Obx(
-      () => DropdownButtonFormField<int>(
+      () => DropdownButtonFormField<String>(
         value: val.value,
         decoration: InputDecoration(labelText: label, border: InputBorder.none),
         items: items,

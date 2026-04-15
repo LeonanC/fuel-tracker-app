@@ -1,40 +1,62 @@
-class MaintenanceEntry {
-  final int? id;
-  final String tipo;
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class MaintenanceModel {
+  final String? id;
+  final String tipoId;
   final DateTime dataServico;
   final double quilometragem;
-  final double? custo;
-  final String? observacoes;
+  final double custo;
+  final String observacoes;
 
-  final double? lembreteKm;
-  final DateTime? lembreteData;
+  final double lembreteKm;
+  final DateTime lembreteData;
   final bool lembreteAtivo;
 
   final int? veiculoId;
 
-  MaintenanceEntry({
+  MaintenanceModel({
     this.id,
-    required this.tipo,
+    required this.tipoId,
     required this.dataServico,
     required this.quilometragem,
-    this.custo,
-    this.observacoes,
-    this.lembreteKm,
-    this.lembreteData,
+    required this.custo,
+    required this.observacoes,
+    required this.lembreteKm,
+    required this.lembreteData,
     this.lembreteAtivo = false,
     this.veiculoId,
   });
 
-  factory MaintenanceEntry.fromMap(Map<String, dynamic> map) {
-    return MaintenanceEntry(
-      id: map['pk_manutencao'],
-      tipo: map['tipo'],
-      dataServico: DateTime.parse(map['data_servico']),
-      quilometragem: (map['quilometragem'] as num).toDouble(),
-      custo: (map['custo'] as num).toDouble(),
+  factory MaintenanceModel.fromFirestore(
+    Map<String, dynamic> map,
+    String docId,
+  ) {
+    DateTime parsedData;
+    if (map['data_servico'] is Timestamp) {
+      parsedData = (map['data_servico'] as Timestamp).toDate();
+    } else if (map['data_servico'] is String) {
+      parsedData = DateTime.tryParse(map['data_servico']) ?? DateTime.now();
+    } else {
+      parsedData = DateTime.now();
+    }
+    DateTime lembreteData;
+    if (map['lembrete_data'] is Timestamp) {
+      lembreteData = (map['lembrete_data'] as Timestamp).toDate();
+    } else if (map['lembrete_data'] is String) {
+      lembreteData = DateTime.tryParse(map['lembrete_data']) ?? DateTime.now();
+    } else {
+      lembreteData = DateTime.now();
+    }
+
+    return MaintenanceModel(
+      id: docId,
+      tipoId: map['fk_tipo'] ?? 0,
+      dataServico: parsedData,
+      quilometragem: (map['quilometragem'] as num?)?.toDouble() ?? 0.0,
+      custo: (map['custo'] as num?)?.toDouble() ?? 0.0,
       observacoes: map['observacoes'],
-      lembreteKm: (map['lembrete_km'] as num?)?.toDouble(),
-      lembreteData: map['lembrete_data'] != null ? DateTime.parse(map['lembrete_data']) : null,
+      lembreteKm: (map['lembrete_km'] as num?)?.toDouble() ?? 0.0,
+      lembreteData: lembreteData,
       lembreteAtivo: map['lembrete_ativo'] == 1,
       veiculoId: map['fk_vehicle'],
     );
@@ -43,13 +65,13 @@ class MaintenanceEntry {
   Map<String, dynamic> toMap() {
     return {
       'pk_manutencao': id,
-      'tipo': tipo,
-      'data_servico': dataServico.toIso8601String().split('T').first,
+      'fk_tipo': tipoId,
+      'data_servico': Timestamp.fromDate(dataServico),
       'quilometragem': quilometragem,
       'custo': custo,
       'observacoes': observacoes,
       'lembrete_km': lembreteKm,
-      'lembrete_data': lembreteData?.toIso8601String().split('T').first,
+      'lembrete_data': Timestamp.fromDate(lembreteData),
       'lembrete_ativo': lembreteAtivo ? 1 : 0,
       'fk_vehicle': veiculoId,
     };
@@ -59,42 +81,14 @@ class MaintenanceEntry {
     final String lembreteAtivoText = lembreteAtivo == 1 ? 'Sim' : 'Não';
     return [
       '${dataServico.day.toString().padLeft(2, '0')}/${dataServico.month.toString().padLeft(2, '0')}/${dataServico.year} ${dataServico.hour.toString().padLeft(2, '0')}:${dataServico.minute.toString().padLeft(2, '0')}',
-      '${lembreteData!.day.toString().padLeft(2, '0')}/${lembreteData!.month.toString().padLeft(2, '0')}/${lembreteData!.year} ${lembreteData!.hour.toString().padLeft(2, '0')}:${lembreteData!.minute.toString().padLeft(2, '0')}',
-      tipo.toString(),
+      '${lembreteData.day.toString().padLeft(2, '0')}/${lembreteData.month.toString().padLeft(2, '0')}/${lembreteData.year} ${lembreteData.hour.toString().padLeft(2, '0')}:${lembreteData.minute.toString().padLeft(2, '0')}',
+      tipoId,
       quilometragem.toStringAsFixed(1),
-      custo!.toStringAsFixed(3),
-      observacoes!.toString(),
-      lembreteKm!.toStringAsFixed(2),
+      custo.toStringAsFixed(2),
+      observacoes.toString(),
+      lembreteKm.toStringAsFixed(2),
       lembreteAtivoText,
       veiculoId,
     ];
-  }
-}
-
-extension MaintenanceEntryCopWith on MaintenanceEntry {
-  MaintenanceEntry copyWith({
-    int? id,
-    String? tipo,
-    DateTime? dataServico,
-    double? quilometragem,
-    double? custo,
-    String? observacoes,
-    double? lembreteKm,
-    DateTime? lembreteData,
-    bool? lembreteAtivo,
-    int? veiculoId,
-  }) {
-    return MaintenanceEntry(
-      id: id ?? this.id,
-      tipo: tipo ?? this.tipo,
-      dataServico: dataServico ?? this.dataServico,
-      quilometragem: quilometragem ?? this.quilometragem,
-      custo: custo ?? this.custo,
-      observacoes: observacoes ?? this.observacoes,
-      lembreteKm: lembreteKm ?? this.lembreteKm,
-      lembreteData: lembreteData ?? this.lembreteData,
-      lembreteAtivo: lembreteAtivo ?? this.lembreteAtivo,
-      veiculoId: veiculoId ?? this.veiculoId,
-    );
   }
 }

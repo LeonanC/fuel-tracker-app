@@ -1,14 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class VehicleModel {
-  final int? id;
+  final String? id;
   final String nickname;
   final String plate;
   final bool isMercosul;
   final String city;
   final String make; // Frabricante
   final String model;
-  final int fuelType; // Tipo de combustível (ex: Gasolina, Flex, Diesel)
+  final String fuelType; // Tipo de combustível (ex: Gasolina, Flex, Diesel)
   final int year;
   final double initialOdometer;
   final double tankCapacity;
@@ -49,7 +49,7 @@ class VehicleModel {
     };
   }
 
-  factory VehicleModel.fromFirestore(Map<String, dynamic> map, int id) {
+  factory VehicleModel.fromFirestore(Map<String, dynamic> map, String docId) {
     DateTime parsedData;
     if (map['created_at'] is Timestamp) {
       parsedData = (map['created_at'] as Timestamp).toDate();
@@ -60,7 +60,7 @@ class VehicleModel {
     }
 
     return VehicleModel(
-      id: id,
+      id: docId,
       nickname: map['nickname'] as String,
       plate: map['plate'] as String? ?? '',
       isMercosul: map['is_mercosul'] == true,

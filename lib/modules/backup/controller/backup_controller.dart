@@ -138,7 +138,7 @@ class BackupController extends GetxController {
       }
 
       if (count > 0) await batch.commit();
-      ;
+
       statusMessage.value = "Limpeza concluída com sucesso.";
     } catch (e) {
       statusMessage.value = "Erro ao limpar dados: $e";

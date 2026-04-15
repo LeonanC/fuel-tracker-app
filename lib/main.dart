@@ -5,16 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/data/services/app_translations.dart';
 import 'package:fuel_tracker_app/main_screen.dart';
+import 'package:fuel_tracker_app/modules/about/pages/about_screen.dart';
 import 'package:fuel_tracker_app/modules/auth/completar_perfil.dart';
-import 'package:fuel_tracker_app/modules/auth/login_binding.dart';
 import 'package:fuel_tracker_app/modules/auth/login_page.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
 import 'package:fuel_tracker_app/modules/home/binding/home_bindings.dart';
 import 'package:fuel_tracker_app/modules/home/pages/home_page.dart';
+import 'package:fuel_tracker_app/modules/maintenance/pages/maintenance_screen.dart';
 import 'package:fuel_tracker_app/modules/perfil/pages/perfil_pages.dart';
 import 'package:fuel_tracker_app/modules/registro/pages/home_entry_page.dart';
-import 'package:fuel_tracker_app/modules/maintenance/pages/maintenance_entry_screen.dart';
 import 'package:fuel_tracker_app/modules/remider/pages/reminders_screen.dart';
 import 'package:fuel_tracker_app/modules/vehicle/pages/vehicle_screen.dart';
 import 'package:fuel_tracker_app/data/services/notification_service.dart';
@@ -60,6 +60,11 @@ class MyApp extends StatelessWidget {
           themeMode: ThemeMode.system,
           getPages: [
             GetPage(
+              name: '/about',
+              page: () => AboutScreen(),
+              binding: HomeBindings(),
+            ),
+            GetPage(
               name: '/main',
               page: () => MainPage(),
               binding: HomeBindings(),
@@ -96,8 +101,8 @@ class MyApp extends StatelessWidget {
               binding: HomeBindings(),
             ),
             GetPage(
-              name: '/maintenance_entry',
-              page: () => MaintenanceEntryScreen(),
+              name: '/maintenance_pages',
+              page: () => MaintenanceScreen(),
               binding: HomeBindings(),
             ),
             GetPage(

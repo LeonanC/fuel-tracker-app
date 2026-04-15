@@ -20,7 +20,7 @@ class LoginController extends GetxController {
   var isLogin = true.obs;
   var isLoading = false.obs;
   var obscureText = true.obs;
-  var selectedVeiculos = RxnInt();
+  var selectedVeiculos = RxnString();
 
   final formKey = GlobalKey<FormState>();
 

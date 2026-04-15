@@ -166,7 +166,12 @@ class HomeEntryPage extends StatelessWidget {
       _dropdown(
         c.selectedVeiculos,
         c.lookupController.veiculosDrop
-            .map((v) => DropdownMenuItem(value: v.id, child: Text(v.nickname)))
+            .map(
+              (v) => DropdownMenuItem(
+                value: v.id.toString(),
+                child: Text(v.nickname),
+              ),
+            )
             .toList(),
         "Veículo",
         onChanged: (novoId) {
@@ -178,7 +183,10 @@ class HomeEntryPage extends StatelessWidget {
       _dropdown(
         c.selectedGas,
         c.lookupController.tipoDrop
-            .map((v) => DropdownMenuItem(value: v.id, child: Text(v.nome)))
+            .map(
+              (v) =>
+                  DropdownMenuItem(value: v.id.toString(), child: Text(v.nome)),
+            )
             .toList(),
         "Combustível",
       ),
@@ -186,7 +194,10 @@ class HomeEntryPage extends StatelessWidget {
       _dropdown(
         c.selectedStations,
         c.lookupController.postosDrop
-            .map((v) => DropdownMenuItem(value: v.id, child: Text(v.nome)))
+            .map(
+              (v) =>
+                  DropdownMenuItem(value: v.id.toString(), child: Text(v.nome)),
+            )
             .toList(),
         "Posto de Combustível",
       ),
@@ -194,13 +205,13 @@ class HomeEntryPage extends StatelessWidget {
   }
 
   Widget _dropdown(
-    RxnInt val,
-    List<DropdownMenuItem<int>> items,
+    RxnString val,
+    List<DropdownMenuItem<String>> items,
     String label, {
-    Function(int?)? onChanged,
+    Function(String?)? onChanged,
   }) {
     return Obx(
-      () => DropdownButtonFormField<int>(
+      () => DropdownButtonFormField<String>(
         value: val.value,
         decoration: InputDecoration(labelText: label, border: InputBorder.none),
         items: items,

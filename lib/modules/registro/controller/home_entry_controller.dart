@@ -7,6 +7,7 @@ import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:remixicon/remixicon.dart';
 
 class HomeEntryController extends GetxController {
   final controller = Get.find<HomeController>();
@@ -16,9 +17,9 @@ class HomeEntryController extends GetxController {
 
   final formKey = GlobalKey<FormState>();
 
-  var selectedGas = RxnInt();
-  var selectedVeiculos = RxnInt();
-  var selectedStations = RxnInt();
+  var selectedGas = RxnString();
+  var selectedVeiculos = RxnString();
+  var selectedStations = RxnString();
   var selectedDate = DateTime.now().obs;
   var isTankFull = false.obs;
   var comprovantePath = ''.obs;
@@ -71,9 +72,9 @@ class HomeEntryController extends GetxController {
       selectedDate.value = entry.entryDate;
       comprovantePath.value = entry.receiptPath ?? '';
     } else {
-      selectedStations.value = 1;
-      selectedGas.value = 1;
-      selectedVeiculos.value = 1;
+      selectedStations.value = '1';
+      selectedGas.value = '1';
+      selectedVeiculos.value = '1';
     }
 
     litrosController.addListener(() => _calculatePrice(from: 'litros'));
@@ -97,7 +98,7 @@ class HomeEntryController extends GetxController {
     }
   }
 
-  void atualizarHodometroPorVeiculo(int? vehicleId) {
+  void atualizarHodometroPorVeiculo(String? vehicleId) {
     if (vehicleId == null) return;
     double ultimoKm = controller.getLatestOdometerForVehicle(vehicleId);
     kmController.text = ultimoKm.toStringAsFixed(0);
@@ -164,13 +165,15 @@ class HomeEntryController extends GetxController {
         'fk_posto': selectedStations.value,
         'data': selectedDate.value,
         'velocimetro': double.tryParse(kmController.text) ?? 0.0,
-        'litros_volume': litrosController.numberValue,
-        'preco_litro': pricePerLiterController.numberValue,
-        'custo_total': totalPriceController.numberValue,
+        'litros_volume': double.tryParse(litrosController.text) ?? 0.0,
+        'preco_litro': double.tryParse(pricePerLiterController.text) ?? 0.0,
+        'custo_total': double.tryParse(totalPriceController.text) ?? 0.0,
         'tanque_cheio': isTankFull.value,
         'tank_capacity': vehicleTankCapacity,
         'receipt_path': comprovantePath.value,
       };
+
+      print(fuelData);
 
       if (editingEntry != null) {
         final updatedModel = FuelEntryModel.fromFirestore(
@@ -182,17 +185,33 @@ class HomeEntryController extends GetxController {
         await controller.saveFuel(fuelData);
       }
 
-      Get.back(result: true);
+      Get.back();
     } catch (e) {
-      Get.snackbar(
+      Get.back();
+      _showSnackbar(
         'Erro',
         'Falha ao salvar o abastecimento: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
+        isError: true,
       );
-    } finally {
-      isLoading.value = false;
     }
+  }
+
+  void _showSnackbar(String title, String messagem, {bool isError = false}) {
+    Get.snackbar(
+      title,
+      messagem,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError
+          ? Colors.redAccent.withOpacity(0.8)
+          : Colors.greenAccent.withOpacity(0.8),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(15),
+      borderRadius: 15,
+      icon: Icon(
+        isError ? RemixIcons.error_warning_line : RemixIcons.check_line,
+        color: Colors.white,
+      ),
+    );
   }
 
   @override

@@ -1,5 +1,5 @@
 class TypeGasModel {
-  final int? id;
+  final String? id;
   final String nome;
   final String? abbr;
   final double octane;
@@ -15,9 +15,9 @@ class TypeGasModel {
     return {'pk_tipo': id, 'nome': nome, 'abbr': abbr, 'octane_rating': octane};
   }
 
-  factory TypeGasModel.fromFirestore(Map<String, dynamic> map, String id) {
+  factory TypeGasModel.fromFirestore(Map<String, dynamic> map, String docId) {
     return TypeGasModel(
-      id: int.tryParse(id) ?? 0,
+      id: docId,
       nome: map['nome']?.toString() ?? '',
       abbr: map['abbr']?.toString() ?? '',
       octane: (map['octane_rating'] as num?)?.toDouble() ?? 0,

@@ -1,243 +1,121 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/modules/backup/controller/backup_controller.dart';
+import 'package:fuel_tracker_app/data/services/backup_service.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
-class BackupRestoreScreen extends GetView<BackupController> {
-  const BackupRestoreScreen({super.key});
+class BackupRestoreScreen extends StatelessWidget {
+  final List<String> colecoes = [
+    'fuels',
+    'manutencao',
+    'postos',
+    'service_type',
+    'tipo_combustivel',
+    'veiculos',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(title: Text('bk_title'.tr), centerTitle: true),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildSectionHeader(
-              'bk_scope_title'.tr,
-              RemixIcons.cloud_line,
-              colorScheme.primary,
-            ),
-            const SizedBox(height: 12),
-            _buildScopeSelector(theme),
-            const SizedBox(height: 24),
-            _buildActionCard(
-              theme,
-              title: "bk_export_card_title".tr,
-              description: "bk_action_export_desc".tr,
-              buttonLabel: "bk_action_export_btn".tr,
-              icon: RemixIcons.cloud_line,
-              color: colorScheme.primary,
-              onPressed: controller.syncData,
-            ),
-            const SizedBox(height: 16),
-            _buildActionCard(
-              theme,
-              title: "bk_action_import_title".tr,
-              description: "bk_action_import_desc".tr,
-              buttonLabel: "bk_action_import_btn".tr,
-              icon: RemixIcons.download_cloud_line,
-              color: Colors.orangeAccent,
-              onPressed: controller.clearCloudData,
-              isWarning: true,
-            ),
-            const SizedBox(height: 20),
-            Obx(
-              () => controller.statusMessage.value != null
-                  ? _buildStatusBanner(colorScheme)
-                  : const SizedBox.shrink(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, IconData icon, Color primary) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: primary),
-        const SizedBox(width: 8),
-        Text(
-          title.toUpperCase(),
-          style: TextStyle(
-            color: primary,
-            fontWeight: FontWeight.w900,
-            fontSize: 12,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScopeSelector(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
+      body: Column(
         children: [
-          _buildScopeItem(
-            'fuels',
-            'bk_scope_fuel_entries'.tr,
-            RemixIcons.gas_station_line,
-            theme,
-          ),
-          _divider(theme),
-          _buildScopeItem(
-            'service_type',
-            'bk_scope_manutencao'.tr,
-            RemixIcons.tools_line,
-            theme,
-          ),
-          _divider(theme),
-          _buildScopeItem(
-            'tipo_combustivel',
-            'bk_scope_types'.tr,
-            RemixIcons.gas_station_fill,
-            theme,
-          ),
-          _divider(theme),
-          _buildScopeItem(
-            'veiculos',
-            'bk_scope_vehicles'.tr,
-            RemixIcons.car_line,
-            theme,
-          ),
-          _divider(theme),
-          _buildScopeItem(
-            'postos',
-            'bk_scope_lookups'.tr,
-            RemixIcons.table_line,
-            theme,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _divider(ThemeData theme) => Divider(
-    height: 1,
-    color: theme.colorScheme.onSurface.withOpacity(0.05),
-    indent: 60,
-  );
-
-  Widget _buildScopeItem(
-    String key,
-    String labelKey,
-    IconData icon,
-    ThemeData theme,
-  ) {
-    return Obx(
-      () => CheckboxListTile(
-        secondary: Icon(
-          icon,
-          color: theme.colorScheme.primary.withOpacity(0.7),
-        ),
-        title: Text(
-          labelKey,
-          style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14),
-        ),
-        activeColor: theme.colorScheme.primary,
-        checkColor: Colors.white,
-        value: controller.selectedScopes[key],
-        onChanged: (_) => controller.toggleScope(key),
-        controlAffinity: ListTileControlAffinity.trailing,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
-    );
-  }
-
-  Widget _buildActionCard(
-    ThemeData theme, {
-    required String title,
-    required String description,
-    required String buttonLabel,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-    bool isWarning = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.1)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 28, color: color),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Card(
+              color: isDark ? Colors.grey[900] : Colors.blue[50],
+              child: ListTile(
+                leading: Icon(Icons.cloud_download, color: Colors.blue),
+                title: Text("Exportar Banco de Dados"),
+                subtitle: Text("Gere um arquivo JSON com todas as coleções"),
               ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 20),
-          Obx(
-            () => SizedBox(
+          Divider(),
+          Expanded(
+            child: ListView.builder(
+              itemCount: colecoes.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  leading: Icon(Icons.table_chart_outlined),
+                  title: Text(colecoes[index]),
+                  trailing: Icon(
+                    Icons.check_circle_outline,
+                    size: 20,
+                    color: Colors.green,
+                  ),
+                  onTap: () {},
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: SizedBox(
               width: double.infinity,
               height: 50,
-              child: ElevatedButton(
-                onPressed: controller.isLoading.value ? null : onPressed,
+              child: ElevatedButton.icon(
+                icon: Icon(Icons.storage),
+                label: Text('INICIAR BACKUP TOTAL'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: color,
+                  backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 0,
                 ),
-                child: controller.isLoading.value
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: LinearProgressIndicator(color: Colors.white),
-                      )
-                    : Text(
-                        buttonLabel,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
+                onPressed: () async {
+                  _executarBackup(context);
+                  await BackupService().exportarBackup();
+                  Get.back();
+                },
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                icon: Icon(Icons.storage),
+                label: Text('RESTAURAR BACKUP (JSON)'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.greenAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () async {
+                  _executarBackup(context);
+                  await BackupService().importarBackup(context);
+                  Get.back();
+                },
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                icon: Icon(Icons.delete_outline),
+                label: Text('LIMPAR OS DADOS'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () async {
+                  _executarDelete(context);
+                  await BackupService().deletarDados(context);
+                  Get.back();
+                },
               ),
             ),
           ),
@@ -246,14 +124,20 @@ class BackupRestoreScreen extends GetView<BackupController> {
     );
   }
 
-  Widget _buildStatusBanner(ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-      child: Text(
-        controller.statusMessage.value!,
-        style: TextStyle(fontWeight: FontWeight.bold),
-        textAlign: TextAlign.center,
+  void _executarDelete(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Deletando os dados das ${colecoes.length} coleções...'),
+      ),
+    );
+  }
+
+  void _executarBackup(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Iniciando processamento das ${colecoes.length} coleções...',
+        ),
       ),
     );
   }

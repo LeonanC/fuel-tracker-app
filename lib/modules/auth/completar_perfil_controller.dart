@@ -10,7 +10,7 @@ class CompletarPerfilController extends GetxController {
   final lookupController = Get.find<LookupController>();
 
   final telefoneController = TextEditingController();
-  final selectedVeiculo = RxnInt();
+  final selectedVeiculo = RxnString();
   final isLoading = false.obs;
 
   @override

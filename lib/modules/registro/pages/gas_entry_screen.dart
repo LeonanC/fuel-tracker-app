@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/modules/registro/controller/gas_entry_controller.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 

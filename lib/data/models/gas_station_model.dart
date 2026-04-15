@@ -1,5 +1,5 @@
 class GasStationModel {
-  final int? id;
+  final String? id;
   final String nome;
   final String? address;
   final String brand;
@@ -35,9 +35,12 @@ class GasStationModel {
     };
   }
 
-  factory GasStationModel.fromFirestore(Map<String, dynamic> map, int id) {
+  factory GasStationModel.fromFirestore(
+    Map<String, dynamic> map,
+    String docId,
+  ) {
     return GasStationModel(
-      id: id,
+      id: docId,
       nome: map['nome'] as String,
       latitude: (map['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (map['longitude'] as num?)?.toDouble() ?? 0.0,

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/data/models/maintenance_entry_model.dart';
 import 'package:fuel_tracker_app/modules/backup/controller/update_controller.dart';
 import 'package:fuel_tracker_app/data/models/app_update.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
+import 'package:fuel_tracker_app/modules/maintenance/pages/maintenance_screen.dart';
 import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/remider/pages/reminders_screen.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
@@ -49,6 +51,7 @@ class ToolsScreen extends GetView<SettingController> {
                   _updateCtrl.latestUpdate.value!,
                   theme,
                 ),
+              const SizedBox(height: 16),
               _sectionTitle('sp_aparencia'.tr),
               Obx(
                 () => _buildSettingTile(
@@ -122,6 +125,13 @@ class ToolsScreen extends GetView<SettingController> {
                 subtitle: 'sp_vehicles_desc'.tr,
                 icon: RemixIcons.car_line,
                 onTap: () => Get.to(() => VehicleScreen()),
+              ),
+              _buildSettingTile(
+                theme: theme,
+                title: 'mt_titulo'.tr,
+                subtitle: 'cl_management'.tr,
+                icon: RemixIcons.tools_line,
+                onTap: () => Get.to(() => MaintenanceScreen()),
               ),
               _sectionTitle('cl_dados'.tr),
 

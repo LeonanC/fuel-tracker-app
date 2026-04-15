@@ -84,15 +84,6 @@ class FuelDb {
     return await d.delete('fuel_entries');
   }
 
-  Future<int> insertMaintenance(MaintenanceEntry maintenance) async {
-    final d = await db;
-    return await d.insert(
-      'manutencao',
-      maintenance.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
   Future<int> deleteMaintenance(int id) async {
     final d = await db;
     return await d.delete(

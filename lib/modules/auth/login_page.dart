@@ -189,14 +189,14 @@ class LoginPage extends GetView<LoginController> {
 
   Widget _dropdown(
     BuildContext context,
-    RxnInt val,
-    List<DropdownMenuItem<int>> items,
+    RxnString val,
+    List<DropdownMenuItem<String>> items,
     String label,
   ) {
     return Obx(
       () => Padding(
         padding: const EdgeInsets.only(bottom: 15),
-        child: DropdownButtonFormField<int>(
+        child: DropdownButtonFormField<String>(
           value: val.value,
           decoration: _inputDecoration(context, "Veículo", RemixIcons.car_line),
           dropdownColor: Theme.of(context).cardColor,

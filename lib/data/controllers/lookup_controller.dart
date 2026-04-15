@@ -27,17 +27,12 @@ class LookupController extends GetxController {
     });
     _firestore.collection('veiculos').snapshots().listen((snapshot) {
       veiculosDrop.value = snapshot.docs
-          .map(
-            (doc) => VehicleModel.fromFirestore(doc.data(), int.parse(doc.id)),
-          )
+          .map((doc) => VehicleModel.fromFirestore(doc.data(), doc.id))
           .toList();
     });
     _firestore.collection('postos').snapshots().listen((snapshot) {
       postosDrop.value = snapshot.docs
-          .map(
-            (doc) =>
-                GasStationModel.fromFirestore(doc.data(), int.parse(doc.id)),
-          )
+          .map((doc) => GasStationModel.fromFirestore(doc.data(), doc.id))
           .toList();
     });
     _firestore.collection('service_type').snapshots().listen((snapshot) {

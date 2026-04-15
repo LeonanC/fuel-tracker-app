@@ -3,9 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FuelEntryModel {
   final String? id;
   final String user;
-  final int vehicleId;
-  final int fuelTypeId;
-  final int gasStationId;
+  final String vehicleId;
+  final String fuelTypeId;
+  final String gasStationId;
   final DateTime entryDate;
   final double odometerKm;
   final double volumeLiters;
@@ -71,9 +71,9 @@ class FuelEntryModel {
     return FuelEntryModel(
       id: docId,
       user: map['fk_usuario'] as String,
-      vehicleId: _toInt(map['fk_veiculo']),
-      fuelTypeId: _toInt(map['fk_tipo']),
-      gasStationId: _toInt(map['fk_posto']),
+      vehicleId: map['fk_veiculo']?.toString() ?? '',
+      fuelTypeId: map['fk_tipo']?.toString() ?? '',
+      gasStationId: map['fk_posto']?.toString() ?? '',
       entryDate: parsedDate,
       odometerKm: _toDouble(map['velocimetro']),
       volumeLiters: _toDouble(map['litros_volume']),

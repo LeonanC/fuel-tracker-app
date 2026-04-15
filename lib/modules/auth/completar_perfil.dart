@@ -51,14 +51,14 @@ class CompletarPerfilPage extends GetView<CompletarPerfilController> {
               ),
               Obx(
                 () => _buildFieldContainer(
-                  child: DropdownButtonFormField<int>(
+                  child: DropdownButtonFormField<String>(
                     value: controller.selectedVeiculo.value,
                     dropdownColor: Theme.of(context).cardColor,
                     style: const TextStyle(color: Colors.white),
                     items: controller.lookupController.veiculosDrop
                         .map(
                           (v) => DropdownMenuItem(
-                            value: v.id,
+                            value: v.id.toString(),
                             child: Text(v.nickname),
                           ),
                         )

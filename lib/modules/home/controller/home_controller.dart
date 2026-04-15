@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
-import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
-import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
@@ -136,12 +134,7 @@ class HomeController extends GetxController {
           },
           onError: (e) {
             isLoading.value = false;
-            Get.snackbar(
-              "Erro",
-              "Falha ao sincronizar: $e",
-              snackPosition: SnackPosition.BOTTOM,
-              backgroundColor: Colors.redAccent,
-            );
+            _showSnackbar("Erro", "Falha ao sincronizar", isError: true);
           },
         );
   }
@@ -171,17 +164,12 @@ class HomeController extends GetxController {
       });
 
       Get.back();
-      Get.snackbar(
-        "Combustível Registrado!",
-        "Você ganhou +$xpGanho de XP!",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Color(0xFF00FF85),
-        colorText: Colors.black,
-        icon: Icon(RemixIcons.medal_2_line),
-        duration: const Duration(seconds: 4),
+      _showSnackbar(
+        "Sucesso",
+        "Abastecimento registrado! Você ganhou +$xpGanho de XP!",
       );
     } catch (e) {
-      Get.snackbar('Erro ao salvar', e.toString());
+      _showSnackbar('Erro', 'Falha ao salvar', isError: true);
     } finally {
       isLoading.value = false;
     }
@@ -208,8 +196,9 @@ class HomeController extends GetxController {
     if (fuel.id == null) return;
     try {
       await _firestore.collection('fuels').doc(fuel.id).update(fuel.toMap());
+      _showSnackbar("Sucesso", "Abastecimento atualizado com sucesso!");
     } catch (e) {
-      Get.snackbar('Erro', "Falha ao atualizar: $e");
+      _showSnackbar("Erro", "Falha ao atualizar: $e", isError: true);
     }
   }
 
@@ -327,5 +316,23 @@ class HomeController extends GetxController {
         margin: const EdgeInsets.all(15),
       );
     }
+  }
+
+  void _showSnackbar(String title, String message, {bool isError = false}) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError
+          ? Colors.redAccent.withOpacity(0.8)
+          : Colors.greenAccent.withOpacity(0.8),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(15),
+      borderRadius: 15,
+      icon: Icon(
+        isError ? RemixIcons.error_warning_line : RemixIcons.check_line,
+        color: Colors.white,
+      ),
+    );
   }
 }

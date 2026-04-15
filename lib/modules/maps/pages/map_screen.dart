@@ -450,10 +450,7 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
             itemBuilder: (context, i) {
               final doc = results[i];
               final data = doc.data() as Map<String, dynamic>;
-              final station = GasStationModel.fromFirestore(
-                data,
-                int.parse(doc.id),
-              );
+              final station = GasStationModel.fromFirestore(data, doc.id);
               return ListTile(
                 leading: Icon(
                   RemixIcons.gas_station_line,

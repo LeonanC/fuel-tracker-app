@@ -1,5 +1,5 @@
 class ServicesTypeModel {
-  final int id;
+  final String id;
   final String nome;
   final String? abbr;
   final int frequency;
@@ -11,20 +11,6 @@ class ServicesTypeModel {
     required this.frequency,
   });
 
-  ServicesTypeModel copyWith({
-    int? id,
-    String? nome,
-    String? abbr,
-    int? frequency,
-  }) {
-    return ServicesTypeModel(
-      id: id ?? this.id,
-      nome: nome ?? this.nome,
-      abbr: abbr ?? this.abbr,
-      frequency: frequency ?? this.frequency,
-    );
-  }
-
   Map<String, dynamic> toMap() {
     return {
       'pk_service': id,
@@ -34,9 +20,12 @@ class ServicesTypeModel {
     };
   }
 
-  factory ServicesTypeModel.fromFirestore(Map<String, dynamic> map, String id) {
+  factory ServicesTypeModel.fromFirestore(
+    Map<String, dynamic> map,
+    String docId,
+  ) {
     return ServicesTypeModel(
-      id: int.tryParse(id) ?? 0,
+      id: docId,
       nome: map['nome'] as String,
       abbr: map['abbr'] as String,
       frequency: map['default_frequency_km'] as int,

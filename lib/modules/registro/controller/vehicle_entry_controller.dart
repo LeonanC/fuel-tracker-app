@@ -23,7 +23,7 @@ class VehicleEntryController extends GetxController {
   var selectedImageUrl = ''.obs;
   var isLoading = false.obs;
   var isMercosul = false.obs;
-  var selectedTipo = RxnInt();
+  var selectedTipo = RxnString();
 
   VehicleModel? editingEntry;
 
@@ -68,7 +68,7 @@ class VehicleEntryController extends GetxController {
       selectedImageUrl.value = entry.imageUrl.toString();
       isMercosul.value = entry.isMercosul;
     } else {
-      selectedTipo.value = 1;
+      selectedTipo.value = '1';
       selectedImageUrl.value = '';
       isMercosul.value = false;
     }
@@ -115,7 +115,7 @@ class VehicleEntryController extends GetxController {
       if (editingEntry != null) {
         final updatedModel = VehicleModel.fromFirestore(
           vehicleData,
-          editingEntry!.id!,
+          editingEntry!.id!.toString(),
         );
         await controller.updateVeiculo(updatedModel);
       } else {

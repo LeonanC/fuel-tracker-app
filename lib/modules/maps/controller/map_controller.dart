@@ -52,7 +52,7 @@ class MapNavigationController extends GetxController {
     ) {
       final markers = snapshot.docs.map((doc) {
         final data = doc.data();
-        final station = GasStationModel.fromFirestore(data, int.parse(doc.id));
+        final station = GasStationModel.fromFirestore(data, doc.id);
         return Marker(
           point: LatLng(station.latitude, station.longitude),
           width: 50,

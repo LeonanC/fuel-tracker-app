@@ -7,7 +7,7 @@ class UserModel2 {
   final String nome;
   final String email;
   final String telefone;
-  final int? vehicle;
+  final String? vehicle;
   final DateTime? criadoEm;
   final double xp;
 
