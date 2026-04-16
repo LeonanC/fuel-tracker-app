@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class CompletarPerfilPage extends GetView<CompletarPerfilController> {
+  const CompletarPerfilPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

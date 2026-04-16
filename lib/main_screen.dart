@@ -19,7 +19,7 @@ class _MainPageState extends State<MainPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
 
-  List<Widget> _pages = [HomePage(), MapScreen(), PerfilPage(), ToolsScreen()];
+  List<Widget> pages = [HomePage(), MapScreen(), PerfilPage(), ToolsScreen()];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -34,7 +34,7 @@ class _MainPageState extends State<MainPage> {
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: theme.scaffoldBackgroundColor,
-        body: _pages[_selectedIndex],
+        body: pages[_selectedIndex],
         bottomNavigationBar: _buildBottomNav(theme),
       ),
     );

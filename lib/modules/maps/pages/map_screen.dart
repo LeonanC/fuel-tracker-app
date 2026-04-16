@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field
+
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -5,8 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
-import 'package:fuel_tracker_app/data/services/application.dart';
 import 'package:fuel_tracker_app/modules/maps/controller/map_controller.dart';
+import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
@@ -14,6 +16,9 @@ import 'package:remixicon/remixicon.dart';
 
 class MapScreen extends GetView<MapNavigationController> {
   const MapScreen({super.key});
+
+  static const Color accentColor = Color(0xFF448AFF);
+  static const Color glassBase = Color(0xCC000000);
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +33,7 @@ class MapScreen extends GetView<MapNavigationController> {
 
       return Scaffold(
         extendBodyBehindAppBar: true,
-        backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
+        backgroundColor: isDarkMode ? Color(0xFF0F1016) : Colors.grey[100],
         appBar: _buildModernAppBar(context, isNavigation, isDarkMode),
         floatingActionButton: _buildMordenFABs(isNavigation),
         body: Stack(
@@ -36,13 +41,18 @@ class MapScreen extends GetView<MapNavigationController> {
             _buildMap(controller, isDarkMode, center),
             Align(
               alignment: Alignment.bottomCenter,
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+              child: IgnorePointer(
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.5),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -75,7 +85,7 @@ class MapScreen extends GetView<MapNavigationController> {
         TileLayer(
           urlTemplate: isDark
               ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
           userAgentPackageName: 'br.com.fuel_tracker_app',
         ),
         if (navCtrl.routePoints.isNotEmpty)
@@ -83,8 +93,10 @@ class MapScreen extends GetView<MapNavigationController> {
             polylines: [
               Polyline(
                 points: navCtrl.routePoints.toList(),
-                strokeWidth: 5.0,
-                color: Colors.blueAccent,
+                strokeWidth: 6.0,
+                color: accentColor,
+                borderStrokeWidth: 2.0,
+                borderColor: Colors.white24,
               ),
             ],
           ),
@@ -102,8 +114,8 @@ class MapScreen extends GetView<MapNavigationController> {
   Marker _buildUserMarker(MapNavigationController navCtrl) {
     return Marker(
       point: navCtrl.currentLocation.value!,
-      width: 60,
-      height: 60,
+      width: 80,
+      height: 80,
       child: Obx(() {
         double rotation =
             (navCtrl.isCompassMode.value || navCtrl.isNavigationMode.value)
@@ -116,16 +128,30 @@ class MapScreen extends GetView<MapNavigationController> {
             alignment: Alignment.center,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 35,
+                height: 35,
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent.withOpacity(0.2),
                   shape: BoxShape.circle,
+                  color: accentColor.withOpacity(0.2),
                 ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(6),
                 child: Icon(
-                  Icons.navigation,
-                  color: Colors.blueAccent,
-                  size: 30,
+                  RemixIcons.navigation_fill,
+                  color: accentColor,
+                  size: 24,
                 ),
               ),
             ],
@@ -143,23 +169,32 @@ class MapScreen extends GetView<MapNavigationController> {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      titleSpacing: 20,
       flexibleSpace: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.black.withOpacity(isDark ? 0.8 : 0.4),
+              Colors.black.withOpacity(isDark ? 0.9 : 0.4),
               Colors.transparent,
             ],
           ),
         ),
       ),
-      title: Text(isNav ? 'Nevagação' : 'nav_map'.tr),
+      title: Text(
+        isNav ? 'NAVEGAÇÃO ATIVA' : 'nav_map'.tr,
+        style: GoogleFonts.montserrat(
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+          fontSize: 14,
+          color: Colors.white,
+        ),
+      ),
       actions: [
         if (!isNav) ...[
           _CircleActionButton(
-            icon: RemixIcons.search_line,
+            icon: RemixIcons.search_2_line,
             onPressed: () => _openSearch(context),
           ),
           const SizedBox(width: 16),
@@ -171,32 +206,50 @@ class MapScreen extends GetView<MapNavigationController> {
   Widget _buildGlassNavigationCard() {
     final station = controller.currentDestinationStation.value;
     if (station == null) return const SizedBox.shrink();
+    final settings = Get.find<SettingController>();
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 30.0),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(32),
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
             child: Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                color: glassBase,
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.12),
+                  width: 1.5,
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                   Row(
                     children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.indigo,
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
                         child: const Icon(
                           RemixIcons.gas_station_fill,
-                          color: Colors.white,
+                          color: accentColor,
+                          size: 28,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -205,51 +258,56 @@ class MapScreen extends GetView<MapNavigationController> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              station.nome,
-                              style: GoogleFonts.lato(
-                                color: Colors.indigoAccent,
+                              station.nome.toUpperCase(),
+                              style: GoogleFonts.montserrat(
+                                color: Colors.white,
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
                               ),
                             ),
                             Text(
-                              'Posto de Combustível',
-                              style: GoogleFonts.lato(
-                                color: Colors.grey,
-                                fontSize: 12,
+                              station.brand,
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      IconButton(
+                      _CircleActionButton(
+                        icon: RemixIcons.close_line,
                         onPressed: controller.clearNavigation,
-                        icon: const Icon(Icons.close, color: Colors.white54),
+                        size: 32,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 18),
+                    child: Divider(color: Colors.white10, height: 1),
+                  ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildInfoDetail(
                         RemixIcons.pin_distance_line,
-                        'Distância',
+                        'Distância'.toUpperCase(),
                         controller.formatDistance(
                           controller.routeDistanceMeters.value,
                         ),
                       ),
                       _buildInfoDetail(
                         RemixIcons.time_line,
-                        'Chegada',
+                        'Chegada'.toUpperCase(),
                         controller.calculateETA(
                           controller.routeDurationSeconds.value,
                         ),
                       ),
                       _buildInfoDetail(
                         RemixIcons.money_dollar_circle_line,
-                        'Preço',
-                        'R\$ ${station.price.toStringAsFixed(2)}',
+                        'Preço'.toUpperCase(),
+                        settings.formatarCurrency(station.price),
                       ),
                     ],
                   ),
@@ -264,25 +322,31 @@ class MapScreen extends GetView<MapNavigationController> {
 
   Widget _buildRefinedLoading() {
     return Container(
-      color: Colors.black45,
+      color: Colors.black54,
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
+              SizedBox(
+                width: 50,
+                height: 50,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: accentColor,
+                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
               Text(
                 controller.isRouting.value
-                    ? 'Calculando melhor rota...'
-                    : 'Localizando satélites...',
-                style: GoogleFonts.lato(
-                  color: Colors.indigoAccent,
-                  letterSpacing: 1.2,
+                    ? 'TRAÇANDO ROTA...'
+                    : 'BUSCANDO LOCALIZAÇÃO...',
+                style: GoogleFonts.montserrat(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2,
+                  fontSize: 12,
                 ),
               ),
             ],
@@ -294,20 +358,20 @@ class MapScreen extends GetView<MapNavigationController> {
 
   Widget _buildMordenFABs(bool isNavigation) {
     return Padding(
-      padding: EdgeInsets.only(bottom: isNavigation ? 180 : 20),
+      padding: EdgeInsets.only(bottom: isNavigation ? 220 : 20, right: 8),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           _MordenFAB(
             icon: controller.isCompassMode.value
-                ? Icons.explore
-                : Icons.explore_outlined,
+                ? RemixIcons.compass_3_fill
+                : RemixIcons.compass_3_line,
             onPressed: controller.toggleCompassMode,
             active: controller.isCompassMode.value,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _MordenFAB(
-            icon: RemixIcons.user_location_line,
+            icon: RemixIcons.focus_3_line,
             onPressed: controller.determinePosition,
           ),
           const SizedBox(height: 12),
@@ -315,7 +379,7 @@ class MapScreen extends GetView<MapNavigationController> {
             _MordenFAB(
               icon: controller.isNavigationMode.value
                   ? RemixIcons.lock_fill
-                  : RemixIcons.lock_unlock_fill,
+                  : RemixIcons.lock_unlock_line,
               onPressed: controller.toggleNavigationMode,
               active: controller.isNavigationMode.value,
               color: Colors.orangeAccent,
@@ -329,17 +393,24 @@ class MapScreen extends GetView<MapNavigationController> {
   Widget _buildInfoDetail(IconData icon, String label, String value) {
     return Column(
       children: [
-        Icon(icon, color: Colors.blueAccent, size: 24),
-        const SizedBox(height: 6),
+        Icon(icon, color: accentColor, size: 22),
+        const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.lato(color: Colors.white54, fontSize: 16),
+          style: GoogleFonts.inter(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
         ),
+        const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.lato(
-            color: Colors.white.withOpacity(0.5),
-            fontSize: 11,
+          style: GoogleFonts.montserrat(
+            color: Colors.white38,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1,
           ),
         ),
       ],
@@ -347,11 +418,10 @@ class MapScreen extends GetView<MapNavigationController> {
   }
 
   void _openSearch(BuildContext context) async {
-    final result = await showSearch<String>(
+    await showSearch<String>(
       context: context,
       delegate: _FuelSearchDelegate(context),
     );
-    if (result != null && result.isNotEmpty) {}
   }
 }
 
@@ -369,12 +439,16 @@ class _MordenFAB extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
+    return FloatingActionButton.small(
       heroTag: null,
       onPressed: onPressed,
-      backgroundColor: active ? (color ?? Colors.blueAccent) : Colors.white,
-      elevation: 4,
-      child: Icon(icon, color: active ? Colors.white : Colors.black87),
+      backgroundColor: active ? (color ?? MapScreen.accentColor) : Colors.white,
+      elevation: 6,
+      child: Icon(
+        icon,
+        color: active ? Colors.white : Colors.black87,
+        size: 20,
+      ),
     );
   }
 }
@@ -387,25 +461,25 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
   @override
   ThemeData appBarTheme(BuildContext context) {
     return Theme.of(context).copyWith(
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.black,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Color(0xFF0F1016),
         elevation: 0,
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: InputBorder.none,
-        hintStyle: GoogleFonts.lato(color: Colors.white54),
+        hintStyle: GoogleFonts.inter(color: Colors.white38),
       ),
     );
   }
 
   @override
   List<Widget>? buildActions(BuildContext context) => [
-    IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+    IconButton(icon: Icon(RemixIcons.close_line), onPressed: () => query = ''),
   ];
 
   @override
   Widget? buildLeading(BuildContext context) => IconButton(
-    icon: const Icon(Icons.arrow_back),
+    icon: Icon(RemixIcons.arrow_left_line, color: Colors.white),
     onPressed: () => close(context, ''),
   );
 
@@ -415,20 +489,14 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) {
     return Container(
-      color: Colors.black,
+      color: Color(0xFF0F1016),
       child: StreamBuilder<QuerySnapshot>(
         stream: _firestore.collection('postos').snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error ao carregar postos',
-                style: GoogleFonts.lato(color: Colors.white),
-              ),
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: MapScreen.accentColor),
             );
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
           }
 
           final results = snapshot.data!.docs.where((doc) {
@@ -436,36 +504,39 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
             return nome.contains(query.toLowerCase());
           }).toList();
 
-          if (results.isEmpty) {
-            return Center(
-              child: Text(
-                "Nenhum posto encontrado.",
-                style: GoogleFonts.lato(color: Colors.white54),
-              ),
-            );
-          }
-
-          return ListView.builder(
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
             itemCount: results.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, i) {
               final doc = results[i];
-              final data = doc.data() as Map<String, dynamic>;
-              final station = GasStationModel.fromFirestore(data, doc.id);
+              final station = GasStationModel.fromFirestore(
+                doc.data() as Map<String, dynamic>,
+                doc.id,
+              );
               return ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                tileColor: Colors.white.withOpacity(0.05),
                 leading: Icon(
                   RemixIcons.gas_station_line,
-                  color: Colors.blueAccent,
+                  color: MapScreen.accentColor,
                 ),
                 title: Text(
                   station.nome,
-                  style: GoogleFonts.lato(
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 subtitle: Text(
-                  '${station.brand} - ${doubleToCurrency(station.price)}',
-                  style: GoogleFonts.lato(color: Colors.white70),
+                  station.brand,
+                  style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
+                ),
+                trailing: Icon(
+                  RemixIcons.arrow_right_s_line,
+                  color: Colors.white24,
                 ),
                 onTap: () {
                   close(context, doc.id);
@@ -483,15 +554,27 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
 class _CircleActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
-  const _CircleActionButton({required this.icon, required this.onPressed});
+  final double size;
+  const _CircleActionButton({
+    required this.icon,
+    required this.onPressed,
+    this.size = 40,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white10,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white10),
+      ),
       child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 20),
+        icon: Icon(icon, color: Colors.white, size: size * 0.5),
         onPressed: onPressed,
+        padding: EdgeInsets.zero,
       ),
     );
   }

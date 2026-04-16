@@ -1,9 +1,10 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/global/fuel_alert_card.dart';
 import 'package:fuel_tracker_app/data/global/fuel_list_filter_menu.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/modules/about/pages/about_screen.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_card.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -59,8 +60,9 @@ class HomePage extends GetView<HomeController> {
     return Obx(() {
       if (controller.isLoading.value) return _buildLoadingShimmer(theme);
       final entries = controller.filteredFuelEntries;
-      if (entries.isEmpty)
+      if (entries.isEmpty) {
         return const Center(child: Text("Nenhum registro encontrado"));
+      }
 
       final grouped = _groupEntries(entries);
 

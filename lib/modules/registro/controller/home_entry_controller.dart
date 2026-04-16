@@ -173,7 +173,7 @@ class HomeEntryController extends GetxController {
               as double?) ??
           0.0;
 
-      final String? currentUserId =
+      final String currentUserId =
           editingEntry?.user ?? controller.auth.currentUser!.uid;
 
       final Map<String, dynamic> fuelData = {
@@ -190,8 +190,6 @@ class HomeEntryController extends GetxController {
         'tank_capacity': vehicleTankCapacity,
         'receipt_path': comprovantePath.value,
       };
-
-      print(selectedDate.value);
 
       if (editingEntry != null) {
         final updatedModel = FuelEntryModel.fromFirestore(

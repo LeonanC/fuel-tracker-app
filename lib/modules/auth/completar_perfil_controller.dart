@@ -19,7 +19,7 @@ class CompletarPerfilController extends GetxController {
     if (Get.arguments is UserModel2) {
       usuarioInicial = Get.arguments;
     } else {
-      print("Erro: Nenhum usuário foi passado nos argumentos!");
+      debugPrint("Erro: Nenhum usuário foi passado nos argumentos!");
     }
   }
 

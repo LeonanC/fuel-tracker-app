@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class BackupRestoreScreen extends StatefulWidget {
+  const BackupRestoreScreen({super.key});
+
   @override
   State<BackupRestoreScreen> createState() => _BackupRestoreScreenState();
 }
@@ -144,14 +146,6 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
         ),
       ),
     );
-  }
-
-  void _executarDelete(BuildContext context) {
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   SnackBar(
-    //     content: Text('Deletando os dados das ${colecoes.length} coleções...'),
-    //   ),
-    // );
   }
 
   void _executarBackup(BuildContext context) {

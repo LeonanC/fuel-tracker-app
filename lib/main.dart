@@ -12,7 +12,6 @@ import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
 import 'package:fuel_tracker_app/modules/home/binding/home_bindings.dart';
 import 'package:fuel_tracker_app/modules/home/pages/home_page.dart';
-import 'package:fuel_tracker_app/modules/maintenance/pages/maintenance_screen.dart';
 import 'package:fuel_tracker_app/modules/perfil/pages/perfil_pages.dart';
 import 'package:fuel_tracker_app/modules/registro/pages/home_entry_page.dart';
 import 'package:fuel_tracker_app/modules/remider/pages/reminders_screen.dart';
@@ -98,11 +97,6 @@ class MyApp extends StatelessWidget {
             GetPage(
               name: '/postos_pages',
               page: () => HomePage(),
-              binding: HomeBindings(),
-            ),
-            GetPage(
-              name: '/maintenance_pages',
-              page: () => MaintenanceScreen(),
               binding: HomeBindings(),
             ),
             GetPage(

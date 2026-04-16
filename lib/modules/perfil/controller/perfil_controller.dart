@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/user_model.dart';
 import 'package:get/get.dart';
 
@@ -32,7 +33,7 @@ class PerfilController extends GetxController {
         });
       }
     } catch (e) {
-      print("Erro ao carregar perfil: $e");
+      debugPrint("Erro ao carregar perfil: $e");
     } finally {
       isLoading.value = false;
     }

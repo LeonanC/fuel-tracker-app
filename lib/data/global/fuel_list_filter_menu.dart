@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
 
 class FuelListFilterMenu extends GetView<HomeController> {
-  FuelListFilterMenu({super.key});
+  const FuelListFilterMenu({super.key});
 
   PopupMenuItem<String> _buildFilterItem({
     required String value,

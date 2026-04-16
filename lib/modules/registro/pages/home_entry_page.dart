@@ -228,9 +228,7 @@ class HomeEntryPage extends StatelessWidget {
 
   Widget _buildReceiptSection(HomeEntryController c, ThemeData theme) {
     return Obx(() {
-      final hasImage =
-          c.comprovantePath.value != null &&
-          c.comprovantePath.value!.isNotEmpty;
+      final hasImage = c.comprovantePath.value.isNotEmpty;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,

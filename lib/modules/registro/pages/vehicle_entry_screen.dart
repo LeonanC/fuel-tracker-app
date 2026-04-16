@@ -55,16 +55,9 @@ class VehicleEntryScreen extends StatelessWidget {
                         child: CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.grey.withOpacity(0.2),
-                          backgroundImage: c.selectedImageUrl.value != null
-                              ? FileImage(File(c.selectedImageUrl.value))
-                              : null,
-                          child: c.selectedImageUrl.value == null
-                              ? Icon(
-                                  RemixIcons.camera_2_line,
-                                  size: 40,
-                                  color: Colors.grey,
-                                )
-                              : null,
+                          backgroundImage: FileImage(
+                            File(c.selectedImageUrl.value),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),

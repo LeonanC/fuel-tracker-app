@@ -66,7 +66,7 @@ class RemindersPages extends GetView<ReminderController> {
                     : null,
                 activeColor: theme.colorScheme.primary,
               );
-            }).toList(),
+            }),
 
             const Divider(),
             ListTile(
@@ -74,7 +74,7 @@ class RemindersPages extends GetView<ReminderController> {
               leading: Icon(RemixIcons.time_line),
               title: Text('rem_time_titulo'.tr),
               subtitle: Text(
-                'rem_time_subtitulo'.tr + '${selectedTime.format(context)}',
+                '${'rem_time_subtitulo'.tr}${selectedTime.format(context)}',
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: isEnabled ? () => _selectTime(context) : null,

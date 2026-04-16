@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FuelAlertCard extends GetView<HomeController> {
-  FuelAlertCard({super.key});
+  const FuelAlertCard({super.key});
 
   @override
   Widget build(BuildContext context) {

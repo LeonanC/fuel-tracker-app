@@ -97,57 +97,54 @@ class LoginController extends GetxController {
         serverClientId:
             '391534008822-tg5rhcoir6a3k8nag3pf6kgtf6q0uopo.apps.googleusercontent.com',
       );
-      final GoogleSignInAccount? googleUser = await _googleSignIn
-          .authenticate();
-      if (googleUser != null) {
-        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: null,
-          idToken: googleAuth.idToken,
-        );
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: null,
+        idToken: googleAuth.idToken,
+      );
 
-        UserCredential userCredential = await _auth.signInWithCredential(
-          credential,
-        );
+      UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
 
-        if (userCredential.user != null) {
-          User user = userCredential.user!;
+      if (userCredential.user != null) {
+        User user = userCredential.user!;
 
-          DocumentSnapshot doc = await _firestore
-              .collection('usuarios')
-              .doc(user.uid)
-              .get();
+        DocumentSnapshot doc = await _firestore
+            .collection('usuarios')
+            .doc(user.uid)
+            .get();
 
-          if (doc.exists) {
-            _showCustomSnackbar(
-              titulo: "Erro",
-              mensagem: "Usuário já cadastrado.",
-              isError: true,
-            );
-            UserModel2 usuarioExistente = UserModel2.fromFirestore(doc);
-            if (usuarioExistente.vehicle == null) {
-              Get.offAllNamed('/completar-perfil', arguments: usuarioExistente);
-            } else {
-              Get.offAllNamed('/main');
-            }
+        if (doc.exists) {
+          _showCustomSnackbar(
+            titulo: "Erro",
+            mensagem: "Usuário já cadastrado.",
+            isError: true,
+          );
+          UserModel2 usuarioExistente = UserModel2.fromFirestore(doc);
+          if (usuarioExistente.vehicle == null) {
+            Get.offAllNamed('/completar-perfil', arguments: usuarioExistente);
           } else {
-            UserModel2 novoUsuario = UserModel2(
-              id: user.uid,
-              fotoUrl: user.photoURL ?? '',
-              nome: user.displayName ?? "Usuário",
-              email: user.email ?? '',
-              telefone: user.phoneNumber ?? '',
-              vehicle: null,
-              criadoEm: DateTime.now(),
-              xp: 0.0,
-            );
-
-            Get.offAllNamed('/completar-perfil', arguments: novoUsuario);
+            Get.offAllNamed('/main');
           }
+        } else {
+          UserModel2 novoUsuario = UserModel2(
+            id: user.uid,
+            fotoUrl: user.photoURL ?? '',
+            nome: user.displayName ?? "Usuário",
+            email: user.email ?? '',
+            telefone: user.phoneNumber ?? '',
+            vehicle: null,
+            criadoEm: DateTime.now(),
+            xp: 0.0,
+          );
+
+          Get.offAllNamed('/completar-perfil', arguments: novoUsuario);
         }
       }
     } catch (e) {
-      print("Erro detalhado: $e");
+      debugPrint("Erro detalhado: $e");
       _showCustomSnackbar(
         titulo: "Erro",
         mensagem: "Falha ao autenticar com google",
@@ -162,10 +159,12 @@ class LoginController extends GetxController {
     String mensagem = "Erro ao processar autenticação.";
     if (e.code == 'user-not_found') mensagem = "E-mail não encontrado.";
     if (e.code == 'wrong-password') mensagem = "Senha incorreta.";
-    if (e.code == 'email-already-in-use')
+    if (e.code == 'email-already-in-use') {
       mensagem = "Este e-mail já está sendo usado.";
-    if (e.code == 'weak-password')
+    }
+    if (e.code == 'weak-password') {
       mensagem = "A senha escolhida é muito fraca.";
+    }
     _showCustomSnackbar(titulo: "Falha", mensagem: mensagem, isError: true);
   }
 

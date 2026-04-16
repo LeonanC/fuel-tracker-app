@@ -47,7 +47,7 @@ class HomeController extends GetxController {
       await _loadAuxiliaryData();
       setupFuelStream();
     } catch (e) {
-      print("Erro na inicialização: $e");
+      debugPrint("Erro na inicialização: $e");
     } finally {
       if (fuelEntries.isEmpty) isLoading.value = false;
     }

@@ -5,6 +5,8 @@ import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
 class LoginPage extends GetView<LoginController> {
+  const LoginPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     final c = Get.find<LoginController>();
@@ -229,7 +231,7 @@ class LoginPage extends GetView<LoginController> {
         inputFormatters: inputFormatters,
         keyboardType: keyboardType,
         readOnly: readOnly,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: theme.textTheme.bodyLarge?.color),
         validator: (value) => value!.isEmpty ? "lg_erro_campo".tr : null,
         onTap: onTap,
         decoration: _inputDecoration(
@@ -242,6 +244,7 @@ class LoginPage extends GetView<LoginController> {
                     loginController.obscureText.value
                         ? RemixIcons.eye_off_line
                         : RemixIcons.eye_line,
+                    color: theme.iconTheme.color,
                   ),
                   onPressed: loginController.toggleObscure,
                 )
