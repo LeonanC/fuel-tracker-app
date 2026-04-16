@@ -51,7 +51,8 @@ class LoginPage extends GetView<LoginController> {
                 Obx(
                   () => Column(
                     children: [
-                      if (!controller.isLogin.value) ...[
+                      if (!controller.forgotPassword.value &&
+                          !controller.isLogin.value) ...[
                         _buildTextField(
                           context,
                           label: 'lg_nome_completo'.tr,
@@ -74,40 +75,70 @@ class LoginPage extends GetView<LoginController> {
                         icon: RemixIcons.mail_line,
                         controller: controller.emailController,
                       ),
-                      _buildTextField(
-                        context,
-                        label: 'lg_senha'.tr,
-                        icon: RemixIcons.lock_password_line,
-                        controller: controller.senhaController,
-                        isPassword: true,
-                      ),
+                      if (!controller.forgotPassword.value)
+                        _buildTextField(
+                          context,
+                          label: 'lg_senha'.tr,
+                          icon: RemixIcons.lock_password_line,
+                          controller: controller.senhaController,
+                          isPassword: true,
+                        ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                Obx(
-                  () => ElevatedButton(
-                    onPressed: controller.isLoading.value
-                        ? null
-                        : controller.realizarAuth,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.primary,
-                      foregroundColor: theme.colorScheme.onPrimary,
-                      minimumSize: const Size(double.infinity, 55),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
+                if (controller.isLogin.value) ...[
+                  Obx(
+                    () => ElevatedButton(
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : () {
+                              if (controller.isLogin.value) {
+                                controller.realizarAuth();
+                              } else {
+                                controller.esqueceuSenha();
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.colorScheme.primary,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: controller.isLoading.value
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              controller.forgotPassword.value
+                                  ? "lg_forgot_password".tr
+                                  : (controller.isLogin.value)
+                                  ? "lg_entrar".tr
+                                  : "lg_cadastrar".tr,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: controller.toggleForgotPassword,
+                  child: Obx(
+                    () => Text(
+                      controller.forgotPassword.value
+                          ? "lg_voltar_login".tr
+                          : "lg_forgot_password".tr,
+
+                      style: TextStyle(
+                        color: theme.colorScheme.onBackground.withOpacity(0.7),
+                        fontFamily: 'Montserrat',
                       ),
                     ),
-                    child: controller.isLoading.value
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : Text(
-                            controller.isLogin.value
-                                ? "lg_entrar".tr
-                                : "lg_cadastrar".tr,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
                   ),
                 ),
+
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: controller.toggleAuthMode,
@@ -124,6 +155,7 @@ class LoginPage extends GetView<LoginController> {
                   ),
                 ),
                 const SizedBox(height: 20),
+
                 Row(
                   children: [
                     Expanded(

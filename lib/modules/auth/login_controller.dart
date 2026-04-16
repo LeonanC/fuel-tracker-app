@@ -18,6 +18,7 @@ class LoginController extends GetxController {
   final lookupController = Get.find<LookupController>();
 
   var isLogin = true.obs;
+  var forgotPassword = false.obs;
   var isLoading = false.obs;
   var obscureText = true.obs;
   var selectedVeiculos = RxnString();
@@ -35,6 +36,7 @@ class LoginController extends GetxController {
   );
 
   void toggleAuthMode() => isLogin.value = !isLogin.value;
+  void toggleForgotPassword() => forgotPassword.value = !forgotPassword.value;
   void toggleObscure() => obscureText.value = !obscureText.value;
 
   final maskTelefone = MaskTextInputFormatter(
@@ -148,6 +150,52 @@ class LoginController extends GetxController {
       _showCustomSnackbar(
         titulo: "Erro",
         mensagem: "Falha ao autenticar com google",
+        isError: true,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> esqueceuSenha() async {
+    if (emailController.text.isEmpty ||
+        !GetUtils.isEmail(emailController.text)) {
+      _showCustomSnackbar(
+        titulo: "Atenção",
+        mensagem: "Por favor, insira um e-mail válido para recuperar a senha.",
+        isError: true,
+      );
+      return;
+    }
+
+    try {
+      isLoading.value = true;
+      final email = emailController.text.trim();
+
+      final userQuery = await _firestore
+          .collection('usuarios')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        _showCustomSnackbar(
+          titulo: "Erro",
+          mensagem: "Este e-mail não está cadastrado em nossa base.",
+          isError: true,
+        );
+        return;
+      }
+
+      await _auth.sendPasswordResetEmail(email: email);
+      _showCustomSnackbar(
+        titulo: "Sucesso",
+        mensagem:
+            "E-mail de recuperação enviado! Verifique sua caixa de entrada.",
+      );
+    } catch (e) {
+      _showCustomSnackbar(
+        titulo: "Erro",
+        mensagem: "Não foi possível processar a recuperação agora.",
         isError: true,
       );
     } finally {
