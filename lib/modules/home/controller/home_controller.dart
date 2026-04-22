@@ -8,6 +8,7 @@ import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/modules/registro/pages/home_entry_page.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:share_plus/share_plus.dart';
 
 class HomeController extends GetxController {
   final auth = FirebaseAuth.instance;
@@ -24,6 +25,7 @@ class HomeController extends GetxController {
   final fuelEntries = <FuelEntryModel>[].obs;
   final isLoading = false.obs;
 
+  final usuariosMap = <String, dynamic>{}.obs;
   final postosMap = <dynamic, Map<String, dynamic>>{}.obs;
   final veiculosMap = <dynamic, Map<String, dynamic>>{}.obs;
   final tiposMap = <dynamic, Map<String, dynamic>>{}.obs;
@@ -45,6 +47,7 @@ class HomeController extends GetxController {
     isLoading.value = true;
     try {
       await _loadAuxiliaryData();
+      await carregarDonoDoRegistro(auth.currentUser!.uid);
       setupFuelStream();
     } catch (e) {
       debugPrint("Erro na inicialização: $e");
@@ -55,14 +58,26 @@ class HomeController extends GetxController {
 
   Future<void> _loadAuxiliaryData() async {
     final results = await Future.wait([
+      _firestore.collection('usuarios').get(),
       _firestore.collection('tipo_combustivel').get(),
       _firestore.collection('veiculos').get(),
       _firestore.collection('postos').get(),
     ]);
 
-    final tipSnap = results[0];
-    final vecSnap = results[1];
-    final postSnap = results[2];
+    final usuarioSnap = results[0];
+    final tipSnap = results[1];
+    final vecSnap = results[2];
+    final postSnap = results[3];
+
+    for (var doc in usuarioSnap.docs) {
+      final data = doc.data();
+      usuariosMap[doc.id] = {
+        'id': doc.id,
+        'email': data['email'] ?? '',
+        'nome': data['nome'] ?? '',
+        'fotoUrl': data['foto_url'] ?? '',
+      };
+    }
 
     for (var doc in tipSnap.docs) {
       final data = doc.data();
@@ -109,13 +124,34 @@ class HomeController extends GetxController {
     }
   }
 
+  Future<void> updateVehicleOdometer(
+    String vehicleId,
+    double newOdometer,
+  ) async {
+    try {
+      await _firestore.collection('veiculos').doc(vehicleId).update({
+        'initial_odometer': newOdometer,
+      });
+      if (veiculosMap.containsKey(vehicleId)) {
+        veiculosMap[vehicleId]?['initial_odometer'] = newOdometer;
+      }
+    } catch (e) {
+      print("Erro ao atualizar odômetro do veículo: $e");
+    }
+  }
+
   Future<void> setupFuelStream() async {
     final userUID = auth.currentUser?.uid;
     if (userUID == null) return;
 
     _firestore
         .collection('fuels')
-        .where('fk_usuario', isEqualTo: userUID)
+        .where(
+          Filter.or(
+            Filter('fk_usuario', isEqualTo: userUID),
+            Filter('sharedWith', arrayContains: userUID),
+          ),
+        )
         .orderBy('velocimetro', descending: true)
         .snapshots()
         .listen(
@@ -150,26 +186,26 @@ class HomeController extends GetxController {
 
       await _firestore.collection('fuels').add(data);
 
-      double odoAtual = (data['velocimetro'] as num).toDouble();
-      double odoAnterior = lastOdometer.value ?? odoAtual;
-      int xpGanho = _calcularXP(
-        (data['litros_volume'] as num).toDouble(),
-        odoAtual,
-        odoAnterior,
-      );
-
-      await _firestore.collection('usuarios').doc(userUID).update({
-        'xp': FieldValue.increment(xpGanho),
-        'quilometragem': odoAtual,
-      });
-
       Get.back();
-      _showSnackbar(
-        "Sucesso",
-        "Abastecimento registrado! Você ganhou +$xpGanho de XP!",
-      );
+      _showSnackbar("Sucesso", "Abastecimento registrado!");
     } catch (e) {
       _showSnackbar('Erro', 'Falha ao salvar', isError: true);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> delete(String? itemId) async {
+    if (itemId == null || itemId.isEmpty) return;
+
+    try {
+      isLoading.value = true;
+      await _firestore.collection('fuels').doc(itemId).delete();
+      fuelEntries.removeWhere((item) => item.id == itemId);
+      fuelEntries.refresh();
+      _showSnackbar("Sucesso", "Item removido com sucesso!");
+    } catch (e) {
+      _showSnackbar("Erro", "Não foi possível deletar", isError: true);
     } finally {
       isLoading.value = false;
     }
@@ -246,6 +282,16 @@ class HomeController extends GetxController {
     return list;
   }
 
+  List<FuelEntryModel> get meusAbastecimentos {
+    final uid = auth.currentUser?.uid;
+    return filteredFuelEntries.where((e) => e.user == uid).toList();
+  }
+
+  List<FuelEntryModel> get fuelEntriesCompartilhados {
+    final uid = auth.currentUser?.uid;
+    return filteredFuelEntries.where((e) => e.user != uid).toList();
+  }
+
   double get gastoPorKmReal {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
@@ -288,6 +334,33 @@ class HomeController extends GetxController {
       'displayRange': (level).toStringAsFixed(0),
       'level': '$level',
     };
+  }
+
+  Future<void> compartilharComUsuario(
+    String registroId,
+    String uidAmigo,
+  ) async {
+    try {
+      isLoading.value = true;
+
+      await _firestore.collection('fuels').doc(registroId).update({
+        'sharedWith': FieldValue.arrayUnion([uidAmigo]),
+      });
+      _showSnackbar("Sucesso", "Registro compartilhado com sucesso!");
+    } catch (e) {
+      _showSnackbar("Erro", e.toString(), isError: true);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> carregarDonoDoRegistro(String userId) async {
+    if (usuariosMap.containsKey(userId)) return;
+
+    final doc = await _firestore.collection('usuarios').doc(userId).get();
+    if (doc.exists) {
+      usuariosMap[userId] = doc.data();
+    }
   }
 
   void navigateToAddEntry(BuildContext context) async {

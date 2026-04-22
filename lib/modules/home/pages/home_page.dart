@@ -6,6 +6,7 @@ import 'package:fuel_tracker_app/data/global/fuel_list_filter_menu.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_card.dart';
+import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -18,6 +19,7 @@ class HomePage extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final settings = Get.find<SettingController>();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -26,6 +28,19 @@ class HomePage extends GetView<HomeController> {
         children: [
           _buildHeroStats(),
           FuelAlertCard(),
+          Obx((){
+            final alerta = settings.alertaVencimento();
+            if(alerta == null) return SizedBox.shrink();
+
+            return Card(
+              color: Colors.amber.shade100,
+              child: ListTile(
+                leading: Icon(Icons.warning, color: Colors.amber.shade900),
+                title: Text(alerta, style: TextStyle(color: theme.colorScheme.primary)),
+                subtitle: Text("Consulte o site do Bradesco ou Sefaz-RJ para pagar"),
+              ),
+            );
+          }),
           _buildSearchBar(theme),
           Expanded(
             child: RefreshIndicator(
@@ -59,31 +74,64 @@ class HomePage extends GetView<HomeController> {
   Widget _buildMainList(ThemeData theme) {
     return Obx(() {
       if (controller.isLoading.value) return _buildLoadingShimmer(theme);
-      final entries = controller.filteredFuelEntries;
-      if (entries.isEmpty) {
+
+      final meusEntries = controller.meusAbastecimentos;
+      final compartilhadosEntries = controller.fuelEntriesCompartilhados;
+
+      if (meusEntries.isEmpty ) {
         return const Center(child: Text("Nenhum registro encontrado"));
       }
 
-      final grouped = _groupEntries(entries);
+      return CustomScrollView(
+        slivers: [
+          if (meusEntries.isNotEmpty) ...[
+            _buildSliverSectionHeader("Meus Registros", theme),
+            _buildSliverEntryList(meusEntries, theme),
+          ],
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: grouped.keys.length,
-        itemBuilder: (context, i) {
-          String date = grouped.keys.elementAt(i);
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _sectionHeader(date, theme),
-              ...grouped[date]!.map(
-                (e) => FuelCard(entry: e, controller: controller),
-              ),
-            ],
-          );
-        },
+          if (compartilhadosEntries.isNotEmpty) ...[
+             _buildSliverSectionHeader("Abastecimentos Compartilhados", theme),
+             _buildSliverEntryList(compartilhadosEntries, theme),
+           ],
+        ],
       );
     });
+  }
+
+  Widget _buildSliverSectionHeader(String title, ThemeData theme) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16,16,16,8),
+        child: Text(
+          title.toUpperCase(),
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: Colors.blueAccent,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSliverEntryList(List<FuelEntryModel> entries, ThemeData theme) {
+    final grouped = _groupEntries(entries);
+    return SliverList(
+      delegate: SliverChildBuilderDelegate((context, i) {
+        String date = grouped.keys.elementAt(i);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionHeader(date, theme),
+            ...grouped[date]!.map(
+              (e) => FuelCard(entry: e, controller: controller),
+            ),
+          ],
+        );
+      }, childCount: grouped.keys.length),
+    );
   }
 
   Map<String, List<FuelEntryModel>> _groupEntries(List<FuelEntryModel> list) {
@@ -124,7 +172,7 @@ class HomePage extends GetView<HomeController> {
 
   Widget _sectionHeader(String text, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Text(
         text.toUpperCase(),
         style: theme.textTheme.labelSmall?.copyWith(

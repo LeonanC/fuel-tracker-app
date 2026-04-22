@@ -75,32 +75,6 @@ class ToolsScreen extends GetView<SettingController> {
               ),
 
               _sectionTitle('cl_settings'.tr),
-              Obx(
-                () => _buildSettingTile(
-                  theme: theme,
-                  icon: RemixIcons.ruler_2_line,
-                  title: 'sp_unidade_distancia'.tr,
-                  subtitle: 'sp_quilometros'.tr,
-                  trailing: Switch(
-                    value: controller.useMiles.value,
-                    onChanged: controller.toggleUnit,
-                    activeColor: Colors.blueAccent,
-                  ),
-                ),
-              ),
-              Obx(
-                () => _buildSettingTile(
-                  theme: theme,
-                  icon: RemixIcons.drop_line,
-                  title: 'sp_unidade_volume'.tr,
-                  subtitle: 'sp_litros'.tr,
-                  trailing: Switch(
-                    value: controller.useVolume.value,
-                    onChanged: controller.toggleVolume,
-                    activeColor: Colors.orangeAccent,
-                  ),
-                ),
-              ),
               _buildSettingTile(
                 theme: theme,
                 title: 'sp_notification_title'.tr,
@@ -124,6 +98,27 @@ class ToolsScreen extends GetView<SettingController> {
                 icon: RemixIcons.car_line,
                 onTap: () => Get.to(() => VehicleScreen()),
               ),
+              Obx(() => Column(
+                children: [
+                  ListTile(
+                    title: Text("Final da Placa"),
+                    trailing: DropdownButton<int>(
+                      value: controller.placaFinal.value,
+                      items: List.generate(10, (i) => DropdownMenuItem(value: i, child: Text('$i'))),
+                      onChanged: (val) => controller.setPlacaFinal(val!),
+                    ),
+                  ),
+                  Divider(),
+                  Text("Calendário IPVA 2026", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...controller.obterDatasVencimento().asMap().entries.map((entry){
+                    return ListTile(
+                      leading: Icon(Icons.calendar_today),
+                      title: Text("${entry.key + 1}ª Parcela / Cota Única"),
+                      trailing: Text(entry.value),
+                    );
+                  }).toList(),
+                ],
+              )),
               _sectionTitle('cl_dados'.tr),
 
               _buildSettingTile(

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/registro/controller/home_entry_controller.dart';
+import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
@@ -17,6 +18,7 @@ class HomeEntryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.find<HomeEntryController>();
+    final settingsCtrl = Get.find<SettingController>();
 
     final theme = Theme.of(context);
 
@@ -52,6 +54,9 @@ class HomeEntryPage extends StatelessWidget {
                   key: c.formKey,
                   child: Column(
                     children: [
+                      _buildIPVAAlert(settingsCtrl, theme),
+                      const SizedBox(height: 16),
+
                       _buildCard(theme, [
                         _buildDateTile(c, theme),
                         const Divider(),
@@ -65,6 +70,8 @@ class HomeEntryPage extends StatelessWidget {
 
                       const SizedBox(height: 16),
                       _buildDropdowns(c, theme),
+                      const SizedBox(height: 16),
+                      _buildFlexCalculator(settingsCtrl, theme),
                       const SizedBox(height: 16),
                       _buildCard(theme, [
                         Row(
@@ -106,6 +113,102 @@ class HomeEntryPage extends StatelessWidget {
                   ),
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildFlexCalculator(SettingController s, ThemeData theme) {
+    return _buildCard(theme, [
+      Row(
+        children: [
+          Icon(
+            RemixIcons.scales_3_line,
+            color: theme.colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            "Calculadora Flex (70%)",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      Obx(
+        () => Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: "Preço Gasolina",
+                      prefixText: "R\$",
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) =>
+                        s.precoGasolina.value = double.tryParse(v) ?? 0.0,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      labelText: "Preço Etanol",
+                      prefixText: "R\$",
+                    ),
+                    keyboardType: TextInputType.number,
+                    onChanged: (v) =>
+                        s.precoEtanol.value = double.tryParse(v) ?? 0.0,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                s.calcularFlex,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  Widget _buildIPVAAlert(SettingController s, ThemeData theme) {
+    final alerta = s.alertaVencimento();
+    if(alerta == null) return const SizedBox.shrink();
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.amber.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.amber),
+      ),
+      child: Row(
+        children: [
+          Icon(RemixIcons.error_warning_line, color: Colors.amber),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              alerta,
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          )
+        ],
       ),
     );
   }

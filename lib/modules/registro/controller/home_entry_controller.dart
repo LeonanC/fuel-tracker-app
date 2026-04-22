@@ -75,6 +75,12 @@ class HomeEntryController extends GetxController {
       if (lookupController.veiculosDrop.isNotEmpty) {
         selectedVeiculos.value = lookupController.veiculosDrop.first.id
             .toString();
+        atualizarHodometroPorVeiculo(selectedVeiculos.value);
+      }
+
+      if (lookupController.veiculosDrop.isNotEmpty) {
+        selectedVeiculos.value = lookupController.veiculosDrop.first.id
+            .toString();
       } else {
         selectedVeiculos.value = null;
       }
@@ -113,9 +119,15 @@ class HomeEntryController extends GetxController {
   }
 
   void atualizarHodometroPorVeiculo(String? vehicleId) {
-    if (vehicleId == null) return;
+    if (vehicleId == null || vehicleId.isEmpty) return;
+
     double ultimoKm = controller.getLatestOdometerForVehicle(vehicleId);
-    kmController.text = ultimoKm.toStringAsFixed(0);
+
+    if (ultimoKm > 0) {
+      kmController.text = ultimoKm.toStringAsFixed(0);
+    } else {
+      kmController.text = '';
+    }
   }
 
   Future<void> pickComprovante() async {
@@ -168,6 +180,9 @@ class HomeEntryController extends GetxController {
     isLoading.value = true;
 
     try {
+      final double novoOdometro = double.tryParse(kmController.text) ?? 0.0;
+      final String? veiculoId = selectedVeiculos.value;
+
       final double vehicleTankCapacity =
           (controller.veiculosMap[selectedVeiculos.value]?['tank_capacity']
               as double?) ??
@@ -200,6 +215,11 @@ class HomeEntryController extends GetxController {
       } else {
         await controller.saveFuel(fuelData);
       }
+
+      if(veiculoId != null){
+        await controller.updateVehicleOdometer(veiculoId, novoOdometro);
+      }
+      
     } catch (e) {
       Get.back();
       _showSnackbar(

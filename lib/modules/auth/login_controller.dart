@@ -95,61 +95,56 @@ class LoginController extends GetxController {
   Future<void> loginWithGoogle() async {
     try {
       isLoading.value = true;
-      await _googleSignIn.initialize(
+            await _googleSignIn.initialize(
         serverClientId:
             '391534008822-tg5rhcoir6a3k8nag3pf6kgtf6q0uopo.apps.googleusercontent.com',
       );
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      final GoogleSignInAccount account = await _googleSignIn.authenticate();
+      
+      final String? idToken = account.authentication.idToken;
+      
+      final authz = await account.authorizationClient.authorizeScopes(['email', 'profile']);
+      final String accessToken = authz.accessToken;
+
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: null,
-        idToken: googleAuth.idToken,
+        accessToken: accessToken,
+        idToken: idToken,
       );
 
-      UserCredential userCredential = await _auth.signInWithCredential(
-        credential,
-      );
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
 
-      if (userCredential.user != null) {
-        User user = userCredential.user!;
-
-        DocumentSnapshot doc = await _firestore
-            .collection('usuarios')
-            .doc(user.uid)
-            .get();
-
-        if (doc.exists) {
-          _showCustomSnackbar(
-            titulo: "Erro",
-            mensagem: "Usuário já cadastrado.",
-            isError: true,
-          );
-          UserModel2 usuarioExistente = UserModel2.fromFirestore(doc);
-          if (usuarioExistente.vehicle == null) {
-            Get.offAllNamed('/completar-perfil', arguments: usuarioExistente);
-          } else {
-            Get.offAllNamed('/main');
-          }
-        } else {
+      if(user != null){
+        DocumentSnapshot doc = await _firestore.collection('usuarios').doc(user.uid).get();
+        if(doc.exists){
+          debugPrint("Usuário recorrente: ${user.displayName}");
+          Get.offAllNamed('/main');
+        }else{
           UserModel2 novoUsuario = UserModel2(
             id: user.uid,
             fotoUrl: user.photoURL ?? '',
-            nome: user.displayName ?? "Usuário",
+            nome: user.displayName ?? "Motorista",
             email: user.email ?? '',
             telefone: user.phoneNumber ?? '',
             vehicle: null,
             criadoEm: DateTime.now(),
             xp: 0.0,
           );
-
+          await _firestore.collection('usuarios').doc(user.uid).set(novoUsuario.toMap());
           Get.offAllNamed('/completar-perfil', arguments: novoUsuario);
         }
       }
-    } catch (e) {
+    }catch(e){   
+      if(e is GoogleSignInException && e.code == 'canceled'){
+        debugPrint("Login cancelado pelo usuário.");
+        return;
+      }
+
       debugPrint("Erro detalhado: $e");
       _showCustomSnackbar(
         titulo: "Erro",
-        mensagem: "Falha ao autenticar com google",
+        mensagem: "Falha ao autenticação. Verique sua conexão ou chaves SHA-1.",
         isError: true,
       );
     } finally {
@@ -216,15 +211,7 @@ class LoginController extends GetxController {
     _showCustomSnackbar(titulo: "Falha", mensagem: mensagem, isError: true);
   }
 
-  @override
-  void onClose() {
-    emailController.dispose();
-    senhaController.dispose();
-    nomeController.dispose();
-    telefoneController.dispose();
-    selectedVeiculos.value;
-    super.onClose();
-  }
+
 
   void _showCustomSnackbar({
     required String titulo,
@@ -256,5 +243,15 @@ class LoginController extends GetxController {
         ),
       ],
     );
+  }
+
+    @override
+  void onClose() {
+    emailController.dispose();
+    senhaController.dispose();
+    nomeController.dispose();
+    telefoneController.dispose();
+    selectedVeiculos.value;
+    super.onClose();
   }
 }
