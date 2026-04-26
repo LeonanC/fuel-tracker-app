@@ -4,6 +4,7 @@
 .pub-cache/
 .pub/
 build/
+android/app/*.json
 
 # Firebase (Arquivos gerados automaticamente)
 .firebase/
