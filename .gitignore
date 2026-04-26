@@ -3,6 +3,7 @@
 .packages
 .pub-cache/
 .pub/
+.android/app/
 build/
 
 # Firebase (Arquivos gerados automaticamente)
