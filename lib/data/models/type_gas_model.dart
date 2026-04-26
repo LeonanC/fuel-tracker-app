@@ -15,22 +15,12 @@ class TypeGasModel {
     return {'pk_tipo': id, 'nome': nome, 'abbr': abbr, 'octane_rating': octane};
   }
 
-  factory TypeGasModel.fromFirestore(Map<String, dynamic> map, String docId) {
+  factory TypeGasModel.fromMap(Map<String, dynamic> map, [String? docId]) {
     return TypeGasModel(
-      id: docId,
+      id: (map['pk_tipo'] ?? docId)?.toString(),
       nome: map['nome']?.toString() ?? '',
       abbr: map['abbr']?.toString() ?? '',
       octane: (map['octane_rating'] as num?)?.toDouble() ?? 0,
     );
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is TypeGasModel && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
 }

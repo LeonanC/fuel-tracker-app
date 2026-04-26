@@ -81,10 +81,7 @@ class GasStationScreen extends GetView<GasStationController> {
             itemCount: postos.length,
             itemBuilder: (context, index) {
               final data = postos[index];
-              final posto = GasStationModel.fromFirestore(
-                data,
-                data['pk_posto'],
-              );
+              final posto = GasStationModel.fromMap(data);
 
               return _buildPostoCard(posto, theme);
             },

@@ -1,193 +1,99 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
-import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
+import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
+import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/modules/registro/pages/home_entry_page.dart';
+import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeController extends GetxController {
-  final auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
-  final lookupController = Get.find<LookupController>();
-  final settingsController = Get.find<SettingController>();
-  final currencyController = Get.find<CurrencyController>();
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final settings = Get.find<SettingController>();
 
-  double alertThresholdKm = 80.0;
-  double kmToMileFactor = 80.0;
-  double kmPerLiterToMPGFactor = 80.0;
-
-  // Observáveis
-  final fuelEntries = <FuelEntryModel>[].obs;
-  final isLoading = false.obs;
-
-  final usuariosMap = <String, dynamic>{}.obs;
-  final postosMap = <dynamic, Map<String, dynamic>>{}.obs;
-  final veiculosMap = <dynamic, Map<String, dynamic>>{}.obs;
-  final tiposMap = <dynamic, Map<String, dynamic>>{}.obs;
-  final servicesMap = <dynamic, Map<String, dynamic>>{}.obs;
-
+  var isLoading = false.obs;
   var searchText = ''.obs;
-  var selectedPostoID = Rxn<dynamic>();
+  var vehicles = <VehicleModel>[].obs;
+  var veiculosMap = <String, Map<String, dynamic>>{}.obs;
+  var postos = <GasStationModel>[].obs;
+  var postosMap = <String, Map<String, dynamic>>{}.obs;
+  var tipos = <TypeGasModel>[].obs;
+  var tiposMap = <String, Map<String, dynamic>>{}.obs;
+
+  var fuelEntries = <FuelEntryModel>[].obs;
+  var sharedWithMeEntries = <FuelEntryModel>[].obs;
+  var usuariosMap = <String, dynamic>{}.obs;
+  var todosUsarios = <Map<String, dynamic>>[].obs;
+
   var selectedVehicleID = Rxn<dynamic>();
   var selectedTipoID = Rxn<dynamic>();
-  var lastOdometer = Rxn<double>();
+  var selectedPostoID = Rxn<dynamic>();
+
+  var veiculosList = <Map<String, dynamic>>[].obs;
+  var tiposList = <Map<String, dynamic>>[].obs;
+  var postosList = <Map<String, dynamic>>[].obs;
+
+  String get currentUserId => _supabase.auth.currentUser?.id ?? '';
 
   @override
   void onInit() {
     super.onInit();
-    _initializeData();
+    fetchInitialData();
   }
 
-  Future<void> _initializeData() async {
-    isLoading.value = true;
+  Future<void> fetchInitialData() async {
     try {
-      await _loadAuxiliaryData();
-      await carregarDonoDoRegistro(auth.currentUser!.uid);
-      setupFuelStream();
+      isLoading.value = true;
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final results = await Future.wait([
+        _supabase.from('veiculos').select(),
+        _supabase.from('usuarios').select('id, nome, foto_url'),
+        _supabase.from('postos').select(),
+        _supabase.from('tipo_combustivel').select(),
+        _supabase
+            .from('abastecimentos')
+            .select()
+            .or('fk_usuario.eq.$userId, shared_with.cs.{$userId}')
+            .order('data', ascending: false),
+      ]);
+
+      final vehicleData = results[0] as List;
+      vehicles.value = vehicleData.map((e) => VehicleModel.fromMap(e)).toList();
+      veiculosMap.value = {for (var v in vehicleData) v['id'].toString(): v};
+
+      final usersData = results[1] as List;
+      todosUsarios.value = List<Map<String, dynamic>>.from(usersData);
+      usuariosMap.value = {for (var u in usersData) u['id'].toString(): u};
+
+      final postosData = results[2] as List;
+      postos.value = postosData.map((e) => GasStationModel.fromMap(e)).toList();
+      postosMap.value = {for (var p in postosData) p['pk_posto'].toString(): p};
+
+      final tiposData = results[3] as List;
+      tipos.value = tiposData.map((e) => TypeGasModel.fromMap(e)).toList();
+      tiposMap.value = {for (var t in tiposData) t['pk_tipo'].toString(): t};
+
+      final fuelData = results[4] as List;
+      fuelEntries.value = fuelData.map((e) => FuelEntryModel.fromMap(e)).toList();
+
+      
     } catch (e) {
       debugPrint("Erro na inicialização: $e");
     } finally {
-      if (fuelEntries.isEmpty) isLoading.value = false;
+      isLoading.value = false;
     }
   }
 
-  Future<void> _loadAuxiliaryData() async {
-    final results = await Future.wait([
-      _firestore.collection('usuarios').get(),
-      _firestore.collection('tipo_combustivel').get(),
-      _firestore.collection('veiculos').get(),
-      _firestore.collection('postos').get(),
-    ]);
 
-    final usuarioSnap = results[0];
-    final tipSnap = results[1];
-    final vecSnap = results[2];
-    final postSnap = results[3];
-
-    for (var doc in usuarioSnap.docs) {
-      final data = doc.data();
-      usuariosMap[doc.id] = {
-        'id': doc.id,
-        'email': data['email'] ?? '',
-        'nome': data['nome'] ?? '',
-        'fotoUrl': data['foto_url'] ?? '',
-      };
-    }
-
-    for (var doc in tipSnap.docs) {
-      final data = doc.data();
-      final id = data['pk_tipo'] ?? doc.id;
-      tiposMap[id] = {
-        'pk_tipo': id,
-        'nome': data['nome'] ?? '',
-        'abbr': data['abbr'] ?? '',
-        'octane_rating': (data['octane_rating'] as num? ?? 0.0).toDouble(),
-      };
-    }
-    for (var doc in vecSnap.docs) {
-      final data = doc.data();
-      final id = data['pk_vehicle'] ?? doc.id;
-      veiculosMap[id] = {
-        'pk_vehicle': id,
-        'nickname': data['nickname'] ?? '',
-        'plate': data['plate'] ?? '',
-        'is_mercosul': data['is_mercosul'] ? true : false,
-        'city': data['city'] ?? '',
-        'make': data['make'] ?? '',
-        'model': data['model'] ?? '',
-        'year': data['year'] ?? 0,
-        'fk_type_fuel': data['fk_type_fuel'] ?? 0,
-        'initial_odometer': (data['initial_odometer'] as num? ?? 0.0)
-            .toDouble(),
-        'tank_capacity': (data['tank_capacity'] as num? ?? 0.0).toDouble(),
-      };
-    }
-    for (var doc in postSnap.docs) {
-      final data = doc.data();
-      final id = data['pk_posto'] ?? doc.id;
-      postosMap[id] = {
-        'pk_posto': id,
-        'nome': data['nome'] ?? '',
-        'endereco': data['endereco'] ?? '',
-        'brand': data['brand'] ?? '',
-        'latitude': (data['latitude'] as num? ?? 0.0).toDouble(),
-        'longitude': (data['longitude'] as num? ?? 0.0).toDouble(),
-        'preco': (data['preco'] as num? ?? 0.0).toDouble(),
-        'hasConvenientStore': data['hasConvenientStore'] ?? false,
-        'is24Hours': data['is24Hours'] ?? false,
-      };
-    }
-  }
-
-  Future<void> updateVehicleOdometer(
-    String vehicleId,
-    double newOdometer,
-  ) async {
-    try {
-      await _firestore.collection('veiculos').doc(vehicleId).update({
-        'initial_odometer': newOdometer,
-      });
-      if (veiculosMap.containsKey(vehicleId)) {
-        veiculosMap[vehicleId]?['initial_odometer'] = newOdometer;
-      }
-    } catch (e) {
-      print("Erro ao atualizar odômetro do veículo: $e");
-    }
-  }
-
-  Future<void> setupFuelStream() async {
-    final userUID = auth.currentUser?.uid;
-    if (userUID == null) return;
-
-    _firestore
-        .collection('fuels')
-        .where(
-          Filter.or(
-            Filter('fk_usuario', isEqualTo: userUID),
-            Filter('sharedWith', arrayContains: userUID),
-          ),
-        )
-        .orderBy('velocimetro', descending: true)
-        .snapshots()
-        .listen(
-          (snapshot) {
-            final entries = snapshot.docs
-                .map((doc) => FuelEntryModel.fromFirestore(doc.data(), doc.id))
-                .toList();
-
-            fuelEntries.assignAll(entries);
-
-            if (entries.isNotEmpty) {
-              lastOdometer.value = entries.first.odometerKm;
-            }
-
-            isLoading.value = false;
-          },
-          onError: (e) {
-            isLoading.value = false;
-            _showSnackbar("Erro", "Falha ao sincronizar", isError: true);
-          },
-        );
-  }
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
-      isLoading.value = true;
-      final userUID = auth.currentUser?.uid;
-      if (userUID == null) return;
-
-      data['fk_usuario'] = userUID;
-      data['data'] = FieldValue.serverTimestamp();
-
-      await _firestore.collection('fuels').add(data);
-
-      Get.back();
-      _showSnackbar("Sucesso", "Abastecimento registrado!");
+      await _supabase.from('abastecimentos').insert(data);
+      Get.back(result: true);
     } catch (e) {
       _showSnackbar('Erro', 'Falha ao salvar', isError: true);
     } finally {
@@ -195,14 +101,27 @@ class HomeController extends GetxController {
     }
   }
 
-  Future<void> delete(String? itemId) async {
-    if (itemId == null || itemId.isEmpty) return;
-
+  Future<void> updateFuel(FuelEntryModel model) async {
     try {
+      if (model.id == null) return;
       isLoading.value = true;
-      await _firestore.collection('fuels').doc(itemId).delete();
-      fuelEntries.removeWhere((item) => item.id == itemId);
-      fuelEntries.refresh();
+
+      await _supabase
+          .from('abastecimentos')
+          .update(model.toMap())
+          .eq('pk_fuel', model.id!);
+      Get.back(result: true);
+    } catch (e) {
+      _showSnackbar("Erro", "Falha ao atualizar: $e", isError: true);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> deleteFuel(String id) async {
+    try {
+      await _supabase.from('abastecimentos').delete().eq('pk_fuel', id);
+      fuelEntries.removeWhere((element) => element.id == id);
       _showSnackbar("Sucesso", "Item removido com sucesso!");
     } catch (e) {
       _showSnackbar("Erro", "Não foi possível deletar", isError: true);
@@ -211,37 +130,66 @@ class HomeController extends GetxController {
     }
   }
 
-  double getLatestOdometerForVehicle(dynamic vehicleId) {
+  Future<void> updateVehicleOdometer(
+    String vehicleId,
+    double newOdometer,
+  ) async {
     try {
-      final lastEntry = fuelEntries.firstWhere((e) => e.vehicleId == vehicleId);
-      return lastEntry.odometerKm;
+      await _supabase
+          .from('veiculos')
+          .update({'initial_odometer': newOdometer})
+          .eq('id', vehicleId);
+
+      int index = vehicles.indexWhere((v) => v.id == vehicleId);
+      if (index != -1) {
+        var v = vehicles[index];
+        vehicles[index] = VehicleModel(
+          id: v.id,
+          nickname: v.nickname,
+          plate: v.plate,
+          city: v.city,
+          make: v.make,
+          model: v.model,
+          fuelType: v.fuelType,
+          year: v.year,
+          initialOdometer: newOdometer,
+          tankCapacity: v.tankCapacity,
+        );
+        vehicles.refresh();
+
+        fetchInitialData();
+      }
     } catch (e) {
-      final veiculoData = veiculosMap[vehicleId];
-      return (veiculoData?['initial_odometer'] as num? ?? 0.0).toDouble();
+      print("Erro ao atualizar odômetro do veículo: $e");
     }
   }
 
-  int _calcularXP(double litros, double odoAtual, double odoAnterior) {
-    int xpPorLitro = litros.toInt();
-    double kmPercorrido = odoAtual - odoAnterior;
-    int xpPorKm = kmPercorrido > 0 ? (kmPercorrido ~/ 10) * 5 : 0;
-    return xpPorLitro + xpPorKm;
+  Future<void> shareEntry(String entryId, List<String> userIds) async {
+    try {
+      await _supabase
+          .from('abastecimentos')
+          .update({'shared_with': userIds})
+          .eq('pk_fuel', entryId);
+      await fetchInitialData();
+      _showSnackbar("Sucesso", "Compartilhamento atualizado!");
+    } catch (e) {
+      _showSnackbar("Erro", "Falha ao compartilhar", isError: true);
+    }
   }
 
-  Future<void> updateFuel(FuelEntryModel fuel) async {
+  double getLatestOdometerForVehicle(dynamic vehicleId) {
     try {
-      isLoading.value = true;
-      final data = fuel.toMap();
-      data.remove('pk_fuel');
-
-      await _firestore.collection('fuels').doc(fuel.id).update(data);
-
-      Get.back();
-      _showSnackbar("Sucesso", "Abastecimento atualizado com sucesso!");
+      final lastEntry = fuelEntries.firstWhereOrNull(
+        (e) => e.vehicleId == vehicleId,
+      );
+      if (lastEntry != null) {
+        return lastEntry.odometerKm;
+      }
+      final vehicle = vehicles.firstWhereOrNull((v) => v.id == vehicleId);
+      return vehicle?.initialOdometer ?? 0.0;
     } catch (e) {
-      _showSnackbar("Erro", "Falha ao atualizar: $e", isError: true);
-    } finally {
-      isLoading.value = false;
+      final veiculoData = veiculosMap[vehicleId];
+      return (veiculoData?['initial_odometer'] as num? ?? 0.0).toDouble();
     }
   }
 
@@ -250,11 +198,9 @@ class HomeController extends GetxController {
     if (selectedVehicleID.value != null) {
       list = list.where((e) => e.vehicleId == selectedVehicleID.value).toList();
     }
-
     if (selectedTipoID.value != null) {
       list = list.where((e) => e.fuelTypeId == selectedTipoID.value).toList();
     }
-
     if (selectedPostoID.value != null) {
       list = list
           .where((e) => e.gasStationId == selectedPostoID.value)
@@ -265,14 +211,13 @@ class HomeController extends GetxController {
       final query = searchText.value.toLowerCase();
       list = list.where((e) {
         final dadosPosto = postosMap[e.gasStationId];
-        final nomePosto = dadosPosto?['nome']?.toString().toLowerCase() ?? "";
-
+        final nomePosto = dadosPosto?['nome']?.toString().toLowerCase() ?? '';
         final dadosVeiculo = veiculosMap[e.vehicleId];
         final nomeVeiculo =
-            dadosVeiculo?['nickname']?.toString().toLowerCase() ?? "";
+            dadosVeiculo?['nickname']?.toString().toLowerCase() ?? '';
 
-        final dadosTipo = tiposMap[e.fuelTypeId];
-        final nomeTipo = dadosTipo?['nome']?.toString().toLowerCase() ?? "";
+        final dadosTipo = veiculosMap[e.fuelTypeId];
+        final nomeTipo = dadosTipo?['nome']?.toString().toLowerCase() ?? '';
 
         return nomePosto.contains(query) ||
             nomeVeiculo.contains(query) ||
@@ -282,99 +227,162 @@ class HomeController extends GetxController {
     return list;
   }
 
-  List<FuelEntryModel> get meusAbastecimentos {
-    final uid = auth.currentUser?.uid;
-    return filteredFuelEntries.where((e) => e.user == uid).toList();
+  
+  List<FuelEntryModel> get meusAbastecimentos{
+    final uid = _supabase.auth.currentUser?.id;
+    return filteredFuelEntries.where((entry) => entry.user == uid).toList();
   }
 
   List<FuelEntryModel> get fuelEntriesCompartilhados {
-    final uid = auth.currentUser?.uid;
-    return filteredFuelEntries.where((e) => e.user != uid).toList();
+    final uid = _supabase.auth.currentUser?.id;
+    return filteredFuelEntries.where((entry) => entry.user != uid).toList();
   }
 
-  double get gastoPorKmReal {
-    final entries = filteredFuelEntries;
+  double get consumoMediaGeral {
+    final entries = selectedVehicleID.value != null
+    ? filteredFuelEntries.where((e) => e.vehicleId == selectedVehicleID.value).toList()
+    : fuelEntries.toList();
+
     if (entries.length < 2) return 0.0;
-
-    final novo = fuelEntries[0];
-    final anterior = fuelEntries[1];
-
-    double somaOdometro = novo.odometerKm - anterior.odometerKm;
-    double volumeLitros = novo.volumeLiters;
-
-    return (volumeLitros > 0) ? somaOdometro / volumeLitros : 0.0;
-  }
-
-  double get averageCostPerKm {
-    final entries = filteredFuelEntries;
-    if (entries.length < 2) return 0.0;
-
-    final novo = entries[0];
+    final atual = entries[0];
     final anterior = entries[1];
 
-    double kmNoTrecho = novo.odometerKm - anterior.odometerKm;
-    double custoTotal = novo.totalCost;
+    final double distancia = atual.odometerKm - anterior.odometerKm;
+    final double litros = atual.volumeLiters;
 
-    if (kmNoTrecho <= 0) return 0.0;
+    return distancia / litros;
+  }
 
-    return (custoTotal / kmNoTrecho) * 100;
+  double get custoMedioGeral {
+    final entries = selectedVehicleID.value != null
+    ? filteredFuelEntries.where((e) => e.vehicleId == selectedVehicleID.value).toList()
+    : fuelEntries.toList();
+
+    if (entries.isEmpty) return 0.0;
+    double totalCusto = entries.fold(
+      0,
+      (sum, item) => sum + item.totalCost,
+    );
+    double totalKm =
+        entries.first.odometerKm - (vehicles.first.initialOdometer);
+
+    return totalKm > 0 ? totalCusto / totalKm : 0.0;
   }
 
   Map<String, String>? get fuelAlertData {
-    if (filteredFuelEntries.isEmpty) return null;
+    if (fuelEntries.isEmpty || selectedVehicleID.value == null) return null;
 
-    final last = filteredFuelEntries.first;
-    final double level = last.tankCapacity;
+    final vehicleEntries = fuelEntries
+        .where((e) => e.vehicleId == selectedVehicleID.value)
+        .toList();
+    if (vehicleEntries.isEmpty) return null;
 
-    if (level > 15.0) return null;
+    final last = vehicleEntries.first;
+    
+    final double currentLevel = last.tankCapacity;
+    if (currentLevel > 10.0) return null;
+
+    final vehicleInfo = veiculosMap[selectedVehicleID.value.toString()];
+    final String nickname = vehicleInfo?['nickname'] ?? vehicleInfo?['modelo'] ?? "Veiculo";
+    final double totalCap = (vehicleInfo?['tank_capacity'] as num? ?? 0.0).toDouble();
+
+    String consumoNoTrajeto = "---";
+    if(vehicleEntries.length >= 2){
+      double media = last.calculateConsumption(vehicleEntries[1]);
+      consumoNoTrajeto = "${media.toStringAsFixed(2)} km/L";
+    }
 
     return {
-      'vehicleName':
-          'controller.veiculosMap[entry.vehicleId]?[nickname] ?? "---"',
-      'displayRange': (level).toStringAsFixed(0),
-      'level': '$level',
+      'vehicleName': nickname,
+      'tank': totalCap.toString(),
+      'displayRange': currentLevel > 0 ? currentLevel.toStringAsFixed(1) : "---",
+      'level': currentLevel.toString(),
+      'consumptionValue': consumoNoTrajeto,
+      'message': currentLevel <= 5.0 ? "Reserva Critica!" : "Nível Baixo",
+      'distanceUnit': 'L',      
     };
   }
 
-  Future<void> compartilharComUsuario(
-    String registroId,
-    String uidAmigo,
-  ) async {
-    try {
-      isLoading.value = true;
+  void mostrarCompartilhar(FuelEntryModel entry) {
+    final meuId = _supabase.auth.currentUser?.id;
+    Get.defaultDialog(
+      title: "Compartilhar com...",
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 300,
+        child: SingleChildScrollView(
+          child: Obx(() {
+            if (todosUsarios.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.all(20.0),
+                child: Text("Nenhum usuário encontrado."),
+              );
+            }
 
-      await _firestore.collection('fuels').doc(registroId).update({
-        'sharedWith': FieldValue.arrayUnion([uidAmigo]),
-      });
-      _showSnackbar("Sucesso", "Registro compartilhado com sucesso!");
-    } catch (e) {
-      _showSnackbar("Erro", e.toString(), isError: true);
-    } finally {
-      isLoading.value = false;
-    }
-  }
+            final listaFiltrada = todosUsarios
+                .where((u) => u['id'] != meuId)
+                .toList();
 
-  Future<void> carregarDonoDoRegistro(String userId) async {
-    if (usuariosMap.containsKey(userId)) return;
+            return ListView.builder(
+              shrinkWrap: true,
+              itemCount: listaFiltrada.length,
+              itemBuilder: (context, index) {
+                final user = listaFiltrada[index];
+                final String userId = user['id']?.toString() ?? "";
+                final String nomeUsuario =
+                    user['nome']?.toString() ?? "Usuário sem nome";
+                final String? fotoUrl = user['foto_url']?.toString();
 
-    final doc = await _firestore.collection('usuarios').doc(userId).get();
-    if (doc.exists) {
-      usuariosMap[userId] = doc.data();
-    }
+                if (userId == meuId || userId.isEmpty) return SizedBox.shrink();
+                final bool isShared = entry.sharedWith.contains(userId);
+
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isShared ? Colors.green.shade200 : null,
+                    backgroundImage: (fotoUrl != null && fotoUrl.isNotEmpty)
+                        ? NetworkImage(fotoUrl)
+                        : null,
+                    child: Icon(
+                      RemixIcons.user_3_line,
+                      color: isShared ? Colors.green : Colors.grey,
+                    ),
+                  ),
+                  title: Text(
+                    nomeUsuario,
+                    style: TextStyle(
+                      fontWeight: isShared
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: isShared ? Colors.green.shade700 : Colors.black87,
+                    ),
+                  ),
+                  subtitle: Text(""),
+                  onTap: () {
+                    List<String> novaLista = List<String>.from(
+                      entry.sharedWith,
+                    );
+                    if (isShared) {
+                      novaLista.remove(userId);
+                    } else {
+                      novaLista.add(userId);
+                    }
+                    shareEntry(entry.id!, novaLista);
+                    Get.back();
+                  },
+                );
+              },
+            );
+          }),
+        ),
+      ),
+    );
   }
 
   void navigateToAddEntry(BuildContext context) async {
-    double odometerToSend = selectedVehicleID.value != null
-        ? getLatestOdometerForVehicle(selectedVehicleID.value)
-        : (lastOdometer.value ?? 0.0);
-
-    final result = await Get.to(
-      () => HomeEntryPage(lastOdometer: odometerToSend),
-    );
-    if (result != null) {
-      if (result is Map<String, dynamic>) {
-        await saveFuel(result);
-      }
+    final result = await Get.to(() => HomeEntryPage());
+    if (result == true) {
+      _showSnackbar("Sucesso", "Abastecimento registrado!");
+      fetchInitialData();
     }
   }
 
@@ -385,16 +393,9 @@ class HomeController extends GetxController {
       () => HomeEntryPage(lastOdometer: odometerToSend, entry: entry),
       arguments: entry,
     );
-    if (result == true || result != null) {
-      Get.snackbar(
-        "Sucesso",
-        "Abastecido com sucesso!",
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: const Color(0xFF00FF85).withOpacity(0.8),
-        colorText: Colors.black,
-        icon: const Icon(RemixIcons.check_line),
-        margin: const EdgeInsets.all(15),
-      );
+    if (result == true) {
+      _showSnackbar("Sucesso", "Registro atualizado!");
+      fetchInitialData();
     }
   }
 

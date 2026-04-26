@@ -1,25 +1,19 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class VehicleModel {
   final String? id;
   final String nickname;
   final String plate;
-  final bool isMercosul;
   final String city;
-  final String make; // Frabricante
+  final String make;
   final String model;
-  final String fuelType; // Tipo de combustível (ex: Gasolina, Flex, Diesel)
+  final String fuelType;
   final int year;
   final double initialOdometer;
   final double tankCapacity;
-  final String? imageUrl;
-  final DateTime createdAt;
 
   VehicleModel({
     this.id,
     required this.nickname,
     required this.plate,
-    this.isMercosul = true,
     required this.city,
     required this.make,
     required this.model,
@@ -27,16 +21,13 @@ class VehicleModel {
     required this.year,
     required this.initialOdometer,
     required this.tankCapacity,
-    required this.createdAt,
-    this.imageUrl,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'pk_vehicle': id,
+      if(id != null) 'id': id,
       'nickname': nickname,
       'plate': plate,
-      'is_mercosul': isMercosul ? true : false,
       'city': city,
       'make': make,
       'model': model,
@@ -44,44 +35,21 @@ class VehicleModel {
       'year': year,
       'initial_odometer': initialOdometer,
       'tank_capacity': tankCapacity,
-      'imagem_url': imageUrl,
-      'created_at': Timestamp.fromDate(createdAt),
     };
   }
 
-  factory VehicleModel.fromFirestore(Map<String, dynamic> map, String docId) {
-    DateTime parsedData;
-    if (map['created_at'] is Timestamp) {
-      parsedData = (map['created_at'] as Timestamp).toDate();
-    } else if (map['created_at'] is String) {
-      parsedData = DateTime.tryParse(map['created_at']) ?? DateTime.now();
-    } else {
-      parsedData = DateTime.now();
-    }
-
-    return VehicleModel(
-      id: docId,
-      nickname: map['nickname'] as String,
-      plate: map['plate'] as String? ?? '',
-      isMercosul: map['is_mercosul'] == true,
-      city: map['city'] as String,
-      make: map['make'] as String,
-      model: map['model'] as String,
-      fuelType: map['fk_type_fuel'] ?? 0,
+  factory VehicleModel.fromMap(Map<String, dynamic> map, [String? docId]) {
+   return VehicleModel(
+      id: (map['id'] ?? docId)?.toString(),
+      nickname: map['nickname'],
+      plate: map['plate'] ?? '',
+      city: map['city'],
+      make: map['make'],
+      model: map['model'],
+      fuelType: map['fk_type_fuel'] ?? '',
       year: map['year'] as int,
-      initialOdometer: (map['initial_odometer'] as num?)?.toDouble() ?? 0.0,
-      tankCapacity: (map['tank_capacity'] as num?)?.toDouble() ?? 0.0,
-      imageUrl: map['imagem_url'] as String? ?? '',
-      createdAt: parsedData,
+      initialOdometer: (map['initial_odometer'] as num).toDouble(),
+      tankCapacity: (map['tank_capacity'] as num).toDouble(),
     );
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is VehicleModel && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
 }

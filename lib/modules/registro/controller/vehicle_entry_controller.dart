@@ -5,11 +5,13 @@ import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/modules/vehicle/controller/vehicle_controller.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VehicleEntryController extends GetxController {
   final controller = Get.find<VehicleController>();
   final lookupController = Get.find<LookupController>();
   final formKey = GlobalKey<FormState>();
+  final _supabase = Supabase.instance.client;
 
   late TextEditingController nicknameController;
   late TextEditingController makeController;
@@ -65,12 +67,9 @@ class VehicleEntryController extends GetxController {
 
     if (isEditing) {
       selectedTipo.value = entry.fuelType;
-      selectedImageUrl.value = entry.imageUrl.toString();
-      isMercosul.value = entry.isMercosul;
     } else {
       selectedTipo.value = '1';
       selectedImageUrl.value = '';
-      isMercosul.value = false;
     }
   }
 
@@ -94,26 +93,23 @@ class VehicleEntryController extends GetxController {
     isLoading.value = true;
 
     try {
-      final DateTime dataCriacao = editingEntry?.createdAt ?? DateTime.now();
 
       final Map<String, dynamic> vehicleData = {
         'pk_vehicle': editingEntry?.id,
         'nickname': nicknameController.text,
         'make': makeController.text,
         'model': modelController.text,
-        'year': int.tryParse(yearController.text) ?? dataCriacao.year,
+        'year': int.tryParse(yearController.text) ?? DateTime.now().year,
         'plate': plateController.text.toUpperCase(),
         'tank_capacity': tankCapacityController.numberValue,
         'initial_odometer': odometerController.numberValue,
-        'imagem_url': selectedImageUrl.value,
         'is_mercosul': isMercosul.value,
         'city': cityController.text,
         'fk_type_fuel': selectedTipo.value,
-        'created_at': dataCriacao,
       };
 
       if (editingEntry != null) {
-        final updatedModel = VehicleModel.fromFirestore(
+        final updatedModel = VehicleModel.fromMap(
           vehicleData,
           editingEntry!.id!.toString(),
         );

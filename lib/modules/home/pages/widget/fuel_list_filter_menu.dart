@@ -40,51 +40,25 @@ class FuelListFilterMenu extends GetView<HomeController> {
     return PopupMenuButton<String>(
       icon: Icon(RemixIcons.filter_3_line, color: theme.colorScheme.onSurface),
       onSelected: (value) {
-        if (value == 'ClearAll') {
-          // controller.clearAllFilters();
-        } else if (value.startsWith('SetVeiculo:')) {
-          controller.selectedVehicleID.value = int.parse(value.split(':')[1]);
+        if (value.startsWith('SetVeiculo:')) {
+          controller.selectedVehicleID.value = value.split(':')[1];
         } else if (value == 'ClearVeiculo') {
           controller.selectedVehicleID.value = null;
         } else if (value.startsWith('SetFuel:')) {
-          controller.selectedTipoID.value = int.parse(value.split(':')[1]);
+          controller.selectedTipoID.value = value.split(':')[1];
         } else if (value == 'ClearFuel') {
           controller.selectedTipoID.value = null;
         } else if (value.startsWith('SetStation:')) {
-          controller.selectedPostoID.value = int.parse(value.split(':')[1]);
+          controller.selectedPostoID.value = value.split(':')[1];
         } else if (value == 'ClearStation') {
           controller.selectedPostoID.value = null;
         }
       },
       itemBuilder: (BuildContext context) {
         List<PopupMenuEntry<String>> items = [];
-        items.add(
-          PopupMenuItem(
-            enabled: false,
-            child: Text(
-              "Filtros Ativos",
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo,
-              ),
-            ),
-          ),
-        );
-        items.add(const PopupMenuDivider());
 
-        items.add(
-          PopupMenuItem(
-            enabled: false,
-            child: Text(
-              'Veiculos:',
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo,
-              ),
-            ),
-          ),
-        );
-        controller.veiculosMap.forEach((id, name) {
+        items.add(_buildSectionHeader("Veículos"));
+        controller.veiculosMap.forEach((id, nome) {
           items.add(
             _buildFilterItem(
               value: 'SetVeiculo:$id',
@@ -93,34 +67,11 @@ class FuelListFilterMenu extends GetView<HomeController> {
             ),
           );
         });
-        items.add(
-          PopupMenuItem(
-            value: 'ClearVeiculo',
-            child: Text(
-              "Limpar Veículo",
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-          ),
-        );
+        items.add(_buildClearItem('ClearVeiculo', "Limpar Veículo"));
         items.add(PopupMenuDivider());
 
-        items.add(
-          PopupMenuItem(
-            enabled: false,
-            child: Text(
-              'Combustível',
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo,
-              ),
-            ),
-          ),
-        );
-
-        controller.tiposMap.forEach((id, name) {
+        items.add(_buildSectionHeader("Combustível"));
+        controller.tiposMap.forEach((id, nome) {
           items.add(
             _buildFilterItem(
               value: 'SetFuel:$id',
@@ -129,34 +80,11 @@ class FuelListFilterMenu extends GetView<HomeController> {
             ),
           );
         });
-        items.add(
-          PopupMenuItem(
-            value: 'ClearFuel',
-            child: Text(
-              'Limpar Combustível',
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-          ),
-        );
 
+        items.add(_buildClearItem("ClearFuel", "Limpar Combustível"));
         items.add(const PopupMenuDivider());
 
-        items.add(
-          PopupMenuItem<String>(
-            enabled: false,
-            child: Text(
-              'Postos',
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                color: Colors.indigo,
-              ),
-            ),
-          ),
-        );
-
+        items.add(_buildSectionHeader("Postos"));
         controller.postosMap.forEach((id, nome) {
           items.add(
             _buildFilterItem(
@@ -166,21 +94,34 @@ class FuelListFilterMenu extends GetView<HomeController> {
             ),
           );
         });
-        items.add(
-          PopupMenuItem(
-            value: 'ClearStation',
-            child: Text(
-              'Limpar Posto',
-              style: GoogleFonts.lato(
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
-              ),
-            ),
-          ),
-        );
+
+        items.add(_buildClearItem('ClearStation', 'Limpar Posto'));
 
         return items;
       },
+    );
+  }
+
+  PopupMenuItem<String> _buildClearItem(String value, String label) {
+    return PopupMenuItem(
+      value: value,
+      child: Text(
+        label,
+        style: GoogleFonts.lato(fontWeight: FontWeight.bold, color: Colors.red),
+      ),
+    );
+  }
+
+  PopupMenuItem<String> _buildSectionHeader(String title) {
+    return PopupMenuItem(
+      enabled: false,
+      child: Text(
+        title,
+        style: GoogleFonts.lato(
+          fontWeight: FontWeight.bold,
+          color: Colors.indigo,
+        ),
+      ),
     );
   }
 }

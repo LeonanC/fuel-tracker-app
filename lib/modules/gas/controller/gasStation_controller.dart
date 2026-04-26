@@ -1,13 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class GasStationController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   // Observáveis
   final isLoading = false.obs;
@@ -23,11 +23,11 @@ class GasStationController extends GetxController {
   Future<void> fetchPosto() async {
     try {
       isLoading.value = true;
-      final snapshot = await _firestore.collection('postos').get();
+      final List<dynamic> data = await _supabase.from('postos').select();
 
       final Map<dynamic, Map<String, dynamic>> tempMap = {};
-      for (var doc in snapshot.docs) {
-        tempMap[doc.id] = doc.data();
+      for (var item in data) {
+        tempMap[item['pk_posto']] = item;
       }
 
       postosMap.assignAll(tempMap);
@@ -85,18 +85,13 @@ class GasStationController extends GetxController {
     try {
       isLoading.value = true;
 
-      int novoId = 1;
-      if (postosMap.isNotEmpty) {
-        final List<int> ids = postosMap.keys
-            .map((e) => int.parse(e.toString()))
-            .toList();
-        novoId = ids.reduce((curr, next) => curr > next ? curr : next) + 1;
-      }
-
-      data['pk_posto'] = novoId;
-
-      await _firestore.collection('postos').doc(novoId.toString()).set(data);
-      postosMap[novoId] = data;
+      final response = await _supabase
+          .from('postos')
+          .insert(data)
+          .select()
+          .single();
+      final int idGerado = response['pk_posto'];
+      postosMap[idGerado] = response;
       postosMap.refresh();
 
       Get.back();
@@ -110,21 +105,15 @@ class GasStationController extends GetxController {
 
   Future<void> updatePosto(GasStationModel posto) async {
     if (posto.id == null) {
-      _showSnackbar(
-        "Erro",
-        "ID do posto não encontrado para atualização",
-        isError: true,
-      );
+      _showSnackbar("Erro", "ID não encontrado", isError: true);
       return;
     }
     try {
       isLoading.value = true;
 
-      final docRef = _firestore.collection('postos').doc(posto.id.toString());
       final data = posto.toMap();
-      data['pk_posto'] = posto.id;
+      await _supabase.from('postos').update(data).eq('pk_posto', posto.id!);
 
-      await docRef.set(data, SetOptions(merge: true));
       postosMap[posto.id] = data;
       postosMap.refresh();
 
@@ -139,7 +128,8 @@ class GasStationController extends GetxController {
 
   Future<void> deletePosto(dynamic id) async {
     try {
-      await _firestore.collection('postos').doc(id.toString()).delete();
+      await _supabase.from('postos').delete().eq('pk_posto', id);
+
       postosMap.remove(id);
       postosMap.refresh();
 

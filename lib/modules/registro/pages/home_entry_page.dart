@@ -3,9 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/registro/controller/home_entry_controller.dart';
-import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
 
 class HomeEntryPage extends StatelessWidget {
@@ -18,7 +17,6 @@ class HomeEntryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = Get.find<HomeEntryController>();
-    final settingsCtrl = Get.find<SettingController>();
 
     final theme = Theme.of(context);
 
@@ -30,14 +28,22 @@ class HomeEntryPage extends StatelessWidget {
         elevation: 0,
         title: Text(c.editingEntry != null ? 'he_edit'.tr : 'he_new'.tr),
         actions: [
-          IconButton(
-            icon: c.editingEntry != null
-                ? Icon(RemixIcons.edit_line)
-                : Icon(RemixIcons.save_line),
-            onPressed: c.submit,
-            tooltip: c.editingEntry != null
-                ? 'he_btn_edit'.tr
-                : 'he_btn_save'.tr,
+          Obx(
+            () => c.isLoading.value
+                ? Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(15),
+                      child: CircularProgressIndicator(strokeWidth: 1),
+                    ),
+                  )
+                : IconButton(
+                    icon: Icon(
+                      RemixIcons.check_double_line,
+                      size: 28,
+                      color: Colors.greenAccent,
+                    ),
+                    onPressed: c.submit,
+                  ),
           ),
         ],
         leading: IconButton(
@@ -45,360 +51,276 @@ class HomeEntryPage extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Obx(
-        () => c.isLoading.value
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: c.formKey,
-                  child: Column(
-                    children: [
-                      _buildIPVAAlert(settingsCtrl, theme),
-                      const SizedBox(height: 16),
+      body: Form(
+        key: c.formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionTitle("INFORMAÇÕES BÁSICAS", theme),
+              _buildCardContainer(child: _buildDropdowns(c)),
 
-                      _buildCard(theme, [
-                        _buildDateTile(c, theme),
-                        const Divider(),
-                        _buildInputField(
-                          c.kmController,
-                          "Odômetro Atual",
-                          RemixIcons.dashboard_3_line,
-                          theme,
-                        ),
-                      ]),
-
-                      const SizedBox(height: 16),
-                      _buildDropdowns(c, theme),
-                      const SizedBox(height: 16),
-                      _buildFlexCalculator(settingsCtrl, theme),
-                      const SizedBox(height: 16),
-                      _buildCard(theme, [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildInputField(
-                                c.litrosController,
-                                "Litros",
-                                RemixIcons.gas_station_line,
-                                theme,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildInputField(
-                                c.pricePerLiterController,
-                                "Preço/L",
-                                RemixIcons.money_dollar_circle_line,
-                                theme,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _buildInputField(
-                          c.totalPriceController,
-                          "Custo Total",
-                          RemixIcons.bank_card_line,
-                          theme,
-                          isBold: true,
-                        ),
-                      ]),
-                      const SizedBox(height: 16),
-                      _buildReceiptSection(c, theme),
-                      const SizedBox(height: 16),
-                      _buildSwitches(c, theme),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: 20),
+              _buildSectionTitle("VALORES E MEDIÇÃO", theme),
+              _buildCardContainer(child: _buildInputField(c)),
+              const SizedBox(height: 20),
+              _buildImagePicker(c, theme),
+              const SizedBox(height: 20),
+              _buildSwitches(c, theme),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildFlexCalculator(SettingController s, ThemeData theme) {
-    return _buildCard(theme, [
-      Row(
-        children: [
-          Icon(
-            RemixIcons.scales_3_line,
-            color: theme.colorScheme.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            "Calculadora Flex (70%)",
-            style: TextStyle(fontWeight: FontWeight.bold),
+  Widget _buildSectionTitle(String title, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 8),
+      child: Text(
+        title,
+        style: GoogleFonts.montserrat(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: Colors.blueAccent,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardContainer({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
-      const SizedBox(height: 12),
-      Obx(
-        () => Column(
+      child: child,
+    );
+  }
+
+  Widget _buildInputField(HomeEntryController c) {
+    return Column(
+      children: [
+        _customTextField(
+          controller: c.kmController,
+          label: "Odômetro Atual",
+          icon: RemixIcons.dashboard_3_line,
+          suffix: "km",
+        ),
+        const SizedBox(height: 15),
+        _buildDatePickerField(c),
+        const Divider(height: 30, color: Colors.white10),
+        Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      labelText: "Preço Gasolina",
-                      prefixText: "R\$",
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (v) =>
-                        s.precoGasolina.value = double.tryParse(v) ?? 0.0,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    decoration: InputDecoration(
-                      labelText: "Preço Etanol",
-                      prefixText: "R\$",
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (v) =>
-                        s.precoEtanol.value = double.tryParse(v) ?? 0.0,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+            Expanded(
+              child: _customTextField(
+                controller: c.litrosController,
+                label: "Litro",
+                icon: RemixIcons.drop_line,
               ),
-              child: Text(
-                s.calcularFlex,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: _customTextField(
+                controller: c.pricePerLiterController,
+                label: "Preço/Litro",
+                icon: RemixIcons.price_tag_3_line,
               ),
             ),
           ],
         ),
-      ),
-    ]);
-  }
-
-  Widget _buildIPVAAlert(SettingController s, ThemeData theme) {
-    final alerta = s.alertaVencimento();
-    if(alerta == null) return const SizedBox.shrink();
-    
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.amber.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber),
-      ),
-      child: Row(
-        children: [
-          Icon(RemixIcons.error_warning_line, color: Colors.amber),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              alerta,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          )
-        ],
-      ),
+        const SizedBox(height: 20),
+        _customTextField(
+          controller: c.totalPriceController,
+          label: "Valor Total",
+          icon: RemixIcons.money_dollar_circle_line,
+          isBold: true,
+        ),
+      ],
     );
   }
 
-  Widget _buildCard(ThemeData theme, List<Widget> children) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.dividerColor.withOpacity(0.1)),
-      ),
-      child: Column(children: children),
-    );
+  Widget _buildDatePickerField(HomeEntryController c){
+    return Obx(() {
+      final date = c.selectedDate.value;
+      final dateStr = "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+      final timeStr = "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+      return InkWell(
+        onTap: () => c.selecionarData(Get.context!),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+          decoration: BoxDecoration(
+            color: Colors.black26,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(RemixIcons.calendar_event_line, size: 20, color: Colors.blueAccent),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Data do Abastecimento",
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  ),
+                  Text(
+                    "$dateStr às $timeStr",
+                    style: GoogleFonts.firaCode(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  )
+                ],
+              ),
+              const Spacer(),
+              Icon(RemixIcons.edit_line, size: 18, color: Colors.white10),
+            ],
+          ),
+        ),
+      );
+    });
   }
 
-  Widget _buildInputField(
-    TextEditingController ctrl,
-    String label,
-    IconData icon,
-    ThemeData theme, {
+  Widget _customTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    String? suffix,
     bool isBold = false,
   }) {
     return TextFormField(
-      controller: ctrl,
-      style: TextStyle(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      style: GoogleFonts.firaCode(
         fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+        color: isBold ? Colors.greenAccent : Colors.white,
       ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20, color: theme.colorScheme.primary),
-        border: InputBorder.none,
+        prefixIcon: Icon(icon, size: 20),
+        suffixText: suffix,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.black26,
       ),
-      keyboardType: TextInputType.number,
     );
   }
 
-  Widget _buildDateTile(HomeEntryController c, ThemeData theme) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        RemixIcons.calendar_event_line,
-        color: theme.colorScheme.primary,
-      ),
-      title: Text(
-        "Data do Abastecimento",
-        style: TextStyle(fontSize: 12, color: Colors.grey),
-      ),
-      subtitle: Obx(
-        () => Text(DateFormat('dd/MM/yyyy').format(c.selectedDate.value)),
-      ),
-      onTap: () => c.selecionarData(Get.context!),
+  Widget _buildImagePicker(HomeEntryController c, ThemeData theme) {
+    return Obx(() {
+      final path = c.comprovantePath.value;
+      return GestureDetector(
+        onTap: c.pickComprovante,
+        child: Container(
+          height: 150,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceVariant,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: path.isEmpty
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(RemixIcons.camera_line, size: 40),
+                    Text("Tirar foto do recibo"),
+                  ],
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: path.startsWith('http')
+                      ? Image.network(path, fit: BoxFit.cover)
+                      : Image.file(File(path), fit: BoxFit.cover),
+                ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildDropdowns(HomeEntryController c) {
+    return Column(
+      children: [
+        _customDropdown(
+          value: c.selectedVeiculos,
+          label: "Selecione o Veículo",
+          icon: RemixIcons.car_fill,
+          items: c.controller.vehicles
+              .map(
+                (v) => DropdownMenuItem(value: v.id, child: Text(v.nickname)),
+              )
+              .toList(),
+          onChanged: (v) {
+            c.selectedVeiculos.value = v;
+            c.atualizarHodometroPorVeiculo(v);
+          },
+        ),
+        const SizedBox(height: 15),
+        _customDropdown(
+          value: c.selectedStations,
+          label: "Selecione o Posto",
+          icon: RemixIcons.gas_station_line,
+          items: c.controller.postos
+              .map((p) => DropdownMenuItem(value: p.id, child: Text(p.nome)))
+              .toList(),
+          onChanged: (p) {
+            c.selectedStations.value = p;
+          },
+        ),
+        const SizedBox(height: 15),
+        _customDropdown(
+          value: c.selectedGas,
+          label: "Selecione o Combustível",
+          icon: RemixIcons.oil_line,
+          items: c.controller.tipos
+              .map((g) => DropdownMenuItem(value: g.id, child: Text(g.nome)))
+              .toList(),
+          onChanged: (g) {
+            c.selectedGas.value = g;
+          },
+        ),
+      ],
     );
   }
 
-  Widget _buildDropdowns(HomeEntryController c, ThemeData theme) {
-    return _buildCard(theme, [
-      _dropdown(
-        c.selectedVeiculos,
-        c.lookupController.veiculosDrop
-            .map(
-              (v) => DropdownMenuItem(
-                value: v.id.toString(),
-                child: Text(v.nickname),
-              ),
-            )
-            .toList(),
-        "Veículo",
-        onChanged: (novoId) {
-          c.selectedVeiculos.value = novoId;
-          c.atualizarHodometroPorVeiculo(novoId);
-        },
-      ),
-      const Divider(),
-      _dropdown(
-        c.selectedGas,
-        c.lookupController.tipoDrop
-            .map(
-              (v) =>
-                  DropdownMenuItem(value: v.id.toString(), child: Text(v.nome)),
-            )
-            .toList(),
-        "Combustível",
-      ),
-      const Divider(),
-      _dropdown(
-        c.selectedStations,
-        c.lookupController.postosDrop
-            .map(
-              (v) =>
-                  DropdownMenuItem(value: v.id.toString(), child: Text(v.nome)),
-            )
-            .toList(),
-        "Posto de Combustível",
-      ),
-    ]);
-  }
-
-  Widget _dropdown(
-    RxnString val,
-    List<DropdownMenuItem<String>> items,
-    String label, {
-    Function(String?)? onChanged,
+  Widget _customDropdown({
+    required RxnString value,
+    required String label,
+    required IconData icon,
+    required List<DropdownMenuItem<String>> items,
+    required Function(String?) onChanged,
   }) {
     return Obx(
       () => DropdownButtonFormField<String>(
-        value: val.value,
-        decoration: InputDecoration(labelText: label, border: InputBorder.none),
+        value: value.value,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.blueAccent),
+          filled: true,
+          fillColor: Colors.black26,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
         items: items,
-        onChanged: (v) {
-          if (onChanged != null) {
-            onChanged(v);
-          } else {
-            val.value = v;
-          }
-        },
+        onChanged: onChanged,
       ),
     );
-  }
-
-  Widget _buildReceiptSection(HomeEntryController c, ThemeData theme) {
-    return Obx(() {
-      final hasImage = c.comprovantePath.value.isNotEmpty;
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "COMPROVANTE",
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: theme.textTheme.bodyMedium!.color,
-            ),
-          ),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: () => c.pickComprovante(),
-            child: Container(
-              width: double.infinity,
-              height: 120,
-              decoration: BoxDecoration(
-                color: theme.cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: hasImage
-                      ? theme.colorScheme.primary
-                      : theme.dividerColor.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: hasImage
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(15),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.file(
-                            File(c.comprovantePath.value),
-                            fit: BoxFit.cover,
-                          ),
-                          Container(color: Colors.black26),
-                          Icon(
-                            RemixIcons.camera_switch_line,
-                            color: Colors.white,
-                            size: 30,
-                          ),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          RemixIcons.camera_line,
-                          color: theme.colorScheme.primary,
-                          size: 30,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Anexar Foto do Recibo",
-                          style: TextStyle(fontSize: 13, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-        ],
-      );
-    });
   }
 
   Widget _buildSwitches(HomeEntryController c, ThemeData theme) {
@@ -406,11 +328,7 @@ class HomeEntryPage extends StatelessWidget {
       () => SwitchListTile(
         title: Text("Tanque Cheio?"),
         value: c.isTankFull.value,
-        secondary: Icon(
-          c.isTankFull.value
-              ? RemixIcons.gas_station_fill
-              : RemixIcons.gas_station_line,
-        ),
+        secondary: Icon(RemixIcons.gas_station_fill),
         onChanged: (v) => c.isTankFull.value = v,
       ),
     );

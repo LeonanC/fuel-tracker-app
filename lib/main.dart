@@ -1,6 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/data/services/app_translations.dart';
@@ -8,6 +5,7 @@ import 'package:fuel_tracker_app/main_screen.dart';
 import 'package:fuel_tracker_app/modules/about/pages/about_screen.dart';
 import 'package:fuel_tracker_app/modules/auth/completar_perfil.dart';
 import 'package:fuel_tracker_app/modules/auth/login_page.dart';
+import 'package:fuel_tracker_app/modules/welcome/welcome_page.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
 import 'package:fuel_tracker_app/modules/home/binding/home_bindings.dart';
@@ -19,21 +17,25 @@ import 'package:fuel_tracker_app/modules/vehicle/pages/vehicle_screen.dart';
 import 'package:fuel_tracker_app/data/services/notification_service.dart';
 import 'package:get/get.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final NotificationService notificationService = NotificationService();
 
 Future<void> main() async {
   await initializeDateFormatting('pt_BR', null);
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Supabase.initialize(
+    url: 'https://feucepbyhclaumteibkd.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldWNlcGJ5aGNsYXVtdGVpYmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MDQyOTMsImV4cCI6MjA5MjM4MDI5M30.Z5xbnS3swuDBGai3Z4Hv1oJhr0QfcEEfq8v9s-x6ypA',
+    authOptions: FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    )
+  );
   await NotificationService.init();
   await NotificationService.requestPermissions();
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-  );
-  User? usuarioLogado = FirebaseAuth.instance.currentUser;
-  String rotaInitial = usuarioLogado == null ? '/login' : '/main';
+  
+  final session = Supabase.instance.client.auth.currentSession;
+  String rotaInitial = session == null ? '/welcome' : '/main';
 
   runApp(MyApp(rotaInitial: rotaInitial));
 }
@@ -67,6 +69,10 @@ class MyApp extends StatelessWidget {
               name: '/main',
               page: () => MainPage(),
               binding: HomeBindings(),
+            ),
+            GetPage(
+              name: '/welcome',
+              page: () => WelcomePage(),
             ),
             GetPage(
               name: '/login',

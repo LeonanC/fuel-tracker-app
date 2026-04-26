@@ -19,10 +19,9 @@ class FuelAlertCard extends GetView<HomeController> {
       final versionLabel2 = 'he_alert_threshold_msg_2'.tr;
 
       final vehicleName = alertData['vehicleName'] ?? "Veículo";
-      final vehicleTank = alertData['tankCapcity'] ?? 0.0;
+      final vehicleTank = alertData['tank'] ?? 0.0;
       final range = '${alertData['displayRange']} ${alertData['distanceUnit']}';
-      final consumption =
-          '${alertData['consumptionValue']} ${alertData['consumptionUnit']}';
+      final consumption = alertData['consumptionValue'];
 
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),

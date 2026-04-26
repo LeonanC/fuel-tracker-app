@@ -1,11 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VehicleController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   final isLoading = false.obs;
   final vehiclesMap = <dynamic, Map<String, dynamic>>{}.obs;
@@ -20,11 +20,12 @@ class VehicleController extends GetxController {
   Future<void> fetchVehicle() async {
     try {
       isLoading.value = true;
-      final snapshot = await _firestore.collection('veiculos').get();
+      final List<dynamic> data = await _supabase.from('veiculos').select();
       final Map<String, Map<String, dynamic>> tempMap = {};
-      for (var doc in snapshot.docs) {
-        tempMap[doc.id] = doc.data();
+      for (var item in data) {
+        tempMap[item['id']] = item;
       }
+
       vehiclesMap.assignAll(tempMap);
     } catch (e) {
       _showSnackbar("Erro", "Falha ao carregar os veículos: $e", isError: true);
@@ -37,18 +38,13 @@ class VehicleController extends GetxController {
     try {
       isLoading.value = true;
 
-      int novoId = 1;
-      if (vehiclesMap.isNotEmpty) {
-        final List<int> ids = vehiclesMap.keys
-            .map((e) => int.parse(e.toString()))
-            .toList();
-        novoId = ids.reduce((curr, next) => curr > next ? curr : next) + 1;
-      }
-
-      data['pk_vehicle'] = novoId;
-
-      await _firestore.collection('veiculos').doc(novoId.toString()).set(data);
-      vehiclesMap[novoId] = data;
+      final response = await _supabase
+          .from('veiculos')
+          .insert(data)
+          .select()
+          .single();
+      final int idGerado = response['id'];
+      vehiclesMap[idGerado] = response;
       vehiclesMap.refresh();
 
       _showSnackbar("Sucesso", "Veículo ${data['nickname']} guardado!");
@@ -61,23 +57,15 @@ class VehicleController extends GetxController {
 
   Future<void> updateVeiculo(VehicleModel veiculo) async {
     if (veiculo.id == null) {
-      _showSnackbar(
-        "Erro",
-        "ID do veículo não encontrado para atualização",
-        isError: true,
-      );
+      _showSnackbar("Erro", "ID não encontrado", isError: true);
       return;
     }
 
     try {
       isLoading.value = true;
-      final docRef = _firestore
-          .collection('veiculos')
-          .doc(veiculo.id.toString());
       final data = veiculo.toMap();
-      data['pk_vehicle'] = veiculo.id;
-
-      await docRef.set(data, SetOptions(merge: true));
+      await _supabase.from('veiculos').update(data).eq('id', veiculo.id!);
+      
       vehiclesMap[veiculo.id] = data;
       vehiclesMap.refresh();
 
@@ -92,7 +80,7 @@ class VehicleController extends GetxController {
 
   Future<void> deleteVeiculo(dynamic id) async {
     try {
-      await _firestore.collection('veiculos').doc(id.toString()).delete();
+      await _supabase.from('veiculos').delete().eq('id', id);
       vehiclesMap.remove(id);
       vehiclesMap.refresh();
 

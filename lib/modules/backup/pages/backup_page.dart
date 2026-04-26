@@ -11,9 +11,31 @@ class BackupRestoreScreen extends StatefulWidget {
 }
 
 class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
+  final List<Map<String, dynamic>> _tabelasConfig = [
+    {
+      'id': 'abastecimentos',
+      'label': 'Histórico de Abastecimentos',
+      'icon': RemixIcons.gas_station_line,
+    },
+    {
+      'id': 'postos',
+      'label': 'Postos de Gasolina',
+      'icon': RemixIcons.user_location_line,
+    },
+    {
+      'id': 'service_type',
+      'label': 'Tipos de Manutenção',
+      'icon': RemixIcons.building_line,
+    },
+    {
+      'id': 'tipo_combustivel',
+      'label': 'Tipos de Combustível',
+      'icon': RemixIcons.oil_line,
+    },
+    {'id': 'veiculos', 'label': 'Meus Veículos', 'icon': RemixIcons.car_line},
+  ];
   final Map<String, bool> colecoesSelecionadas = {
-    'fuels': true,
-    'manutencao': true,
+    'abastecimentos': true,
     'postos': true,
     'service_type': true,
     'tipo_combustivel': true,
@@ -36,20 +58,24 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
           _buildHeader(isDark),
           Divider(),
           Expanded(
-            child: ListView(
-              children: colecoesSelecionadas.keys.map((String key) {
-                return CheckboxListTile(
-                  title: Text(key),
-                  secondary: Icon(Icons.table_chart_outlined),
-                  value: colecoesSelecionadas[key],
-                  activeColor: Colors.blueAccent,
-                  onChanged: (bool? value) {
+            child: ListView.builder(
+              itemCount: _tabelasConfig.length,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemBuilder: (context, index) {
+                final item = _tabelasConfig[index];
+                final String id = item['id'];
+                final bool isSelected = colecoesSelecionadas[id] ?? false;
+                return _buildTableItem(
+                  title: item['label'],
+                  icon: item['icon'],
+                  isSelected: isSelected,
+                  onTap: () {
                     setState(() {
-                      colecoesSelecionadas[key] = value ?? false;
+                      colecoesSelecionadas[id] = !isSelected;
                     });
                   },
                 );
-              }).toList(),
+              },
             ),
           ),
 
@@ -59,56 +85,113 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-    child: Column(
-      children: [
-        _customButton(
-          label: "EXECUTAR BACKUP SELECIONADO",
-          icon: Icons.cloud_upload,
-          color: Colors.blueAccent,
-          onPressed: _getSelecaoFinal.isEmpty
-              ? null
-              : () async {
-                  _executarBackup(context);
-                  await BackupService().exportarBackup(
-                    colecoes: _getSelecaoFinal,
-                  );
-                  Get.back();
-                },
-        ),
-        const SizedBox(height: 12),
-        _customButton(
-          label: "RESTAURAR BACKUP SELECIONADO",
-          icon: Icons.settings_backup_restore,
-          color: Colors.greenAccent,
-          onPressed: _getSelecaoFinal.isEmpty
-              ? null
-              : () async {
-                  _executarBackup(context);
-                  await BackupService().importarBackup(context);
-                  Get.back();
-                },
-        ),
-        const SizedBox(height: 12),
-        _customButton(
-          label: "DELETAR DADOS SELECIONADO",
-          icon: RemixIcons.delete_bin_2_line,
-          color: Colors.redAccent,
-          onPressed: _getSelecaoFinal.isEmpty
-              ? null
-              : () async {
-                  _executarBackup(context);
-                  await BackupService().deletarDados(
-                    context,
-                    colecoes: _getSelecaoFinal,
-                  );
-                  Get.back();
-                },
+  Widget _buildActionButtons(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+    decoration: BoxDecoration(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: Offset(0, -5),
         ),
       ],
     ),
+    child: SafeArea(
+      top: false,
+      bottom: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _customButton(
+            label: "EXECUTAR BACKUP",
+            icon: RemixIcons.cloud_fill,
+            color: Colors.blueAccent,
+            onPressed: _getSelecaoFinal.isEmpty
+                ? null
+                : () => _processarBackup(context),
+          ),
+          const SizedBox(height: 12),
+          _customButton(
+            label: "RESTAURAR BACKUP",
+            icon: RemixIcons.refresh_line,
+            color: Colors.greenAccent,
+            onPressed: _getSelecaoFinal.isEmpty
+                ? null
+                : () => _processarRestauro(context),
+          ),
+          const SizedBox(height: 12),
+          _customButton(
+            label: "DELETAR DADOS",
+            icon: RemixIcons.delete_bin_5_line,
+            color: Colors.redAccent,
+            onPressed: _getSelecaoFinal.isEmpty
+                ? null
+                : () => _processarDeletar(context),
+          ),
+        ],
+      ),
+    ),
   );
+
+  Widget _buildTableItem({
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? (isDark ? Colors.blueAccent.withOpacity(0.15) : Colors.blue[50])
+            : (isDark ? Colors.grey[900] : Colors.white),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected
+              ? Colors.blueAccent
+              : (isDark ? Colors.grey[800]! : Colors.grey[300]!),
+          width: 1,
+        ),
+      ),
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.blueAccent
+                : Colors.grey.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.grey,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected
+                ? (isDark ? Colors.blue[200] : Colors.blue[900])
+                : null,
+          ),
+        ),
+        trailing: Checkbox(
+          value: isSelected,
+          activeColor: Colors.blueAccent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+          onChanged: (_) => onTap(),
+        ),
+      ),
+    );
+  }
 
   Widget _customButton({
     required String label,
@@ -148,13 +231,36 @@ class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
     );
   }
 
-  void _executarBackup(BuildContext context) {
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   SnackBar(
-    //     content: Text(
-    //       'Iniciando processamento das ${colecoes.length} coleções...',
-    //     ),
-    //   ),
-    // );
+  void _processarBackup(BuildContext context) async {
+    await BackupService().exportarBackup();
+    _showSnackbar("Iniciando", "Exportando as tabelas...");
+  }
+
+  void _processarRestauro(BuildContext context) async {
+    await BackupService().importarBackup(context);
+    _showSnackbar("Iniciando", "Restaurando as tabelas...");
+  }
+
+  void _processarDeletar(BuildContext context) async {
+    await BackupService().deletarDados(context, colecoes: _getSelecaoFinal);
+    _showSnackbar("Iniciando", "Deletando todas as tabelas...");
+  }
+
+  void _showSnackbar(String title, String messagem, {bool isError = false}) {
+    Get.snackbar(
+      title,
+      messagem,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError
+          ? Colors.redAccent.withOpacity(0.8)
+          : Colors.greenAccent.withOpacity(0.8),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(15),
+      borderRadius: 15,
+      icon: Icon(
+        isError ? RemixIcons.error_warning_line : RemixIcons.check_line,
+        color: Colors.white,
+      )
+    );
   }
 }

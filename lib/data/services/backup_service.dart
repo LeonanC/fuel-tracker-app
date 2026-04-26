@@ -1,11 +1,6 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'dart:convert';
 import 'dart:io';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
@@ -14,69 +9,53 @@ import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BackupService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   final Map<String, Function> _modelFactories = {
-    'fuels': (data, id) => FuelEntryModel.fromFirestore(data, id),
-    'postos': (data, id) => GasStationModel.fromFirestore(data, id),
-    'service_type': (data, id) => ServicesTypeModel.fromFirestore(data, id),
-    'tipo_combustivel': (data, id) => TypeGasModel.fromFirestore(data, id),
-    'veiculos': (data, id) => VehicleModel.fromFirestore(data, id),
+    'abastecimentos': (data) => FuelEntryModel.fromMap(data),
+    'postos': (data) => GasStationModel.fromMap(data),
+    'service_type': (data) => ServicesTypeModel.fromMap(data),
+    'tipo_combustivel': (data) => TypeGasModel.fromMap(data),
+    'veiculos': (data) => VehicleModel.fromMap(data),
   };
 
-  dynamic _toJsonFormat(dynamic value) {
-    if (value is Timestamp) return value.toDate().toIso8601String();
-    if (value is DateTime) return value.toIso8601String();
-    if (value is Map) return value.map((k, v) => MapEntry(k, _toJsonFormat(v)));
-    if (value is List) return value.map(_toJsonFormat).toList();
-    return value;
-  }
-
   Future<void> exportarBackup({List<String>? colecoes}) async {
-    final user = _auth.currentUser;
+    final user = _supabase.auth.currentUser;
     if (user == null) return;
 
     final listaParaProcessar = colecoes ?? _modelFactories.keys.toList();
 
     Map<String, dynamic> backupTotal = {
-      'fk_usuario': user.uid,
+      'user_id': user.id,
       'data_exportacao': DateTime.now().toIso8601String(),
       'colecoes_incluidas': listaParaProcessar,
     };
 
     try {
-      for (String colecao in listaParaProcessar) {
-        if (!_modelFactories.containsKey(colecao)) continue;
+      for (String tabela in listaParaProcessar) {
+        final List<dynamic> data = await _supabase.from(tabela).select();
 
-        QuerySnapshot snapshot;
-        if (colecao == 'fuels') {
-          snapshot = await _db
-              .collection(colecao)
-              .where('fk_usuario', isEqualTo: user.uid)
-              .get();
-        } else {
-          snapshot = await _db.collection(colecao).get();
-        }
-
-        backupTotal[colecao] = snapshot.docs.map((doc) {
-          var model = _modelFactories[colecao]!(doc.data(), doc.id);
-          var map = model.toMap();
-          map['id_firestore'] = doc.id;
-          return _toJsonFormat(map);
+        backupTotal[tabela] = data.map((item) {
+          final factory = _modelFactories[tabela];
+          if(factory == null){
+            throw Exception('A tabela "$tabela" não possui um mapeamento em _modelFactories. Verifique os nomes');
+          }
+          final model = factory(item);
+          return model.toMap();
         }).toList();
       }
+      await _salvarCompartilhar(jsonEncode(backupTotal), user.id);
 
-      await _salvarCompartilhar(jsonEncode(backupTotal), user.uid);
     } catch (e) {
       debugPrint('Erro ao gerar backup: $e');
     }
   }
 
   Future<void> importarBackup(BuildContext context) async {
-    final user = _auth.currentUser;
+    final user = _supabase.auth.currentUser;
     if (user == null) return;
 
     try {
@@ -90,35 +69,28 @@ class BackupService {
       File file = File(result.files.single.path!);
       Map<String, dynamic> backupJson = jsonDecode(await file.readAsString());
 
-      if (backupJson['fk_usuario'] != user.uid) {
+      if (backupJson['user_id'] != user.id) {
         _mostrarErroValidacao(context);
         return;
       }
 
       _mostrarLoading(context);
 
-      for (var colecao in _modelFactories.keys) {
-        if (backupJson[colecao] == null) continue;
+      for (var tabela in _modelFactories.keys) {
+        if (backupJson[tabela] == null) continue;
 
-        List documentos = backupJson[colecao];
+        List documentos = backupJson[tabela];
 
         for (var doc in documentos) {
           Map<String, dynamic> map = Map<String, dynamic>.from(doc);
-          String? idDocumento = map['id_firestore'];
-          map.remove('id_firestore');
-          map['fk_usuario'] = user.uid;
+          
+          if(map.containsKey('user_id')) map['user_id'] = user.id;
+          if(map.containsKey('fk_usuario')) map['fk_usuario'] = user.id;
 
-          var model = _modelFactories[colecao]!(map, idDocumento ?? '');
-
-          if (idDocumento != null) {
-            await _db.collection(colecao).doc(idDocumento).set(model.toMap());
-          } else {
-            await _db.collection(colecao).add(model.toMap());
-          }
+          await _supabase.from(tabela).upsert(map);
         }
       }
       Navigator.pop(context);
-      _mostrarSucesso(context);
     } catch (e) {
       debugPrint('Erro ao importar backup: $e');
     }
@@ -128,7 +100,7 @@ class BackupService {
     BuildContext context, {
     List<String>? colecoes,
   }) async {
-    final user = _auth.currentUser;
+    final user = _supabase.auth.currentUser;
     if (user == null) return;
 
     bool confirmar = await _mostrarConfirmacao(context);
@@ -139,20 +111,10 @@ class BackupService {
     try {
       _mostrarLoading(context);
 
-      for (String nomeColecao in listaParaDeletar) {
-        QuerySnapshot snapshot;
-        if (nomeColecao == 'fuels') {
-          snapshot = await _db
-              .collection(nomeColecao)
-              .where('fk_usuario', isEqualTo: user.uid)
-              .get();
-        } else {
-          snapshot = await _db.collection(nomeColecao).get();
-        }
+      for (String tabela in listaParaDeletar) {
+        final column = (tabela == 'abastecimentos')  ? 'fk_usuario' : 'user_id';
 
-        for (var doc in snapshot.docs) {
-          await doc.reference.delete();
-        }
+        await _supabase.from(tabela).delete().eq(column, user.id);
       }
 
       Navigator.pop(context);
@@ -224,11 +186,5 @@ class BackupService {
       barrierDismissible: false,
       builder: (context) => Center(child: CircularProgressIndicator()),
     );
-  }
-
-  void _mostrarSucesso(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Dados restaurados com sucesso!')));
   }
 }

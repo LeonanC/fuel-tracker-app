@@ -20,25 +20,12 @@ class ServicesTypeModel {
     };
   }
 
-  factory ServicesTypeModel.fromFirestore(
-    Map<String, dynamic> map,
-    String docId,
-  ) {
+  factory ServicesTypeModel.fromMap(Map<String, dynamic> map) {
     return ServicesTypeModel(
-      id: docId,
+      id: map['id'],
       nome: map['nome'] as String,
       abbr: map['abbr'] as String,
       frequency: map['default_frequency_km'] as int,
     );
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is ServicesTypeModel && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
 }

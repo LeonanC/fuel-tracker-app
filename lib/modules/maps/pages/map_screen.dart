@@ -3,7 +3,6 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
@@ -13,6 +12,7 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MapScreen extends GetView<MapNavigationController> {
   const MapScreen({super.key});
@@ -455,7 +455,7 @@ class _MordenFAB extends StatelessWidget {
 
 class _FuelSearchDelegate extends SearchDelegate<String> {
   final BuildContext _context;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
   _FuelSearchDelegate(this._context);
 
   @override
@@ -490,30 +490,33 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
   Widget buildSuggestions(BuildContext context) {
     return Container(
       color: Color(0xFF0F1016),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: _firestore.collection('postos').snapshots(),
+      child: FutureBuilder<List<dynamic>>(
+        future: _supabase.from('postos').select().ilike('nome', '%$query'),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(color: MapScreen.accentColor),
             );
           }
 
-          final results = snapshot.data!.docs.where((doc) {
-            final nome = doc['nome'].toString().toLowerCase();
-            return nome.contains(query.toLowerCase());
-          }).toList();
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Text(
+                "Nenhum posto encontrado",
+                style: GoogleFonts.inter(color: Colors.white54),
+              ),
+            );
+          }
+
+          final results = snapshot.data!;
 
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: results.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, i) {
-              final doc = results[i];
-              final station = GasStationModel.fromFirestore(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
-              );
+              final item = results[i];
+              final station = GasStationModel.fromMap(item);
               return ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -539,7 +542,7 @@ class _FuelSearchDelegate extends SearchDelegate<String> {
                   color: Colors.white24,
                 ),
                 onTap: () {
-                  close(context, doc.id);
+                  close(context, station.id!);
                   Get.find<MapNavigationController>().setupNavigation(station);
                 },
               );

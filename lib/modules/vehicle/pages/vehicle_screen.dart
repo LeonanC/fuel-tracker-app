@@ -82,7 +82,7 @@ class VehicleScreen extends GetView<VehicleController> {
             itemCount: veiculos.length,
             itemBuilder: (context, index) {
               final data = veiculos[index];
-              final veiculo = VehicleModel.fromFirestore(
+              final veiculo = VehicleModel.fromMap(
                 data,
                 data['pk_vehicle'],
               );

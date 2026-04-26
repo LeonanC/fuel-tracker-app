@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/modules/auth/login_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
@@ -9,7 +10,6 @@ class LoginPage extends GetView<LoginController> {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.find<LoginController>();
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -51,8 +51,41 @@ class LoginPage extends GetView<LoginController> {
                 Obx(
                   () => Column(
                     children: [
-                      if (!controller.forgotPassword.value &&
-                          !controller.isLogin.value) ...[
+                      if (!controller.isLogin.value) ...[
+                        Obx(
+                          () => CircleAvatar(
+                            radius: 40,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage:
+                                controller.fotoUrl.value != null &&
+                                    controller.fotoUrl.value!.isNotEmpty
+                                ? NetworkImage(controller.fotoUrl.value!)
+                                : null,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: controller.fotoUrl.value != null
+                                    ? Colors.black26
+                                    : Colors.transparent,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: IconButton(
+                                icon: Icon(
+                                  controller.fotoUrl.value == null
+                                      ? RemixIcons.camera_line
+                                      : RemixIcons.edit_line,
+                                  color: controller.fotoUrl.value == null
+                                      ? Colors.grey.shade700
+                                      : Colors.white,
+                                  size: 28,
+                                ),
+                                onPressed:
+                                    controller.selecionarEFazerUploadFoto,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 15),
                         _buildTextField(
                           context,
                           label: 'lg_nome_completo'.tr,
@@ -67,7 +100,7 @@ class LoginPage extends GetView<LoginController> {
                           keyboardType: TextInputType.phone,
                           inputFormatters: [controller.maskTelefone],
                         ),
-                        _buildDropdown(context, c),
+                        _buildDropdown(context, controller),
                       ],
                       _buildTextField(
                         context,
@@ -75,7 +108,7 @@ class LoginPage extends GetView<LoginController> {
                         icon: RemixIcons.mail_line,
                         controller: controller.emailController,
                       ),
-                      if (!controller.forgotPassword.value)
+                      if (!controller.isForgotPassword.value) ...[
                         _buildTextField(
                           context,
                           label: 'lg_senha'.tr,
@@ -83,54 +116,50 @@ class LoginPage extends GetView<LoginController> {
                           controller: controller.senhaController,
                           isPassword: true,
                         ),
+                      ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                if (controller.isLogin.value) ...[
-                  Obx(
-                    () => ElevatedButton(
-                      onPressed: controller.isLoading.value
-                          ? null
-                          : () {
-                              if (controller.isLogin.value) {
-                                controller.realizarAuth();
-                              } else {
-                                controller.esqueceuSenha();
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.primary,
-                        foregroundColor: theme.colorScheme.onPrimary,
-                        minimumSize: const Size(double.infinity, 55),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
-                        ),
+                Obx(
+                  () => ElevatedButton(
+                    onPressed: () {
+                      if (controller.isForgotPassword.value) {
+                        controller.forgotPassword();
+                      } else {
+                        controller.realizarAuth();
+                      }
+                    },
+
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.primary,
+                      foregroundColor: theme.colorScheme.onPrimary,
+                      minimumSize: const Size(double.infinity, 55),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
-                      child: controller.isLoading.value
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(
-                              controller.forgotPassword.value
-                                  ? "lg_forgot_password".tr
-                                  : (controller.isLogin.value)
-                                  ? "lg_entrar".tr
-                                  : "lg_cadastrar".tr,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
                     ),
+                    child: controller.isLoading.value
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            controller.isForgotPassword.value
+                                ? "ENVIAR E-MAIL DE RECUPERAÇÃO"
+                                : controller.isLogin.value
+                                ? "lg_entrar".tr
+                                : "lg_cadastrar".tr,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                   ),
-                ],
+                ),
+
                 const SizedBox(height: 20),
                 TextButton(
-                  onPressed: controller.toggleForgotPassword,
+                  onPressed: controller.alternarEsqueciSenha,
                   child: Obx(
                     () => Text(
-                      controller.forgotPassword.value
+                      controller.isForgotPassword.value
                           ? "lg_voltar_login".tr
                           : "lg_forgot_password".tr,
-
                       style: TextStyle(
                         color: theme.colorScheme.onBackground.withOpacity(0.7),
                         fontFamily: 'Montserrat',
@@ -138,8 +167,6 @@ class LoginPage extends GetView<LoginController> {
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 20),
                 TextButton(
                   onPressed: controller.toggleAuthMode,
                   child: Obx(
@@ -151,54 +178,6 @@ class LoginPage extends GetView<LoginController> {
                         color: theme.colorScheme.onBackground.withOpacity(0.7),
                         fontFamily: 'Montserrat',
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: Divider(
-                        color: theme.colorScheme.onBackground.withOpacity(0.2),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: Text(
-                        "OU",
-                        style: TextStyle(
-                          color: theme.colorScheme.onBackground.withOpacity(
-                            0.5,
-                          ),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Divider(
-                        color: theme.colorScheme.onBackground.withOpacity(0.2),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                OutlinedButton.icon(
-                  onPressed: () => controller.loginWithGoogle(),
-                  icon: Icon(RemixIcons.google_fill, color: Colors.redAccent),
-                  label: Text(
-                    controller.isLogin.value
-                        ? "lg_entrar_google".tr
-                        : "lg_cadastrar_google".tr,
-                    style: TextStyle(color: theme.colorScheme.onBackground),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 55),
-                    side: BorderSide(
-                      color: theme.colorScheme.onBackground.withOpacity(0.2),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
                     ),
                   ),
                 ),
@@ -214,9 +193,12 @@ class LoginPage extends GetView<LoginController> {
     return _dropdown(
       context,
       c.selectedVeiculos,
-      c.lookupController.veiculosDrop
-          .map((v) => DropdownMenuItem(value: v.id, child: Text(v.nickname)))
-          .toList(),
+      c.lookupController.veiculosDrop.map((VehicleModel veiculo) {
+        return DropdownMenuItem<String>(
+          value: veiculo.id,
+          child: Text(veiculo.nickname),
+        );
+      }).toList(),
       "Veículo",
     );
   }
@@ -252,14 +234,13 @@ class LoginPage extends GetView<LoginController> {
     VoidCallback? onTap,
     List<TextInputFormatter>? inputFormatters,
   }) {
-    final loginController = Get.find<LoginController>();
     final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: TextFormField(
         controller: controller,
-        obscureText: isPassword ? loginController.obscureText.value : false,
+        obscureText: isPassword ? this.controller.obscureText.value : false,
         inputFormatters: inputFormatters,
         keyboardType: keyboardType,
         readOnly: readOnly,
@@ -273,12 +254,12 @@ class LoginPage extends GetView<LoginController> {
           suffixIcon: isPassword
               ? IconButton(
                   icon: Icon(
-                    loginController.obscureText.value
+                    this.controller.obscureText.value
                         ? RemixIcons.eye_off_line
                         : RemixIcons.eye_line,
                     color: theme.iconTheme.color,
                   ),
-                  onPressed: loginController.toggleObscure,
+                  onPressed: this.controller.toggleObscure,
                 )
               : null,
         ),

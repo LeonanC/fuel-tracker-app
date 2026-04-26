@@ -1,26 +1,24 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BackupController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
   final _box = GetStorage();
 
   var isLoading = false.obs;
   var statusMessage = RxnString();
 
   final Map<String, String> scopeToCollection = {
-    'fuel_entries': 'fuels',
-    'manutencao': 'service_type',
+    'abastecimentos': 'fuel_entries',
+    'service_type': 'service_type',
     'tipo_combustivel': 'tipo_combustivel',
-    'vehicles': 'veiculos',
-    'lookups': 'postos',
+    'veiculos': 'vehicles',
+    'postos': 'postos',
   };
 
   var selectedScopes = {
-    'fuels': true,
+    'abastecimentos': true,
     'service_type': true,
     'tipo_combustivel': true,
     'veiculos': true,
@@ -34,7 +32,7 @@ class BackupController extends GetxController {
   }
 
   Future<void> syncData() async {
-    final user = _auth.currentUser;
+    final user = _supabase.auth.currentUser;
     if (user == null) {
       statusMessage.value = "Usuário não encontrado.";
       return;
@@ -42,15 +40,15 @@ class BackupController extends GetxController {
 
     try {
       isLoading.value = true;
-      statusMessage.value = "Iniciando backup na nuvem...";
+      statusMessage.value = "Iniciando sincronização com Supabase...";
 
       for (var scope in selectedScopes.entries) {
         if (scope.value) {
-          await _uploadCollection(scope.key, user.uid);
+          await _uploadToSupabase(scope.key, user.id);
         }
       }
 
-      statusMessage.value = "Nuvem atualizada com sucesso!";
+      statusMessage.value = "Dados sincronizados com sucesso!";
     } catch (e) {
       statusMessage.value = "Erro ao sincronização: $e";
     } finally {
@@ -58,86 +56,52 @@ class BackupController extends GetxController {
     }
   }
 
-  Future<void> _uploadCollection(String scope, String uid) async {
-    final collectionName = scopeToCollection[scope];
-    if (collectionName == null) return;
+  Future<void> _uploadToSupabase(String scope, String uid) async {
+    final tableName = scopeToCollection[scope];
+    if (tableName == null) return;
 
-    List<dynamic> localData = _box.read(collectionName) ?? [];
+    List<dynamic> localData = _box.read(scope) ?? [];
     if (localData.isEmpty) return;
 
-    WriteBatch batch = _firestore.batch();
-    int count = 0;
-
-    for (var item in localData) {
-      String docId =
-          item['pk_fuel']?.toString() ??
-          item['pk_posto'] ??
-          item['pk_service'] ??
-          item['pk_tipo'] ??
-          item['pk_vehicle'] ??
-          DateTime.now().microsecondsSinceEpoch.toString();
-
-      DocumentReference docRef = _firestore
-          .collection('usuarios')
-          .doc(uid)
-          .collection(collectionName)
-          .doc(docId);
-
-      Map<String, dynamic> dataToUpload = Map<String, dynamic>.from(item);
-      dataToUpload['fk_usuario'] = uid;
-      dataToUpload['last_sync'] = FieldValue.serverTimestamp();
-
-      batch.set(docRef, dataToUpload, SetOptions(merge: true));
-      count++;
-
-      if (count >= 450) {
-        await batch.commit();
-        batch = _firestore.batch();
-        count = 0;
+    final List<Map<String, dynamic>> dataToUpsert = localData.map((item) {
+      final Map<String, dynamic> map = Map<String, dynamic>.from(item);
+      if (tableName == 'fuel_entries') {
+        map['fk_usuario'] = uid;
+      } else {
+        map['user_id'] = uid;
       }
-    }
 
-    if (count > 0) await batch.commit();
+      map.remove('last_sync');
+      return map;
+    }).toList();
+
+    await _supabase.from(tableName).upsert(dataToUpsert);
   }
 
   Future<void> clearCloudData() async {
-    final user = _auth.currentUser;
+    final user = _supabase.auth.currentUser;
     if (user == null) {
-      statusMessage.value = "Faça login para gerenciar em nuvem.";
+      statusMessage.value = "Faça login para gerenciar os dados.";
       return;
     }
 
     try {
       isLoading.value = true;
-      statusMessage.value = "Removendo dados selecionados...";
-
-      int count = 0;
-      WriteBatch batch = _firestore.batch();
+      statusMessage.value = "Removendo dados da nuvem...";
 
       for (var entry in selectedScopes.entries) {
         if (entry.value) {
-          final collectionName = scopeToCollection[entry.key];
-          if (collectionName == null) continue;
+          final tableName = scopeToCollection[entry.key];
+          if (tableName == null) continue;
 
-          final snapshots = await _firestore
-              .collection(collectionName)
-              .where('fk_usuario', isEqualTo: user.uid)
-              .get();
+          final userColumn = (tableName == 'fuel_entries')
+              ? 'fk_usuario'
+              : 'user_id';
 
-          for (var doc in snapshots.docs) {
-            batch.delete(doc.reference);
-            count++;
-
-            if (count >= 450) {
-              await batch.commit();
-              batch = _firestore.batch();
-              count = 0;
-            }
-          }
+          await _supabase.from(tableName).delete().eq(userColumn, user.id);
         }
       }
 
-      if (count > 0) await batch.commit();
 
       statusMessage.value = "Limpeza concluída com sucesso.";
     } catch (e) {

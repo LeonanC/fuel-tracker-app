@@ -1,12 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/data/models/services_type_model.dart';
 import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LookupController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final _supabase = Supabase.instance.client;
 
   final tipoDrop = <TypeGasModel>[].obs;
   final veiculosDrop = <VehicleModel>[].obs;
@@ -20,24 +20,25 @@ class LookupController extends GetxController {
   }
 
   void fetchLookups() {
-    _firestore.collection('tipo_combustivel').snapshots().listen((snapshot) {
-      tipoDrop.value = snapshot.docs
-          .map((doc) => TypeGasModel.fromFirestore(doc.data(), doc.id))
+    _supabase.from('tipo_combustivel').stream(primaryKey: ['id']).listen((
+      data,
+    ) {
+      tipoDrop.value = data.map((map) => TypeGasModel.fromMap(map)).toList();
+    });
+
+    _supabase.from('veiculos').stream(primaryKey: ['id']).listen((data) {
+      veiculosDrop.value = data.map((map) => VehicleModel.fromMap(map)).toList();
+    });
+
+    _supabase.from('postos').stream(primaryKey: ['id']).listen((data) {
+      postosDrop.value = data
+          .map((map) => GasStationModel.fromMap(map))
           .toList();
     });
-    _firestore.collection('veiculos').snapshots().listen((snapshot) {
-      veiculosDrop.value = snapshot.docs
-          .map((doc) => VehicleModel.fromFirestore(doc.data(), doc.id))
-          .toList();
-    });
-    _firestore.collection('postos').snapshots().listen((snapshot) {
-      postosDrop.value = snapshot.docs
-          .map((doc) => GasStationModel.fromFirestore(doc.data(), doc.id))
-          .toList();
-    });
-    _firestore.collection('service_type').snapshots().listen((snapshot) {
-      servicosDrop.value = snapshot.docs
-          .map((doc) => ServicesTypeModel.fromFirestore(doc.data(), doc.id))
+
+    _supabase.from('service_type').stream(primaryKey: ['id']).listen((data) {
+      servicosDrop.value = data
+          .map((map) => ServicesTypeModel.fromMap(map))
           .toList();
     });
   }

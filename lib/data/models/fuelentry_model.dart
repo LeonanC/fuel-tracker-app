@@ -1,12 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class FuelEntryModel {
   final String? id;
   final String user;
   final String vehicleId;
   final String fuelTypeId;
   final String gasStationId;
-  final DateTime entryDate;
+  final DateTime? entryDate;
   final double odometerKm;
   final double volumeLiters;
   final double pricePerLiter;
@@ -43,12 +41,12 @@ class FuelEntryModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'pk_fuel': id,
+      if (id != null) 'pk_fuel': id,
       'fk_usuario': user,
       'fk_veiculo': vehicleId,
       'fk_tipo': fuelTypeId,
       'fk_posto': gasStationId,
-      'data': Timestamp.fromDate(entryDate),
+      'data': entryDate?.toIso8601String(),
       'velocimetro': odometerKm,
       'litros_volume': volumeLiters,
       'preco_litro': pricePerLiter,
@@ -56,30 +54,22 @@ class FuelEntryModel {
       'tanque_cheio': tankFull,
       'tank_capacity': tankCapacity,
       'receipt_path': receiptPath,
-      'sharedWith': sharedWith,
+      'shared_with': sharedWith,
     };
   }
 
-  factory FuelEntryModel.fromFirestore(Map<String, dynamic> map, String docId) {
-    DateTime parsedDate;
-
-    if (map['data'] is Timestamp) {
-      parsedDate = (map['data'] as Timestamp).toDate();
-    } else if (map['data'] is DateTime) {
-      parsedDate = map['data'];
-    } else if (map['data'] is String) {
-      parsedDate = DateTime.tryParse(map['data']) ?? DateTime.now();
-    } else {
-      parsedDate = DateTime.now();
-    }
-
+  factory FuelEntryModel.fromMap(Map<String, dynamic> map, [String? docId]) {
     return FuelEntryModel(
-      id: docId,
+      id: (map['pk_fuel'] ?? docId)?.toString(),
       user: map['fk_usuario']?.toString() ?? '',
       vehicleId: map['fk_veiculo']?.toString() ?? '',
       fuelTypeId: map['fk_tipo']?.toString() ?? '',
       gasStationId: map['fk_posto']?.toString() ?? '',
-      entryDate: parsedDate,
+      entryDate: map['data'] != null
+          ? (map['data'] is DateTime
+                ? map['data']
+                : DateTime.tryParse(map['data'].toString()))
+          : null,
       odometerKm: _toDouble(map['velocimetro']),
       volumeLiters: _toDouble(map['litros_volume']),
       pricePerLiter: _toDouble(map['preco_litro']),
@@ -87,9 +77,7 @@ class FuelEntryModel {
       tankCapacity: _toDouble(map['tank_capacity']),
       tankFull: map['tanque_cheio'] ?? false,
       receiptPath: map['receipt_path'] as String?,
-      sharedWith: map['sharedWith'] != null
-      ? List<String>.from(map['sharedWith'])
-      : []
+      sharedWith: _toList(map['shared_with'] ?? map['sharedWith']),
     );
   }
 
@@ -97,5 +85,13 @@ class FuelEntryModel {
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0.0;
     return 0.0;
+  }
+
+  static List<String> _toList(dynamic value){
+    if(value == null) return [];
+    if(value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    return [];
   }
 }

@@ -30,35 +30,22 @@ class GasStationModel {
       'endereco': address,
       'brand': brand,
       'preco': price,
-      'hasConvenientStore': hasConvenientStore ? true : false,
-      'is24Hours': is24Hours ? true : false,
+      'has_convenient_store': hasConvenientStore ? true : false,
+      'is_24_hours': is24Hours ? true : false,
     };
   }
 
-  factory GasStationModel.fromFirestore(
-    Map<String, dynamic> map,
-    String docId,
-  ) {
+   factory GasStationModel.fromMap(Map<String, dynamic> map, [String? docId]) {
     return GasStationModel(
-      id: docId,
+      id: (map['pk_posto'] ?? docId)?.toString(),
       nome: map['nome'] as String,
       latitude: (map['latitude'] as num?)?.toDouble() ?? 0.0,
       longitude: (map['longitude'] as num?)?.toDouble() ?? 0.0,
       address: map['endereco'] as String?,
       brand: map['brand'] as String,
       price: (map['preco'] as num?)?.toDouble() ?? 0.0,
-      hasConvenientStore: map['hasConvenientStore'] == true,
-      is24Hours: map['is24Hours'] == true,
+      hasConvenientStore: map['has_convenient_store'] == true || map['hasConvenientStore'] == true,
+      is24Hours: map['is_24_hours'] == true || map['is24Hours'] == true,
     );
   }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is GasStationModel && other.id == id;
-  }
-
-  @override
-  int get hashCode => id.hashCode;
 }

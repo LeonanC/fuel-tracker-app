@@ -5,7 +5,9 @@ class AppTranslations extends Translations {
   Map<String, Map<String, String>> get keys => {
     'pt_BR': {
       // LOGIN PAGE
+      'lg_welcome': 'BEM VINDO AO',
       'lg_titulo': 'Fuel Tracker',
+      'lg_subtitulo': 'Gerencie seus abastecimentos e acompanhe o desempenho do seu veículo de forma simples.',
       'lg_nome_completo': 'Nome Completo',
       'lg_telefone': "Telefone",
       'lg_placa': 'Placa do Veículo',

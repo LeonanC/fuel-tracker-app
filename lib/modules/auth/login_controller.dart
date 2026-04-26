@@ -1,30 +1,29 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
 import 'package:fuel_tracker_app/data/models/user_model.dart';
 import 'package:fuel_tracker_app/data/services/auth_service.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginController extends GetxController {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
   final AuthService _authService = AuthService();
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final lookupController = Get.find<LookupController>();
 
-  var isLogin = true.obs;
-  var forgotPassword = false.obs;
   var isLoading = false.obs;
+  var isLogin = true.obs;
+  var isForgotPassword = false.obs;
   var obscureText = true.obs;
   var selectedVeiculos = RxnString();
+  var fotoUrl = RxnString();
 
   final formKey = GlobalKey<FormState>();
-
   final emailController = TextEditingController();
   final senhaController = TextEditingController();
   final nomeController = TextEditingController();
@@ -34,57 +33,57 @@ class LoginController extends GetxController {
     decimalSeparator: ',',
     precision: 0,
   );
-
-  void toggleAuthMode() => isLogin.value = !isLogin.value;
-  void toggleForgotPassword() => forgotPassword.value = !forgotPassword.value;
-  void toggleObscure() => obscureText.value = !obscureText.value;
-
   final maskTelefone = MaskTextInputFormatter(
     mask: '(##) # ####-####',
     filter: {"#": RegExp(r'[0-9]')},
     type: MaskAutoCompletionType.lazy,
   );
 
+  void alternarEsqueciSenha(){
+    isForgotPassword.value = !isForgotPassword.value;
+    isLogin.value = true;
+  }
+
+  void toggleObscure() => obscureText.value = !obscureText.value;
+  void toggleAuthMode() => isLogin.value = !isLogin.value;
+
   void realizarAuth() async {
     if (!formKey.currentState!.validate()) return;
     isLoading.value = true;
-
     try {
       if (isLogin.value) {
         await _authService.login(
           emailController.text.trim(),
           senhaController.text.trim(),
         );
+
+        await Future.delayed(const Duration(milliseconds: 100));
+        
         Get.offAllNamed('/main');
       } else {
+        String? vehicleId = selectedVeiculos.value;
+        if(vehicleId != null && vehicleId.isEmpty) vehicleId = null;
+
         final novoUsuario = UserModel2(
-          id: '',
-          fotoUrl: '',
           nome: nomeController.text.trim(),
           email: emailController.text.trim(),
           telefone: telefoneController.text.trim(),
           vehicle: selectedVeiculos.value,
-          xp: xpController.numberValue,
+          fotoUrl: fotoUrl.value,
+          xp: 0.0,
         );
+        await _authService.signUp(novoUsuario, senhaController.text.trim());
 
-        await _authService.cadastrarUsuario(
-          userModel: novoUsuario,
-          password: senhaController.text.trim(),
-        );
+        _showCustomSnackbar("Sucesso", "Cadastro realizado! Verfique seu e-mail se necessário.");
 
-        _showCustomSnackbar(
-          titulo: "Conta criada!",
-          mensagem: "Bem-vindo ao Fuel Tracker, Usuario: ${novoUsuario.nome}",
-          isError: false,
-        );
         isLogin.value = true;
+        nomeController.clear();
+        telefoneController.clear();
       }
-    } on FirebaseAuthException catch (e) {
-      _handleAuthError(e);
     } catch (e) {
       _showCustomSnackbar(
-        titulo: "Erro",
-        mensagem: "Ocorreu um erro inesperado: $e",
+        "Erro",
+        "Ocorreu um erro inesperado: $e",
         isError: true,
       );
     } finally {
@@ -92,136 +91,53 @@ class LoginController extends GetxController {
     }
   }
 
-  Future<void> loginWithGoogle() async {
-    try {
+  Future<void> selecionarEFazerUploadFoto() async {
+    final ImagePicker picker = ImagePicker();
+
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
+
+    if(image != null){
       isLoading.value = true;
-            await _googleSignIn.initialize(
-        serverClientId:
-            '391534008822-tg5rhcoir6a3k8nag3pf6kgtf6q0uopo.apps.googleusercontent.com',
-      );
+      try{
+        File file = File(image.path);
+        final String fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final String path = 'perfis/$fileName';
 
-      final GoogleSignInAccount account = await _googleSignIn.authenticate();
-      
-      final String? idToken = account.authentication.idToken;
-      
-      final authz = await account.authorizationClient.authorizeScopes(['email', 'profile']);
-      final String accessToken = authz.accessToken;
+        await _supabase.storage.from('fotos_perfil').upload(path, file, fileOptions: const FileOptions(cacheControl: '3600', upsert: false));
 
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: accessToken,
-        idToken: idToken,
-      );
-
-      UserCredential userCredential = await _auth.signInWithCredential(credential);
-      User? user = userCredential.user;
-
-      if(user != null){
-        DocumentSnapshot doc = await _firestore.collection('usuarios').doc(user.uid).get();
-        if(doc.exists){
-          debugPrint("Usuário recorrente: ${user.displayName}");
-          Get.offAllNamed('/main');
-        }else{
-          UserModel2 novoUsuario = UserModel2(
-            id: user.uid,
-            fotoUrl: user.photoURL ?? '',
-            nome: user.displayName ?? "Motorista",
-            email: user.email ?? '',
-            telefone: user.phoneNumber ?? '',
-            vehicle: null,
-            criadoEm: DateTime.now(),
-            xp: 0.0,
-          );
-          await _firestore.collection('usuarios').doc(user.uid).set(novoUsuario.toMap());
-          Get.offAllNamed('/completar-perfil', arguments: novoUsuario);
-        }
+        final String publicUrl = _supabase.storage.from('fotos_perfil').getPublicUrl(path);
+        fotoUrl.value = publicUrl;
+        _showCustomSnackbar("Sucesso", "Foto carregada com sucesso!");
+      }catch(e){
+        _showCustomSnackbar("Erro no Upload", e.toString(), isError: true);
+        print(e.toString());
+      }finally{
+        isLoading.value = false;
       }
-    }catch(e){   
-      if(e is GoogleSignInException && e.code == 'canceled'){
-        debugPrint("Login cancelado pelo usuário.");
-        return;
-      }
-
-      debugPrint("Erro detalhado: $e");
-      _showCustomSnackbar(
-        titulo: "Erro",
-        mensagem: "Falha ao autenticação. Verique sua conexão ou chaves SHA-1.",
-        isError: true,
-      );
-    } finally {
-      isLoading.value = false;
     }
   }
 
-  Future<void> esqueceuSenha() async {
-    if (emailController.text.isEmpty ||
-        !GetUtils.isEmail(emailController.text)) {
-      _showCustomSnackbar(
-        titulo: "Atenção",
-        mensagem: "Por favor, insira um e-mail válido para recuperar a senha.",
-        isError: true,
-      );
-      return;
+  Future<void> forgotPassword() async {
+    isLoading.value = true;
+    if (isForgotPassword.value) {
+      await _authService.recuperarSenha(emailController.text.trim());
     }
 
-    try {
-      isLoading.value = true;
-      final email = emailController.text.trim();
-
-      final userQuery = await _firestore
-          .collection('usuarios')
-          .where('email', isEqualTo: email)
-          .get();
-
-      if (userQuery.docs.isEmpty) {
-        _showCustomSnackbar(
-          titulo: "Erro",
-          mensagem: "Este e-mail não está cadastrado em nossa base.",
-          isError: true,
-        );
-        return;
-      }
-
-      await _auth.sendPasswordResetEmail(email: email);
-      _showCustomSnackbar(
-        titulo: "Sucesso",
-        mensagem:
-            "E-mail de recuperação enviado! Verifique sua caixa de entrada.",
-      );
-    } catch (e) {
-      _showCustomSnackbar(
-        titulo: "Erro",
-        mensagem: "Não foi possível processar a recuperação agora.",
-        isError: true,
-      );
-    } finally {
-      isLoading.value = false;
-    }
+    isLoading.value = false;
   }
 
-  void _handleAuthError(FirebaseAuthException e) {
-    String mensagem = "Erro ao processar autenticação.";
-    if (e.code == 'user-not_found') mensagem = "E-mail não encontrado.";
-    if (e.code == 'wrong-password') mensagem = "Senha incorreta.";
-    if (e.code == 'email-already-in-use') {
-      mensagem = "Este e-mail já está sendo usado.";
-    }
-    if (e.code == 'weak-password') {
-      mensagem = "A senha escolhida é muito fraca.";
-    }
-    _showCustomSnackbar(titulo: "Falha", mensagem: mensagem, isError: true);
-  }
-
-
-
-  void _showCustomSnackbar({
-    required String titulo,
-    required String mensagem,
+  void _showCustomSnackbar(
+    String titulo,
+    String mensagem, {
     bool isError = false,
   }) {
     Get.snackbar(
       titulo,
       mensagem,
-      snackPosition: SnackPosition.TOP,
+      snackPosition: SnackPosition.BOTTOM,
       backgroundColor: isError
           ? const Color(0xFF991B1B)
           : const Color(0xFF065F46),
@@ -245,13 +161,13 @@ class LoginController extends GetxController {
     );
   }
 
-    @override
+  @override
   void onClose() {
     emailController.dispose();
     senhaController.dispose();
     nomeController.dispose();
     telefoneController.dispose();
-    selectedVeiculos.value;
+    xpController.dispose();
     super.onClose();
   }
 }

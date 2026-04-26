@@ -1,8 +1,6 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/data/global/fuel_alert_card.dart';
-import 'package:fuel_tracker_app/data/global/fuel_list_filter_menu.dart';
+import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_alert_card.dart';
+import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_list_filter_menu.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_card.dart';
@@ -14,12 +12,13 @@ import 'package:remixicon/remixicon.dart';
 import 'package:shimmer/shimmer.dart';
 
 class HomePage extends GetView<HomeController> {
-  const HomePage({super.key});
+  HomePage({super.key});
+
+  final settings = Get.find<SettingController>();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final settings = Get.find<SettingController>();
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -28,23 +27,28 @@ class HomePage extends GetView<HomeController> {
         children: [
           _buildHeroStats(),
           FuelAlertCard(),
-          Obx((){
+          Obx(() {
             final alerta = settings.alertaVencimento();
-            if(alerta == null) return SizedBox.shrink();
+            if (alerta == null) return SizedBox.shrink();
 
             return Card(
               color: Colors.amber.shade100,
               child: ListTile(
                 leading: Icon(Icons.warning, color: Colors.amber.shade900),
-                title: Text(alerta, style: TextStyle(color: theme.colorScheme.primary)),
-                subtitle: Text("Consulte o site do Bradesco ou Sefaz-RJ para pagar"),
+                title: Text(
+                  alerta,
+                  style: TextStyle(color: theme.colorScheme.primary),
+                ),
+                subtitle: Text(
+                  "Consulte o site do Bradesco ou Sefaz-RJ para pagar",
+                ),
               ),
             );
           }),
           _buildSearchBar(theme),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => controller.setupFuelStream(),
+              onRefresh: () => controller.fetchInitialData(),
               child: _buildMainList(theme),
             ),
           ),
@@ -75,25 +79,49 @@ class HomePage extends GetView<HomeController> {
     return Obx(() {
       if (controller.isLoading.value) return _buildLoadingShimmer(theme);
 
-      final meusEntries = controller.meusAbastecimentos;
-      final compartilhadosEntries = controller.fuelEntriesCompartilhados;
+      final query = controller.searchText.value.toLowerCase();
 
-      if (meusEntries.isEmpty ) {
-        return const Center(child: Text("Nenhum registro encontrado"));
+      final filteredEntries = controller.filteredFuelEntries.where((e) {
+        return e.vehicleId.toLowerCase().contains(query) ||
+            e.gasStationId.toLowerCase().contains(query);
+      }).toList();
+
+      final meusRegistros = filteredEntries
+          .where((e) => e.user == controller.currentUserId)
+          .toList();
+
+      final compartilhadoComigo = filteredEntries
+          .where((e) => e.user != controller.currentUserId)
+          .toList();
+
+      if (filteredEntries.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(RemixIcons.ghost_line, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                "Nenhum registro encontrado",
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        );
       }
 
       return CustomScrollView(
         slivers: [
-          if (meusEntries.isNotEmpty) ...[
-            _buildSliverSectionHeader("Meus Registros", theme),
-            _buildSliverEntryList(meusEntries, theme),
+          if (meusRegistros.isNotEmpty) ...[
+            _buildSliverSectionHeader("Todos os Abastecimentos", theme),
+            _buildSliverEntryList(meusRegistros, theme),
           ],
-          const SliverToBoxAdapter(child: SizedBox(height: 20)),
 
-          if (compartilhadosEntries.isNotEmpty) ...[
-             _buildSliverSectionHeader("Abastecimentos Compartilhados", theme),
-             _buildSliverEntryList(compartilhadosEntries, theme),
-           ],
+          if (compartilhadoComigo.isNotEmpty) ...[
+            _buildSliverSectionHeader("Compartilhado", theme),
+            _buildSliverEntryList(compartilhadoComigo, theme),
+            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          ],
         ],
       );
     });
@@ -102,7 +130,7 @@ class HomePage extends GetView<HomeController> {
   Widget _buildSliverSectionHeader(String title, ThemeData theme) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16,16,16,8),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         child: Text(
           title.toUpperCase(),
           style: theme.textTheme.titleSmall?.copyWith(
@@ -117,17 +145,19 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildSliverEntryList(List<FuelEntryModel> entries, ThemeData theme) {
     final grouped = _groupEntries(entries);
+
     return SliverList(
       delegate: SliverChildBuilderDelegate((context, i) {
         String date = grouped.keys.elementAt(i);
+        List<FuelEntryModel> dayEntries = grouped[date]!;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionHeader(date, theme),
-            ...grouped[date]!.map(
-              (e) => FuelCard(entry: e, controller: controller),
-            ),
+            ...dayEntries.map((e) {
+              return FuelCard(entry: e, controller: controller);
+            }),
           ],
         );
       }, childCount: grouped.keys.length),
@@ -138,7 +168,8 @@ class HomePage extends GetView<HomeController> {
     Map<String, List<FuelEntryModel>> map = {};
 
     for (var e in list) {
-      String key = _formatDateKey(e.entryDate);
+      if (e.entryDate == null) continue;
+      String key = _formatDateKey(e.entryDate!);
       (map[key] ??= []).add(e);
     }
     return map;
@@ -146,9 +177,16 @@ class HomePage extends GetView<HomeController> {
 
   String _formatDateKey(DateTime date) {
     final now = DateTime.now();
-    if (date.day == now.day && date.month == now.month) return "Hoje";
-    if (date.day == now.subtract(const Duration(days: 1)).day) return "Ontem";
-    return DateFormat('dd MMMM', 'pt_BR').format(date);
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final entryDate = DateTime(date.year, date.month, date.day);
+
+    if (entryDate == today) return "Hoje";
+    if (entryDate == yesterday) return "Ontem";
+    return DateFormat(
+      'dd [MMMM]',
+      'pt_BR',
+    ).format(date).replaceAll('[', 'de ').replaceAll(']', '');
   }
 
   Widget _buildLoadingShimmer(ThemeData theme) {
@@ -206,19 +244,15 @@ class HomePage extends GetView<HomeController> {
             _statTile(
               RemixIcons.calculator_line,
               Colors.blueAccent,
-              "Consumo",
-              controller.settingsController.formatarConsumo(
-                controller.gastoPorKmReal,
-              ),
+              "MÉDIA GERAL",
+              settings.formatarConsumo(controller.consumoMediaGeral),
             ),
             const VerticalDivider(color: Colors.white10, width: 30),
             _statTile(
               RemixIcons.gas_station_line,
               Colors.orangeAccent,
-              "Custo/KM",
-              controller.settingsController.formatarCurrency(
-                controller.averageCostPerKm / 100,
-              ),
+              "CUSTO MÉDIO",
+              settings.formatarCurrency(controller.custoMedioGeral),
             ),
           ],
         ),
@@ -296,7 +330,7 @@ class HomePage extends GetView<HomeController> {
         IconButton(
           icon: Icon(RemixIcons.refresh_line),
           tooltip: 'hp_refresh'.tr,
-          onPressed: () => controller.setupFuelStream(),
+          onPressed: () => controller.fetchInitialData(),
         ),
         FuelListFilterMenu(),
         IconButton(

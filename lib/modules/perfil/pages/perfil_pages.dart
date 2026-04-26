@@ -31,9 +31,12 @@ class PerfilPage extends GetView<PerfilController> {
         }
         final user = controller.userModel.value;
         if (user == null) return const SizedBox.shrink();
-        final vehicleData = homeController.veiculosMap[user.vehicle] ?? {};
+
+        final String vehicleId = user.vehicle ?? "";
+        final vehicleData = homeController.veiculosMap[vehicleId] ?? {};
 
         return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
           child: Column(
             children: [
@@ -130,19 +133,31 @@ class PerfilPage extends GetView<PerfilController> {
   ) {
     return Column(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: primary.withOpacity(0.5), width: 3),
-          ),
-          child: CircleAvatar(
-            radius: 50,
-            backgroundColor: primary.withOpacity(0.1),
-            backgroundImage: fotoUrl != null ? NetworkImage(fotoUrl) : null,
-            child: fotoUrl == null
-                ? Icon(RemixIcons.user_3_fill, size: 45, color: primary)
-                : null,
-          ),
+        Stack(
+          alignment: Alignment.bottomRight,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: primary.withOpacity(0.5), width: 3),
+              ),
+              child: CircleAvatar(
+                radius: 55,
+                backgroundColor: primary.withOpacity(0.1),
+                backgroundImage: (fotoUrl != null && fotoUrl.isNotEmpty)
+                    ? NetworkImage(fotoUrl)
+                    : null,
+                child: (fotoUrl == null || fotoUrl.isEmpty)
+                    ? Icon(RemixIcons.user_3_fill, size: 50, color: primary)
+                    : null,
+              ),
+            ),
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: primary,
+              child: Icon(RemixIcons.edit_2_fill, color: Colors.white, size: 16),
+            )
+          ],
         ),
         const SizedBox(height: 15),
         Text(
@@ -176,7 +191,7 @@ class PerfilPage extends GetView<PerfilController> {
         Expanded(
           child: _buildStatCard(
             "Média Mensal",
-            settings.formatarConsumo(home.gastoPorKmReal),
+            settings.formatarConsumo(home.consumoMediaGeral),
             Colors.green,
             cardColor,
           ),
@@ -184,8 +199,8 @@ class PerfilPage extends GetView<PerfilController> {
         const SizedBox(width: 15),
         Expanded(
           child: _buildStatCard(
-            "Custo/Km",
-            settings.formatarCurrency(home.averageCostPerKm),
+            "XP Acumulado",
+            "${controller.userModel.value?.xp.toInt() ?? 0} pts",
             Colors.orange,
             cardColor,
           ),
@@ -224,7 +239,7 @@ class PerfilPage extends GetView<PerfilController> {
                     ),
                   ),
                   Text(
-                    "XP Atual: ${controller.nivelAtual}",
+                    "Faltam poucos pontos para o próximo nível!",
                     style: TextStyle(color: secondary, fontSize: 12),
                   ),
                 ],

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -11,11 +10,12 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:remixicon/remixicon.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 const LatLng defaultCenter = LatLng(-23.55052, -46.63330);
 
 class MapNavigationController extends GetxController {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
   final MapController mapController = MapController();
   final FlutterTts _tts = FlutterTts();
 
@@ -36,39 +36,58 @@ class MapNavigationController extends GetxController {
   int _lastStepIndex = -1;
 
   StreamSubscription<Position>? _positionStream;
-  StreamSubscription<QuerySnapshot>? _stationsSubscription;
+  RealtimeChannel? _stationsChannel;
 
   @override
   void onInit() {
     super.onInit();
     _setupVoice();
     initMap();
-    _listenToPostos();
+    _fetchAndListenPostos();
   }
 
-  void _listenToPostos() {
-    _stationsSubscription = _firestore.collection('postos').snapshots().listen((
-      snapshot,
-    ) {
-      final markers = snapshot.docs.map((doc) {
-        final data = doc.data();
-        final station = GasStationModel.fromFirestore(data, doc.id);
-        return Marker(
-          point: LatLng(station.latitude, station.longitude),
-          width: 50,
-          height: 50,
-          child: GestureDetector(
-            onTap: () => setupNavigation(station),
-            child: Icon(
-              RemixIcons.gas_station_line,
-              color: Colors.orange[700],
-              size: 35,
-            ),
+  void _fetchAndListenPostos() async {
+    try {
+      final List<dynamic> data = await _supabase.from('postos').select();
+      _updateMarkers(data);
+
+      _stationsChannel = _supabase
+          .channel('public:postos')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'postos',
+            callback: (payload) async {
+              final List<dynamic> newData = await _supabase
+                  .from('postos')
+                  .select();
+              _updateMarkers(newData);
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      debugPrint("Erro ao buscar postos no mapa: $e");
+    }
+  }
+
+  void _updateMarkers(List<dynamic> data){
+    final markers = data.map((item) {
+      final station = GasStationModel.fromMap(item);
+      return Marker(
+        point: LatLng(station.latitude, station.longitude),
+        width: 50,
+        height: 50,
+        child: GestureDetector(
+          onTap: () => setupNavigation(station),
+          child: Icon(
+            RemixIcons.gas_station_line,
+            color: Colors.orange[700],
+            size: 35,
           ),
-        );
-      }).toList();
-      stationMarkers.assignAll(markers);
-    });
+        ),
+      );
+    }).toList();
+    stationMarkers.assignAll(markers);
   }
 
   Future<void> _setupVoice() async {
@@ -91,7 +110,7 @@ class MapNavigationController extends GetxController {
   @override
   void onClose() {
     _positionStream?.cancel();
-    _stationsSubscription?.cancel();
+    _supabase.removeChannel(_stationsChannel!);
     super.onClose();
   }
 
