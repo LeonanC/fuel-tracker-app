@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 
 class AppController extends GetxController {
   final String versionUrl =
-      "https://github.com/LeonanC/fuel-tracker-app/blob/main/config/update.json";
+      "https://raw.githubusercontent.com/LeonanC/fuel-tracker-app/blob/main/config/update.json";
 
   @override
   void onInit() {
@@ -30,6 +30,9 @@ class AppController extends GetxController {
         String versaoAtual = packageInfo.version;
 
         if (_precisaAtualizar(versaoAtual, versaoRemota)) {
+          print("Versão Local: $versaoAtual");
+          print("Versão Remota: $versaoRemota");
+          print("Status da Requisição: ${response.statusCode}");
           _exibirDialogAtualizacao(urlDownload, mensagem);
         }
       }
@@ -64,21 +67,21 @@ class AppController extends GetxController {
     );
   }
 
-  void _showSnackbar(String title, String mensagem, {bool isError = false}){
+  void _showSnackbar(String title, String mensagem, {bool isError = false}) {
     Get.snackbar(
       title,
       mensagem,
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: isError
-      ? Colors.redAccent.withOpacity(0.8)
-      : Colors.greenAccent.withOpacity(0.8),
+          ? Colors.redAccent.withOpacity(0.8)
+          : Colors.greenAccent.withOpacity(0.8),
       colorText: Colors.white,
       margin: const EdgeInsets.all(15),
       borderRadius: 15,
       icon: Icon(
         isError ? RemixIcons.error_warning_line : RemixIcons.check_line,
         color: Colors.white,
-      )
+      ),
     );
   }
 }
