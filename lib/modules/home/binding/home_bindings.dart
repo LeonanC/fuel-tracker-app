@@ -1,9 +1,9 @@
+import 'package:fuel_tracker_app/data/controllers/app_controller.dart';
 import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
 import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
 import 'package:fuel_tracker_app/modules/auth/completar_perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/auth/login_controller.dart';
 import 'package:fuel_tracker_app/modules/backup/controller/backup_controller.dart';
-import 'package:fuel_tracker_app/modules/backup/controller/update_controller.dart';
 import 'package:fuel_tracker_app/modules/gas/controller/gasStation_controller.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/modules/maps/controller/map_controller.dart';
@@ -16,6 +16,7 @@ import 'package:get/get.dart';
 class HomeBindings implements Bindings {
   @override
   void dependencies() {
+    Get.lazyPut<AppController>(() => AppController(), fenix: true);
     Get.lazyPut<LookupController>(() => LookupController(), fenix: true);
     Get.lazyPut<CurrencyController>(() => CurrencyController(), fenix: true);
     Get.lazyPut<GasStationController>(
@@ -36,7 +37,7 @@ class HomeBindings implements Bindings {
       () => MapNavigationController(),
       fenix: true,
     );
-    Get.lazyPut<UpdateController>(() => UpdateController(), fenix: true);
+    
     Get.lazyPut<BackupController>(() => BackupController(), fenix: true);
   }
 }

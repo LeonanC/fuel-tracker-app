@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/modules/about/controller/about_controller.dart';
-import 'package:fuel_tracker_app/modules/backup/controller/update_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -8,17 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 class AboutScreen extends StatelessWidget {
   AboutScreen({super.key});
 
-  final UpdateController updateController = Get.put(UpdateController());
   final AboutController aboutController = Get.put(AboutController());
-
-  Future<void> _checkForUpdate() async {
-    aboutController.setChecking(true);
-    try {
-      await updateController.checkForUpdate();
-    } finally {
-      aboutController.setChecking(false);
-    }
-  }
 
   Future<void> _launchUrl(String url) async {
     final Uri uri = Uri.parse(url);
@@ -108,13 +97,13 @@ class AboutScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 40),
-              _buildActionButton(
-                label: 'up_check_for_updates'.tr,
-                icon: isChecking ? null : RemixIcons.download_line,
-                color: Colors.orange,
-                isLoading: isChecking,
-                onPressed: isChecking ? null : _checkForUpdate,
-              ),
+              // _buildActionButton(
+              //   label: 'up_check_for_updates'.tr,
+              //   icon: isChecking ? null : RemixIcons.download_line,
+              //   color: Colors.orange,
+              //   isLoading: isChecking,
+              //   onPressed: isChecking ? null : _checkForUpdate,
+              // ),
               const SizedBox(height: 12),
               _buildActionButton(
                 label: 'ab_githubSource'.tr,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fuel_tracker_app/data/controllers/app_controller.dart';
 import 'package:fuel_tracker_app/data/services/app_translations.dart';
 import 'package:fuel_tracker_app/main_screen.dart';
 import 'package:fuel_tracker_app/modules/about/pages/about_screen.dart';
@@ -22,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final NotificationService notificationService = NotificationService();
 
 Future<void> main() async {
+  Get.put(AppController());
   await initializeDateFormatting('pt_BR', null);
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(

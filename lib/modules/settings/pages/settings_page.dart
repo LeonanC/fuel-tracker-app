@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/modules/backup/controller/update_controller.dart';
-import 'package:fuel_tracker_app/data/models/app_update.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
 import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dart';
@@ -13,8 +11,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 class ToolsScreen extends GetView<SettingController> {
   const ToolsScreen({super.key});
-
-  UpdateController get _updateCtrl => Get.find<UpdateController>();
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +39,6 @@ class ToolsScreen extends GetView<SettingController> {
           () => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_updateCtrl.latestUpdate.value != null)
-                _buildUpdateCard(
-                  context,
-                  _updateCtrl.latestUpdate.value!,
-                  theme,
-                ),
-              const SizedBox(height: 16),
               _sectionTitle('sp_aparencia'.tr),
               Obx(
                 () => _buildSettingTile(
@@ -217,100 +206,6 @@ class ToolsScreen extends GetView<SettingController> {
     const subject = 'Feedback Fuel Tracker App';
     _launchUrl(
       'mailto:LeonanC@outlook.com.br?subject=${Uri.encodeComponent(subject)}',
-    );
-  }
-
-  Widget _buildUpdateCard(
-    BuildContext context,
-    AppUpdate update,
-    ThemeData theme,
-  ) {
-    final isDark = theme.brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [Color(0xFF1E3C72), Color(0xFF2A5298)]
-              : [Colors.blue.shade700, Colors.blue.shade500],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(isDark ? 0.3 : 0.2),
-            blurRadius: 12,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  RemixIcons.rocket_2_fill,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'sp_update_available'.tr,
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      'v${update.version} • ${'sp_ready_to_install'.tr}',
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        color: Colors.white.withOpacity(0.8),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () => _launchUrl(update.url),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.blue.shade800,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: Text(
-                "sp_update_new".tr,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
