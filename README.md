@@ -1,26 +1,47 @@
-📊 Fuel Tracker App
-O Fuel Tracker é uma aplicação robusta desenvolvida para auxiliar motoristas no controle detalhado de consumo de combustível e gestão de despesas veiculares. O projeto utiliza o poder do desenvolvimento multiplataforma para oferecer uma experiência consistente e performática.
+## 📈 Roadmap
+- [x] Migração para Supabase.
+- [x] Lógica de consumo por trecho (hidrômetro).
+- [ ] Implementação de dashboard com gráficos de gastos mensais.
+- [ ] Sistema de lembrete para manutenção (troca de óleo e filtros).
 
-🚀 Tecnologias
-O projeto é construído com as seguintes tecnologias:
+---
+Criado por **Leonan Carvalho** – [LinkedIn](https://www.linkedin.com/in/leonanc/) | [GitHub](https://github.com/LeonanC)
 
-Framework: Flutter
+---
 
-Linguagem: Dart
+### Por que esta versão é melhor?
+1.  **Contexto Real:** Menciona o foco no "consumo por trecho", que é um diferencial que você valoriza.
+2.  **Profissionalismo:** O link para seu LinkedIn e a organização da estrutura de pastas mostram que você é um desenvolvedor que se preocupa com a arquitetura do código.
+3.  **Identidade:** RemoveCom certeza, Leonan. Para deixar o `README.md` com a sua cara, adicionei detalhes que refletem seu perfil de desenvolvedor, o propósito real do projeto e um toque mais profissional para o seu portfólio no GitHub.
 
-Backend: Supabase (Autenticação e Banco de Dados PostgreSQL)
+Aqui está a versão personalizada:
 
-Gerenciamento de Estado: Provider / Riverpod (ajuste conforme sua preferência)
+---
 
-Persistência Local: SQFlite ou Hive (se aplicável)
+# 📊 Fuel Tracker App
 
-✨ Funcionalidades Principais
-Registro de Abastecimento: Cadastro intuitivo de litros, valor por litro e odômetro.
+Bem-vindo ao **Fuel Tracker**, um projeto pessoal focado em resolver um problema prático: o controle preciso de consumo de combustível. Desenvolvido com **Flutter**, este app é a evolução de uma ferramenta de gestão logística, agora otimizada para monitorar a eficiência veicular de forma simples e eficaz.
 
-Cálculo de Eficiência: Cálculo automático de consumo médio (KM/L) por trecho.
+## 📱 Sobre o Projeto
+O Fuel Tracker nasceu da necessidade de acompanhar o desempenho real de veículos (como o **Honda City**) no dia a dia. Ele permite que o motorista registre cada abastecimento e obtenha instantaneamente o cálculo de consumo por trecho, indo além do que o hodômetro total mostra.
 
-Sincronização em Nuvem: Seus dados são salvos de forma segura e sincronizados via Supabase.
+Este projeto faz parte do meu ecossistema de soluções de logística e mobilidade, focando em arquitetura limpa e integração escalável com o **Supabase**.
 
-Gestão de Veículos: Suporte para cadastrar e monitorar mais de um veículo simultaneamente.
+## 🛠️ Stack Tecnológica
+*   **Frontend:** Flutter (Dart)
+*   **Backend & Auth:** [Supabase](https://supabase.com/) (PostgreSQL)
+*   **Arquitetura:** Clean Architecture / Gerenciamento de estado reativo.
 
-Histórico Completo: Dashboard com logs de todos os abastecimentos realizados.
+## ✨ Funcionalidades
+*   **Cálculo de Consumo Real:** Foco no consumo atual por trecho percorrido.
+*   **Gestão via Supabase:** Autenticação segura e armazenamento de dados em nuvem.
+*   **Multi-Veículo:** Pronto para gerenciar diferentes perfis de veículos.
+*   **Interface Intuitiva:** UI desenhada para facilitar o uso rápido em postos de combustível.
+
+## 🏗️ Estrutura de Pastas
+```text
+lib/
+├── core/          # Lógica compartilhada e utilitários
+├── data/          # Repositórios e fontes de dados (Supabase)
+├── domain/        # Entidades e Casos de Uso
+└── presentation/  # Telas (UI) e Gerenciamento de Estado
