@@ -4,6 +4,7 @@ import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
 import 'package:fuel_tracker_app/modules/gas/controller/gasStation_controller.dart';
 import 'package:fuel_tracker_app/modules/registro/pages/gas_entry_screen.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
 
 class GasStationScreen extends GetView<GasStationController> {
@@ -16,78 +17,117 @@ class GasStationScreen extends GetView<GasStationController> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'gs_titulo'.tr,
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontWeight: FontWeight.w600,
+
+      body: Obx(() {
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120.h,
+              floating: true,
+              pinned: true,
+              elevation: 0,
+              stretch: true,
+              backgroundColor: theme.scaffoldBackgroundColor,
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: true,
+                titlePadding: EdgeInsets.only(bottom: 16.h),
+                title: Text(
+                  'gs_titulo'.tr,
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onSurface,
+                    fontSize: 18.sp,
+                  ),
+                ),
+              ),
+            ),
+            if (controller.isLoading.value)
+              SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(color: colorScheme.primary),
+                ),
+              )
+            else if (controller.gasStationsMap.isEmpty)
+              SliverFillRemaining(child: _buildEmptyState(colorScheme))
+            else
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 100.h),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final postos = controller.gasStationsMap.values.toList();
+                    final data = postos[index];
+                    final posto = GasStationModel.fromMap(
+                      data,
+                      data['pk_posto'],
+                    );
+                    return _buildPostoCard(posto, theme);
+                  }, childCount: controller.gasStationsMap.length),
+                ),
+              ),
+          ],
+        );
+      }),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: _buildFab(colorScheme),
+    );
+  }
+
+  Widget _buildFab(ColorScheme colorScheme) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: Offset(0, 8),
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      child: FloatingActionButton.extended(
         backgroundColor: colorScheme.primary,
         onPressed: () => Get.to(() => GasEntryScreen()),
+        elevation: 0,
         label: Text(
           "gs_novo_posto".tr,
-          style: TextStyle(
-            fontFamily: 'Montserrat',
+          style: GoogleFonts.montserrat(
             fontWeight: FontWeight.bold,
+            fontSize: 14.sp,
             color: Colors.white,
           ),
         ),
-        icon: Icon(RemixIcons.add_line, color: Colors.white),
+        icon: Icon(RemixIcons.add_fill, color: Colors.white),
       ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return Center(
-            child: CircularProgressIndicator(color: colorScheme.primary),
-          );
-        }
-        final postos = controller.postosMap.values.toList();
+    );
+  }
 
-        if (postos.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  RemixIcons.gas_station_line,
-                  size: 64.sp,
-                  color: colorScheme.onSurface.withOpacity(0.1),
-                ),
-                SizedBox(height: 16.h),
-                Text(
-                  "gs_nenhum_posto".tr,
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
-                    color: colorScheme.onSurface.withOpacity(0.4),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () => controller.fetchPosto(),
-          color: colorScheme.primary,
-          child: ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-            itemCount: postos.length,
-            itemBuilder: (context, index) {
-              final data = postos[index];
-              final posto = GasStationModel.fromMap(data);
-
-              return _buildPostoCard(posto, theme);
-            },
+  Widget _buildEmptyState(ColorScheme colorScheme) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: EdgeInsets.all(32.w),
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.05),
+            shape: BoxShape.circle,
           ),
-        );
-      }),
+          child: Icon(
+            RemixIcons.gas_station_line,
+            size: 80.sp,
+            color: colorScheme.primary.withOpacity(0.2),
+          ),
+        ),
+        SizedBox(height: 24.h),
+        Text(
+          "gs_nenhum_posto".tr,
+          style: GoogleFonts.montserrat(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface.withOpacity(0.5),
+          ),
+        ),
+      ],
     );
   }
 
@@ -95,153 +135,258 @@ class GasStationScreen extends GetView<GasStationController> {
     final colorScheme = theme.colorScheme;
 
     return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
+      margin: EdgeInsets.only(bottom: 16.h, left: 16.w, right: 16.w),
       decoration: BoxDecoration(
         color: theme.cardColor,
-        borderRadius: BorderRadius.circular(20.r),
+        borderRadius: BorderRadius.circular(24.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
         border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20.r),
-        onTap: () => Get.to(() => GasEntryScreen(data: posto)),
-        child: Padding(
-          padding: EdgeInsets.all(16.w),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(10.w),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      RemixIcons.gas_station_fill,
-                      color: colorScheme.primary,
-                      size: 24.sp,
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          posto.nome,
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            color: colorScheme.onSurface,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24.r),
+        child: InkWell(
+          onTap: () => Get.to(() => GasEntryScreen(data: posto)),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildBrandLogo(posto.brand, colorScheme),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            posto.nome,
+                            style: GoogleFonts.montserrat(
+                              color: colorScheme.onSurface,
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                        ),
-                        Text(
-                          posto.brand,
-                          style: TextStyle(
-                            fontFamily: 'Montserrat',
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      RemixIcons.delete_bin_line,
-                      color: colorScheme.error,
-                      size: 20.sp,
-                    ),
-                    onPressed: () => _confirmDelete(posto, theme),
-                  ),
-                ],
-              ),
-              Divider(
-                height: 24.h,
-                color: colorScheme.onSurface.withOpacity(0.05),
-              ),
-              Row(
-                children: [
-                  Icon(
-                    RemixIcons.map_pin_2_line,
-                    size: 14.sp,
-                    color: colorScheme.onSurface.withOpacity(0.4),
-                  ),
-                  SizedBox(width: 4.w),
-                  Expanded(
-                    child: Text(
-                      '${posto.address}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Montserrat',
-                        color: colorScheme.onSurface.withOpacity(0.7),
-                        fontSize: 13.sp,
+                          if (posto.address != null)
+                            Text(
+                              posto.address!,
+                              style: GoogleFonts.montserrat(
+                                color: colorScheme.onSurface.withOpacity(0.5),
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12.h),
-              Row(
-                children: [
-                  _buildBadge(
-                    RemixIcons.shopping_basket_line,
-                    "gs_loja".tr,
-                    posto.hasConvenientStore,
-                    theme,
-                  ),
-                  SizedBox(width: 8.w),
-                  _buildBadge(
-                    RemixIcons.time_line,
-                    "gs_24h".tr,
-                    posto.is24Hours,
-                    theme,
-                  ),
-                ],
-              ),
-            ],
+                    _buildDeleteButton(
+                      () => _confirmDelete(posto, theme),
+                      colorScheme,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
+                Wrap(
+                  spacing: 8.w,
+                  runSpacing: 8.h,
+                  children: [
+                    if (posto.precoGasolina > 0)
+                      _buildPriceChip(
+                        RemixIcons.drop_fill,
+                        "GAS",
+                        posto.precoGasolina,
+                        Colors.blueAccent,
+                      ),
+                    if (posto.precoEtanol > 0)
+                      _buildPriceChip(
+                        RemixIcons.leaf_fill,
+                        "ETA",
+                        posto.precoEtanol,
+                        Colors.greenAccent,
+                      ),
+                    if (posto.precoDiesel > 0)
+                      _buildPriceChip(
+                        RemixIcons.truck_fill,
+                        "DIE",
+                        posto.precoDiesel,
+                        Colors.orangeAccent,
+                      ),
+                    if (posto.precoGnv > 0)
+                      _buildPriceChip(
+                        RemixIcons.fire_fill,
+                        "GNV",
+                        posto.precoGnv,
+                        Colors.purpleAccent,
+                      ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
+                Row(
+                  children: [
+                    _buildStatusBadge(
+                      RemixIcons.store_2_line,
+                      "gs_loja".tr,
+                      posto.hasConvenientStore,
+                      colorScheme,
+                    ),
+                    SizedBox(width: 8.w),
+                    _buildStatusBadge(
+                      RemixIcons.time_fill,
+                      "gs_24h".tr,
+                      posto.is24Hours,
+                      colorScheme,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBadge(
+  Widget _buildPriceChip(
     IconData icon,
     String label,
-    bool active,
-    ThemeData theme,
+    double price,
+    Color color,
   ) {
-    final colorSheme = theme.colorScheme;
-    final Color activeColor = Colors.greenAccent;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14.sp),
+          SizedBox(width: 6.w),
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: GoogleFonts.montserrat(
+                    color: color.withOpacity(0.8),
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextSpan(
+                  text: controller.settings.formatarCurrency(price),
+                  style: GoogleFonts.montserrat(
+                    color: color,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton(VoidCallback onTap, ColorScheme colorScheme) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          padding: EdgeInsets.all(8.w),
+          decoration: BoxDecoration(
+            color: colorScheme.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+          child: Icon(
+            RemixIcons.delete_bin_7_line,
+            color: colorScheme.error,
+            size: 18.sp,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrandLogo(String brand, ColorScheme colorScheme) {
+    String brandLower = brand.toLowerCase();
+    IconData icon;
+    Color color;
+
+    if (brandLower.contains('petrobras') || brandLower.contains(' br ')) {
+      icon = RemixIcons.contrast_drop_line;
+      color = Colors.greenAccent;
+    } else if (brandLower.contains('shell')) {
+      icon = RemixIcons.goblet_line;
+      color = Colors.redAccent;
+    } else if (brandLower.contains('ipiranga')) {
+      icon = RemixIcons.triangle_line;
+      color = Colors.orangeAccent;
+    } else if (brandLower.contains('ale')) {
+      icon = RemixIcons.rhythm_line;
+      color = Color(0xFFED1C24);
+    } else if (brandLower.contains('amrx')) {
+      icon = RemixIcons.star_fill;
+      color = Color(0xFFD32F2F);
+    } else {
+      icon = RemixIcons.gas_station_fill;
+      color = colorScheme.primary;
+    }
+
+    return Container(
+      width: 50.w,
+      height: 50.w,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Icon(icon, color: color, size: 28.sp),
+    );
+  }
+
+  Widget _buildStatusBadge(
+    IconData icon,
+    String label,
+    bool isActive,
+    ColorScheme colorScheme,
+  ) {
+    final color = isActive
+        ? colorScheme.primary
+        : colorScheme.onSurface.withOpacity(0.3);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: active
-            ? activeColor.withOpacity(0.1)
-            : colorSheme.onSurface.withOpacity(0.05),
+        color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(8.r),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12.sp,
-            color: active ? activeColor : colorSheme.onSurface.withOpacity(0.2),
-          ),
+          Icon(icon, color: color, size: 14.sp),
           SizedBox(width: 4.w),
           Text(
             label,
-            style: TextStyle(
-              fontFamily: 'Montserrat',
-              color: active
-                  ? activeColor
-                  : colorSheme.onSurface.withOpacity(0.2),
-              fontSize: 11.sp,
+            style: GoogleFonts.montserrat(
+              color: color,
+              fontSize: 10.sp,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ],
@@ -253,13 +398,21 @@ class GasStationScreen extends GetView<GasStationController> {
     Get.defaultDialog(
       title: "gs_excluir_titulo".tr,
       middleText: "gs_excluir_confirm".tr,
-      backgroundColor: const Color(0xFF1A1A1A),
-      titleStyle: const TextStyle(color: Colors.white),
-      middleTextStyle: const TextStyle(color: Colors.white70),
+      backgroundColor: theme.cardColor,
+      titleStyle: GoogleFonts.montserrat(
+        color: theme.colorScheme.onSurface,
+        fontWeight: FontWeight.bold,
+      ),
+      middleTextStyle: GoogleFonts.montserrat(
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
+        fontSize: 14.sp,
+      ),
+      radius: 24.r,
       textConfirm: 'gs_sim'.tr,
       textCancel: 'gs_nao'.tr,
       confirmTextColor: Colors.white,
-      buttonColor: Colors.redAccent,
+      cancelTextColor: theme.colorScheme.primary,
+      buttonColor: theme.colorScheme.error,
       onConfirm: () {
         controller.deletePosto(posto.id);
         Get.back();

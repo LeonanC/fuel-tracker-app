@@ -29,6 +29,7 @@ class HomeEntryController extends GetxController {
   var isTankFull = false.obs;
   var comprovantePath = ''.obs;
   var isLoading = false.obs;
+  var precoAtual = 0.0.obs;
 
   FuelEntryModel? editingEntry;
 
@@ -74,6 +75,10 @@ class HomeEntryController extends GetxController {
     litrosController.addListener(() => _calcularLitros(from: 'litros'));
     pricePerLiterController.addListener(() => _calcularLitros(from: 'preco'));
     totalPriceController.addListener(() => _calcularLitros(from: 'total'));
+
+    pricePerLiterController.addListener((){
+      precoAtual.value = pricePerLiterController.numberValue;
+    });
   }
 
   void _calcularLitros({required String from}) {

@@ -64,6 +64,7 @@ class HomeEntryPage extends StatelessWidget {
               const SizedBox(height: 20),
               _buildSectionTitle("VALORES E MEDIÇÃO", theme),
               _buildCardContainer(child: _buildInputField(c)),
+              _buildComparisonCard(c, theme),
               const SizedBox(height: 20),
               _buildImagePicker(c, theme),
               const SizedBox(height: 20),
@@ -150,11 +151,80 @@ class HomeEntryPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDatePickerField(HomeEntryController c){
+  Widget _buildComparisonCard(HomeEntryController c, ThemeData theme) {
+    return Obx(() {
+      final double? precoDigitado = c.precoAtual.value;
+      final String? selectedGasId = c.selectedGas.value;
+
+      const double precoGasolinaReferencia = 5.89;
+      const double precoEtanolReferencia = 4.10;
+
+      if (precoDigitado == null || precoDigitado <= 0){
+        return const SizedBox.shrink();
+      }
+
+      final gasObj = c.controller.tipos.firstWhereOrNull((g) => g.id == selectedGasId);
+      final String gasName = gasObj?.nome ?? "";
+
+      bool isEtanol = gasName.contains('Etanol / Flex');
+
+      double ratio = isEtanol
+          ? (precoDigitado / precoGasolinaReferencia)
+          : (precoEtanolReferencia / precoDigitado);
+
+      bool vantajoso = ratio <= 0.7;
+      return AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: Container(
+          key: ValueKey(vantajoso),
+          margin: const EdgeInsets.only(top: 15),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: vantajoso
+                ? Colors.green.withOpacity(0.1)
+                : Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: vantajoso
+                  ? Colors.greenAccent.withOpacity(0.3)
+                  : Colors.orangeAccent.withOpacity(0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                vantajoso
+                    ? RemixIcons.thumb_up_line
+                    : RemixIcons.error_warning_line,
+                color: Colors.greenAccent,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  vantajoso
+                      ? "Este combustível está valendo a pena! (Ratio: ${(ratio * 100).toStringAsFixed(1)}%)"
+                      : "Atenção: A ${(isEtanol ? 'Gasolina Comum' : 'Etanol / Flex')} pode estar mais vantajosa agora.",
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: vantajoso ? Colors.greenAccent : Colors.orangeAccent,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildDatePickerField(HomeEntryController c) {
     return Obx(() {
       final date = c.selectedDate.value;
-      final dateStr = "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
-      final timeStr = "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+      final dateStr =
+          "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+      final timeStr =
+          "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
       return InkWell(
         onTap: () => c.selecionarData(Get.context!),
         child: Container(
@@ -165,7 +235,11 @@ class HomeEntryPage extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(RemixIcons.calendar_event_line, size: 20, color: Colors.blueAccent),
+              Icon(
+                RemixIcons.calendar_event_line,
+                size: 20,
+                color: Colors.blueAccent,
+              ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +254,7 @@ class HomeEntryPage extends StatelessWidget {
                       color: Colors.white,
                       fontSize: 16,
                     ),
-                  )
+                  ),
                 ],
               ),
               const Spacer(),

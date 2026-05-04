@@ -16,7 +16,6 @@ import 'package:get/get.dart';
 class HomeBindings implements Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<AppController>(() => AppController(), fenix: true);
     Get.lazyPut<LookupController>(() => LookupController(), fenix: true);
     Get.lazyPut<CurrencyController>(() => CurrencyController(), fenix: true);
     Get.lazyPut<GasStationController>(
@@ -37,7 +36,7 @@ class HomeBindings implements Bindings {
       () => MapNavigationController(),
       fenix: true,
     );
-    
+    Get.lazyPut<AppController>(() => AppController(), fenix: true);
     Get.lazyPut<BackupController>(() => BackupController(), fenix: true);
   }
 }

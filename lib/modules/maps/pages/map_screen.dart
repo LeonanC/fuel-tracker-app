@@ -307,7 +307,7 @@ class MapScreen extends GetView<MapNavigationController> {
                       _buildInfoDetail(
                         RemixIcons.money_dollar_circle_line,
                         'Preço'.toUpperCase(),
-                        settings.formatarCurrency(station.price),
+                        settings.formatarCurrency(station.precoGasolina),
                       ),
                     ],
                   ),

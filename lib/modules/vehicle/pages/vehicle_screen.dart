@@ -4,6 +4,7 @@ import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/modules/registro/pages/vehicle_entry_screen.dart';
 import 'package:fuel_tracker_app/modules/vehicle/controller/vehicle_controller.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
 
 class VehicleScreen extends GetView<VehicleController> {
@@ -33,8 +34,7 @@ class VehicleScreen extends GetView<VehicleController> {
                 titlePadding: EdgeInsets.only(bottom: 16.h),
                 title: Text(
                   'veh_titulo'.tr,
-                  style: TextStyle(
-                    fontFamily: 'Montserrat',
+                  style: GoogleFonts.montserrat(
                     fontWeight: FontWeight.w700,
                     color: colorScheme.onSurface,
                     fontSize: 18.sp,
@@ -45,28 +45,19 @@ class VehicleScreen extends GetView<VehicleController> {
             if (controller.isLoading.value)
               SliverFillRemaining(
                 child: Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      colorScheme.primary,
-                    ),
-                  ),
+                  child: CircularProgressIndicator(color: colorScheme.primary),
                 ),
               )
-            else if (controller.vehiclesMap.isEmpty)
+            else if (controller.vehicles.isEmpty)
               SliverFillRemaining(child: _buildEmptyState(colorScheme))
             else
               SliverPadding(
                 padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 100.h),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate((context, index) {
-                    final veiculos = controller.vehiclesMap.values.toList();
-                    final data = veiculos[index];
-                    final veiculo = VehicleModel.fromMap(
-                      data,
-                      data['pk_vehicle'],
-                    );
+                    final veiculo = controller.vehicles[index];
                     return _buildVehicleCard(veiculo, theme);
-                  }, childCount: controller.vehiclesMap.length),
+                  }, childCount: controller.vehicles.length),
                 ),
               ),
           ],
@@ -142,6 +133,9 @@ class VehicleScreen extends GetView<VehicleController> {
 
   Widget _buildVehicleCard(VehicleModel veiculo, ThemeData theme) {
     final colorScheme = theme.colorScheme;
+    Color brandColor = veiculo.make.toLowerCase().contains('honda')
+        ? Colors.redAccent
+        : colorScheme.primary;
 
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -163,63 +157,123 @@ class VehicleScreen extends GetView<VehicleController> {
           onTap: () => Get.to(() => VehicleEntryScreen(data: veiculo)),
           child: Padding(
             padding: EdgeInsets.all(16.w),
-            child: Row(
+            child: Column(
               children: [
-                Container(
-                  width: 56.w,
-                  height: 56.w,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primary,
-                        colorScheme.primary.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: brandColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16.r),
+                      ),
+                      child: Icon(
+                        RemixIcons.car_fill,
+                        color: brandColor,
+                        size: 28.sp,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(18.r),
-                  ),
-                  child: Icon(
-                    RemixIcons.car_fill,
-                    color: Colors.white,
-                    size: 28.sp,
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        veiculo.nickname,
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 17.sp,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: -0.5,
-                        ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            veiculo.model,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            "${veiculo.make} • ${veiculo.year}",
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withOpacity(0.5),
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 4.h),
-                      Text(
-                        "${veiculo.make} ${veiculo.model} • ${veiculo.year}",
-                        style: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.5),
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                    _buildDeleteButton(
+                      () => _confirmDelete(veiculo, theme),
+                      colorScheme,
+                    ),
+                  ],
                 ),
-                _buildDeleteButton(
-                  () => _confirmDelete(veiculo, theme),
-                  colorScheme,
+                SizedBox(height: 20.h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildInfoTile(
+                      RemixIcons.steering_2_line,
+                      "Placa",
+                      veiculo.plate,
+                      colorScheme,
+                    ),
+                    _buildInfoTile(
+                      RemixIcons.gas_station_line,
+                      "Combustível",
+                      '${controller.tiposMap[veiculo.fuelType]?['nome']}',
+                      colorScheme,
+                    ),
+                    _buildInfoTile(
+                      RemixIcons.dashboard_3_line,
+                      "KM Atual",
+                      '${veiculo.initialOdometer}',
+                      colorScheme,
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoTile(
+    IconData icon,
+    String label,
+    String value,
+    ColorScheme colorScheme,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              size: 12.sp,
+              color: colorScheme.primary.withOpacity(0.6),
+            ),
+            SizedBox(width: 4.w),
+            Text(
+              label.toUpperCase(),
+              style: GoogleFonts.montserrat(
+                fontSize: 9.sp,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface.withOpacity(0.3),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 4.h),
+        Text(
+          value,
+          style: GoogleFonts.montserrat(
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+      ],
     );
   }
 
@@ -250,8 +304,13 @@ class VehicleScreen extends GetView<VehicleController> {
       title: "veh_excluir_titulo".tr,
       middleText: "veh_excluir_confirm".tr,
       backgroundColor: theme.cardColor,
-      titleStyle: TextStyle(color: theme.colorScheme.onSurface, fontWeight: FontWeight.bold),
-      middleTextStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.7)),
+      titleStyle: TextStyle(
+        color: theme.colorScheme.onSurface,
+        fontWeight: FontWeight.bold,
+      ),
+      middleTextStyle: TextStyle(
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
+      ),
       radius: 20.r,
       textConfirm: 'veh_sim'.tr,
       textCancel: 'veh_nao'.tr,

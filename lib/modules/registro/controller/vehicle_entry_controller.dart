@@ -31,45 +31,37 @@ class VehicleEntryController extends GetxController {
 
   void inicializer(VehicleModel? entry) {
     editingEntry = entry;
-    final isEditing = entry != null;
 
     nicknameController = TextEditingController(
-      text: isEditing ? entry.nickname.toString() : '',
+      text: entry?.nickname.toString() ?? '',
     );
-    makeController = TextEditingController(
-      text: isEditing ? entry.make.toString() : '',
-    );
+    makeController = TextEditingController(text: entry?.make.toString() ?? '');
     modelController = TextEditingController(
-      text: isEditing ? entry.model.toString() : '',
+      text: entry?.model.toString() ?? '',
     );
-    yearController = TextEditingController(
-      text: isEditing ? entry.year.toString() : '',
-    );
+    yearController = TextEditingController(text: entry?.year.toString() ?? '');
     plateController = TextEditingController(
-      text: isEditing ? entry.plate.toString() : '',
+      text: entry?.plate.toString() ?? '',
     );
 
     plateController.addListener(() => update());
 
     tankCapacityController = MoneyMaskedTextController(
-      initialValue: isEditing ? entry.tankCapacity : 0,
+      initialValue: entry?.tankCapacity ?? 0.0,
       decimalSeparator: ',',
       thousandSeparator: '',
       precision: 1,
     );
     odometerController = MoneyMaskedTextController(
-      initialValue: isEditing ? entry.initialOdometer : 0,
+      initialValue: entry?.initialOdometer ?? 0.0,
       decimalSeparator: ',',
       thousandSeparator: '',
       precision: 1,
     );
-    cityController = TextEditingController(text: isEditing ? entry.city : '');
+    cityController = TextEditingController(text: entry?.city ?? '');
 
-    if (isEditing) {
+    if (entry != null) {
       selectedTipo.value = entry.fuelType;
-    } else {
-      selectedTipo.value = '1';
-      selectedImageUrl.value = '';
     }
   }
 
@@ -93,7 +85,6 @@ class VehicleEntryController extends GetxController {
     isLoading.value = true;
 
     try {
-
       final Map<String, dynamic> vehicleData = {
         'pk_vehicle': editingEntry?.id,
         'nickname': nicknameController.text,

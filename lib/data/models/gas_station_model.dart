@@ -5,7 +5,10 @@ class GasStationModel {
   final String brand;
   final double latitude;
   final double longitude;
-  final double price;
+  final double precoGasolina;
+  final double precoEtanol;
+  final double precoDiesel;
+  final double precoGnv;
   final bool hasConvenientStore;
   final bool is24Hours;
 
@@ -16,7 +19,10 @@ class GasStationModel {
     required this.brand,
     required this.latitude,
     required this.longitude,
-    required this.price,
+    this.precoGasolina = 0.0,
+    this.precoEtanol = 0.0,
+    this.precoDiesel = 0.0,
+    this.precoGnv = 0.0,
     required this.hasConvenientStore,
     required this.is24Hours,
   });
@@ -29,7 +35,10 @@ class GasStationModel {
       'longitude': longitude,
       'endereco': address,
       'brand': brand,
-      'preco': price,
+      'preco_gasolina': precoGasolina,
+      'preco_etanol': precoEtanol,
+      'preco_diesel': precoDiesel,
+      'preco_gnv': precoGnv,
       'has_convenient_store': hasConvenientStore ? true : false,
       'is_24_hours': is24Hours ? true : false,
     };
@@ -43,7 +52,10 @@ class GasStationModel {
       longitude: (map['longitude'] as num?)?.toDouble() ?? 0.0,
       address: map['endereco'] as String?,
       brand: map['brand'] as String,
-      price: (map['preco'] as num?)?.toDouble() ?? 0.0,
+      precoGasolina: (map['preco_gasolina'] as num?)?.toDouble() ?? 0.0,
+      precoEtanol: (map['preco_etanol'] as num?)?.toDouble() ?? 0.0,
+      precoDiesel: (map['preco_diesel'] as num?)?.toDouble() ?? 0.0,
+      precoGnv: (map['preco_gnv'] as num?)?.toDouble() ?? 0.0,
       hasConvenientStore: map['has_convenient_store'] == true || map['hasConvenientStore'] == true,
       is24Hours: map['is_24_hours'] == true || map['is24Hours'] == true,
     );

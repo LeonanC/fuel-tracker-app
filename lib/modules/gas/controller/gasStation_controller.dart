@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
@@ -8,10 +9,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class GasStationController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final settings = Get.find<SettingController>();
 
   // Observáveis
   final isLoading = false.obs;
-  final postosMap = <dynamic, Map<String, dynamic>>{}.obs;
+  final gasStationsMap = <dynamic, Map<String, dynamic>>{}.obs;
   var selectedPostoID = Rxn<dynamic>();
 
   @override
@@ -30,7 +32,7 @@ class GasStationController extends GetxController {
         tempMap[item['pk_posto']] = item;
       }
 
-      postosMap.assignAll(tempMap);
+      gasStationsMap.assignAll(tempMap);
     } catch (e) {
       _showSnackbar("Erro", "Falha ao carregar postos: $e", isError: true);
     } finally {
@@ -91,8 +93,8 @@ class GasStationController extends GetxController {
           .select()
           .single();
       final int idGerado = response['pk_posto'];
-      postosMap[idGerado] = response;
-      postosMap.refresh();
+      gasStationsMap[idGerado] = response;
+      gasStationsMap.refresh();
 
       Get.back();
       _showSnackbar("Sucesso", "Posto ${data['nome']} guardado!");
@@ -114,8 +116,8 @@ class GasStationController extends GetxController {
       final data = posto.toMap();
       await _supabase.from('postos').update(data).eq('pk_posto', posto.id!);
 
-      postosMap[posto.id] = data;
-      postosMap.refresh();
+      gasStationsMap[posto.id] = data;
+      gasStationsMap.refresh();
 
       Get.back();
       _showSnackbar("Sucesso", "Posto ${posto.nome} atualizado!");
@@ -130,8 +132,8 @@ class GasStationController extends GetxController {
     try {
       await _supabase.from('postos').delete().eq('pk_posto', id);
 
-      postosMap.remove(id);
-      postosMap.refresh();
+      gasStationsMap.remove(id);
+      gasStationsMap.refresh();
 
       _showSnackbar("Eliminado", "O posto foi removido.");
     } catch (e) {

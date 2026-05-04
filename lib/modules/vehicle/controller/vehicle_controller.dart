@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
@@ -8,7 +9,10 @@ class VehicleController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
 
   final isLoading = false.obs;
+  final vehicles = <VehicleModel>[].obs;
   final vehiclesMap = <dynamic, Map<String, dynamic>>{}.obs;
+  final tipos = <TypeGasModel>[].obs;
+  final tiposMap = <dynamic, Map<String, dynamic>>{}.obs;
   var selectedVehicleID = Rxn<dynamic>();
 
   @override
@@ -20,13 +24,20 @@ class VehicleController extends GetxController {
   Future<void> fetchVehicle() async {
     try {
       isLoading.value = true;
-      final List<dynamic> data = await _supabase.from('veiculos').select();
-      final Map<String, Map<String, dynamic>> tempMap = {};
-      for (var item in data) {
-        tempMap[item['id']] = item;
-      }
 
-      vehiclesMap.assignAll(tempMap);
+      final results = await Future.wait([
+        _supabase.from('veiculos').select(),
+        _supabase.from('tipo_combustivel').select(),
+      ]);
+
+      final vehicleData = results[0] as List;
+      vehicles.value = vehicleData.map((e) => VehicleModel.fromMap(e)).toList();
+      vehiclesMap.value = {for (var v in vehicleData) v['id'].toString(): v};
+      
+      final tiposData = results[1] as List;
+      tipos.value = tiposData.map((e) => TypeGasModel.fromMap(e)).toList();
+      tiposMap.value = {for (var t in tiposData) t['pk_tipo'].toString(): t};
+
     } catch (e) {
       _showSnackbar("Erro", "Falha ao carregar os veículos: $e", isError: true);
     } finally {

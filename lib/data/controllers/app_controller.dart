@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 
 class AppController extends GetxController {
   final String versionUrl =
-      "https://raw.githubusercontent.com/LeonanC/fuel-tracker-app/blob/main/config/update.json";
+      "https://raw.githubusercontent.com/LeonanC/fuel-tracker-app/blob/main/version.json";
 
   @override
   void onInit() {

@@ -35,112 +35,89 @@ class ToolsScreen extends GetView<SettingController> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Obx(
-          () => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _sectionTitle('sp_aparencia'.tr),
-              Obx(
-                () => _buildSettingTile(
-                  theme: theme,
-                  icon: controller.isDarkMode.value
-                      ? RemixIcons.moon_line
-                      : RemixIcons.sun_line,
-                  title: "sp_modo_escuro".tr,
-                  subtitle: "sp_modo_escuro_sub".tr,
-                  trailing: Switch(
-                    value: controller.isDarkMode.value,
-                    onChanged: (val) => controller.toggleTheme(),
-                    activeColor: Colors.blueAccent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle('sp_aparencia'.tr),
+            Obx(
+              () => _buildSettingTile(
+                theme: theme,
+                icon: controller.isDarkMode.value
+                    ? RemixIcons.moon_line
+                    : RemixIcons.sun_line,
+                title: "sp_modo_escuro".tr,
+                subtitle: "sp_modo_escuro_sub".tr,
+                trailing: Switch(
+                  value: controller.isDarkMode.value,
+                  onChanged: (val) => controller.toggleTheme(),
+                  activeColor: Colors.blueAccent,
+                ),
+              ),
+            ),
+            _buildSettingTile(
+              theme: theme,
+              icon: RemixIcons.global_line,
+              title: "sp_idioma".tr,
+              subtitle: "sp_idioma_nome".tr,
+              onTap: () => _showLanguageModal(context, theme),
+            ),
+
+            _sectionTitle('cl_settings'.tr),
+            _buildSettingTile(
+              theme: theme,
+              title: 'sp_notification_title'.tr,
+              subtitle: 'sp_notification_desc'.tr,
+              icon: RemixIcons.notification_3_line,
+              onTap: () => Get.to(() => RemindersPages()),
+            ),
+            const SizedBox(height: 24),
+            _sectionTitle('cl_management'.tr),
+            _buildSettingTile(
+              theme: theme,
+              title: 'sp_gasStation_title'.tr,
+              subtitle: 'sp_gasStation_desc'.tr,
+              icon: RemixIcons.gas_station_line,
+              onTap: () => Get.to(() => GasStationScreen()),
+            ),
+            _buildSettingTile(
+              theme: theme,
+              title: 'sp_vehicles_title'.tr,
+              subtitle: 'sp_vehicles_desc'.tr,
+              icon: RemixIcons.car_line,
+              onTap: () => Get.to(() => VehicleScreen()),
+            ),
+            _sectionTitle('cl_dados'.tr),
+
+            _buildSettingTile(
+              theme: theme,
+              title: 'sp_backup_title'.tr,
+              subtitle: 'sp_backup_desc'.tr,
+              icon: RemixIcons.cloud_line,
+              onTap: () => Get.to(() => BackupRestoreScreen()),
+            ),
+            _buildSettingTile(
+              theme: theme,
+              title: 'sp_feedback_title'.tr,
+              subtitle: 'sp_feedback_desc'.tr,
+              icon: RemixIcons.customer_service_2_line,
+              onTap: () => _sendFeedback(),
+            ),
+            const SizedBox(height: 30),
+            _buildLogoutButton(theme),
+            const SizedBox(height: 40),
+            Obx(
+              () => Center(
+                child: Text(
+                  "Versão ${controller.appVersion.value}",
+                  style: TextStyle(
+                    fontFamily: 'Montserrat',
+                    color: Colors.grey.withOpacity(0.5),
+                    fontSize: 12,
                   ),
                 ),
               ),
-              _buildSettingTile(
-                theme: theme,
-                icon: RemixIcons.global_line,
-                title: "sp_idioma".tr,
-                subtitle: "sp_idioma_nome".tr,
-                onTap: () => _showLanguageModal(context, theme),
-              ),
-
-              _sectionTitle('cl_settings'.tr),
-              _buildSettingTile(
-                theme: theme,
-                title: 'sp_notification_title'.tr,
-                subtitle: 'sp_notification_desc'.tr,
-                icon: RemixIcons.notification_3_line,
-                onTap: () => Get.to(() => RemindersPages()),
-              ),
-              const SizedBox(height: 24),
-              _sectionTitle('cl_management'.tr),
-              _buildSettingTile(
-                theme: theme,
-                title: 'sp_gasStation_title'.tr,
-                subtitle: 'sp_gasStation_desc'.tr,
-                icon: RemixIcons.gas_station_line,
-                onTap: () => Get.to(() => GasStationScreen()),
-              ),
-              _buildSettingTile(
-                theme: theme,
-                title: 'sp_vehicles_title'.tr,
-                subtitle: 'sp_vehicles_desc'.tr,
-                icon: RemixIcons.car_line,
-                onTap: () => Get.to(() => VehicleScreen()),
-              ),
-              Obx(() => Column(
-                children: [
-                  ListTile(
-                    title: Text("Final da Placa"),
-                    trailing: DropdownButton<int>(
-                      value: controller.placaFinal.value,
-                      items: List.generate(10, (i) => DropdownMenuItem(value: i, child: Text('$i'))),
-                      onChanged: (val) => controller.setPlacaFinal(val!),
-                    ),
-                  ),
-                  Divider(),
-                  Text("Calendário IPVA 2026", style: TextStyle(fontWeight: FontWeight.bold)),
-                  ...controller.obterDatasVencimento().asMap().entries.map((entry){
-                    return ListTile(
-                      leading: Icon(Icons.calendar_today),
-                      title: Text("${entry.key + 1}ª Parcela / Cota Única"),
-                      trailing: Text(entry.value),
-                    );
-                  }).toList(),
-                ],
-              )),
-              _sectionTitle('cl_dados'.tr),
-
-              _buildSettingTile(
-                theme: theme,
-                title: 'sp_backup_title'.tr,
-                subtitle: 'sp_backup_desc'.tr,
-                icon: RemixIcons.cloud_line,
-                onTap: () => Get.to(() => BackupRestoreScreen()),
-              ),
-              _buildSettingTile(
-                theme: theme,
-                title: 'sp_feedback_title'.tr,
-                subtitle: 'sp_feedback_desc'.tr,
-                icon: RemixIcons.customer_service_2_line,
-                onTap: () => _sendFeedback(),
-              ),
-              const SizedBox(height: 30),
-              _buildLogoutButton(theme),
-              const SizedBox(height: 40),
-              Obx(
-                () => Center(
-                  child: Text(
-                    "Versão ${controller.appVersion.value}",
-                    style: TextStyle(
-                      fontFamily: 'Montserrat',
-                      color: Colors.grey.withOpacity(0.5),
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

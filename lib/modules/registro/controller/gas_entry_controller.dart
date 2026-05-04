@@ -12,7 +12,10 @@ class GasEntryController extends GetxController {
   late TextEditingController nameController;
   late TextEditingController addressController;
   late TextEditingController brandController;
-  late MoneyMaskedTextController priceController;
+  late MoneyMaskedTextController priceGAController;
+  late MoneyMaskedTextController priceETAController;
+  late MoneyMaskedTextController priceDIEController;
+  late MoneyMaskedTextController priceGNController;
   late MoneyMaskedTextController latitudeController;
   late MoneyMaskedTextController longitudeController;
 
@@ -38,11 +41,29 @@ class GasEntryController extends GetxController {
       text: isEditing ? entry.brand.toString() : '',
     );
 
-    priceController = MoneyMaskedTextController(
-      initialValue: isEditing ? entry.price : 0,
+    priceGAController = MoneyMaskedTextController(
+      initialValue: isEditing ? entry.precoGasolina : 0,
       decimalSeparator: '.',
       thousandSeparator: '',
-      precision: 3,
+      precision: 2,
+    );
+    priceETAController = MoneyMaskedTextController(
+      initialValue: isEditing ? entry.precoEtanol : 0,
+      decimalSeparator: '.',
+      thousandSeparator: '',
+      precision: 2,
+    );
+    priceDIEController = MoneyMaskedTextController(
+      initialValue: isEditing ? entry.precoDiesel : 0,
+      decimalSeparator: '.',
+      thousandSeparator: '',
+      precision: 2,
+    );
+    priceGNController = MoneyMaskedTextController(
+      initialValue: isEditing ? entry.precoGnv : 0,
+      decimalSeparator: '.',
+      thousandSeparator: '',
+      precision: 2,
     );
     latitudeController = MoneyMaskedTextController(
       initialValue: isEditing ? entry.latitude : 0,
@@ -94,7 +115,10 @@ class GasEntryController extends GetxController {
         brand: brandController.text.trim(),
         latitude: latitudeController.numberValue,
         longitude: longitudeController.numberValue,
-        price: priceController.numberValue,
+        precoGasolina: priceGAController.numberValue,
+        precoEtanol: priceETAController.numberValue,
+        precoDiesel: priceDIEController.numberValue,
+        precoGnv: priceGNController.numberValue,
         hasConvenientStore: hasConvenienceStore.value,
         is24Hours: is24Hours.value,
       );
