@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/modules/auth/completar_perfil_controller.dart';
+import 'package:fuel_tracker_app/modules/login/controller/completar_perfil_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 

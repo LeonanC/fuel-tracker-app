@@ -3,9 +3,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/data/controllers/app_controller.dart';
 import 'package:fuel_tracker_app/data/services/app_translations.dart';
 import 'package:fuel_tracker_app/main_screen.dart';
+import 'package:fuel_tracker_app/modules/about/binding/about_binding.dart';
 import 'package:fuel_tracker_app/modules/about/pages/about_screen.dart';
-import 'package:fuel_tracker_app/modules/auth/completar_perfil.dart';
-import 'package:fuel_tracker_app/modules/auth/login_page.dart';
+import 'package:fuel_tracker_app/modules/backup/binding/backup_binding.dart';
+import 'package:fuel_tracker_app/modules/gas/binding/gas_binding.dart';
+import 'package:fuel_tracker_app/modules/login/binding/login_binding.dart';
+import 'package:fuel_tracker_app/modules/login/pages/completar_perfil.dart';
+import 'package:fuel_tracker_app/modules/login/pages/login_page.dart';
+import 'package:fuel_tracker_app/modules/perfil/binding/perfil_binding.dart';
+import 'package:fuel_tracker_app/modules/remider/binding/reminder_binding.dart';
+import 'package:fuel_tracker_app/modules/settings/binding/setting_binding.dart';
+import 'package:fuel_tracker_app/modules/settings/pages/settings_page.dart';
+import 'package:fuel_tracker_app/modules/vehicle/binding/vehicle_binding.dart';
 import 'package:fuel_tracker_app/modules/welcome/loading_binding.dart';
 import 'package:fuel_tracker_app/modules/welcome/loading_page.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
@@ -24,28 +33,27 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final NotificationService notificationService = NotificationService();
 
 Future<void> main() async {
-  Get.put(AppController());
-  await initializeDateFormatting('pt_BR', null);
   WidgetsFlutterBinding.ensureInitialized();
+
   await Supabase.initialize(
     url: 'https://feucepbyhclaumteibkd.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldWNlcGJ5aGNsYXVtdGVpYmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MDQyOTMsImV4cCI6MjA5MjM4MDI5M30.Z5xbnS3swuDBGai3Z4Hv1oJhr0QfcEEfq8v9s-x6ypA',
-    authOptions: FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.pkce,
-    )
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldWNlcGJ5aGNsYXVtdGVpYmtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4MDQyOTMsImV4cCI6MjA5MjM4MDI5M30.Z5xbnS3swuDBGai3Z4Hv1oJhr0QfcEEfq8v9s-x6ypA',
+    authOptions: FlutterAuthClientOptions(authFlowType: AuthFlowType.pkce),
   );
+
+  Get.put(AppController());
+  await initializeDateFormatting('pt_BR', null);
   await NotificationService.init();
   await NotificationService.requestPermissions();
-  
-  final session = Supabase.instance.client.auth.currentSession;
-  String rotaInitial = session == null ? '/login' : '/loading';
 
-  runApp(MyApp(rotaInitial: rotaInitial));
+  
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  final String rotaInitial;
-  const MyApp({super.key, required this.rotaInitial});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -57,22 +65,12 @@ class MyApp extends StatelessWidget {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Controle de Combustível',
-          initialRoute: rotaInitial,
+          initialRoute: '/main',
           translations: AppTranslations(),
           locale: Get.deviceLocale,
           fallbackLocale: Locale('pt_BR', 'BR'),
           themeMode: ThemeMode.system,
           getPages: [
-            GetPage(
-              name: '/about',
-              page: () => AboutScreen(),
-              binding: HomeBindings(),
-            ),
-            GetPage(
-              name: '/main',
-              page: () => MainPage(),
-              binding: HomeBindings(),
-            ),
             GetPage(
               name: '/loading',
               page: () => LoadingPage(),
@@ -81,53 +79,68 @@ class MyApp extends StatelessWidget {
             GetPage(
               name: '/login',
               page: () => LoginPage(),
-              binding: HomeBindings(),
+              binding: LoginBinding(),
+            ),
+            GetPage(
+              name: '/about',
+              page: () => AboutScreen(),
+              binding: AboutBinding(),
+            ),
+            GetPage(
+              name: '/main',
+              page: () => MainPage(),
+              binding: HomeBinding(),
             ),
             GetPage(
               name: '/completar-perfil',
               page: () => CompletarPerfilPage(),
-              binding: HomeBindings(),
+              binding: LoginBinding(),
             ),
             GetPage(
               name: '/perfil',
               page: () => PerfilPage(),
-              binding: HomeBindings(),
+              binding: SettingBinding(),
             ),
             GetPage(
               name: '/home',
               page: () => HomePage(),
-              binding: HomeBindings(),
+              binding: HomeBinding(),
             ),
             GetPage(
               name: '/fuel_entry',
               page: () => HomeEntryPage(),
-              binding: HomeBindings(),
+              binding: HomeBinding(),
               transition: Transition.rightToLeftWithFade,
             ),
             GetPage(
               name: '/postos_pages',
               page: () => HomePage(),
-              binding: HomeBindings(),
+              binding: HomeBinding(),
             ),
             GetPage(
               name: '/notification_pages',
               page: () => RemindersPages(),
-              binding: HomeBindings(),
+              binding: ReminderBinding(),
             ),
             GetPage(
               name: '/gas_station',
               page: () => GasStationScreen(),
-              binding: HomeBindings(),
+              binding: GasStationBinding(),
             ),
             GetPage(
               name: '/vehicles_pages',
               page: () => VehicleScreen(),
-              binding: HomeBindings(),
+              binding: VehicleBinding(),
             ),
             GetPage(
               name: '/backup_pages',
-              page: () => BackupRestoreScreen(),
-              binding: HomeBindings(),
+              page: () => BackupScreen(),
+              binding: BackupBinding(),
+            ),
+            GetPage(
+              name: '/settings',
+              page: () => SettingScreen(),
+              binding: SettingBinding(),
             ),
           ],
           theme: ThemeData(

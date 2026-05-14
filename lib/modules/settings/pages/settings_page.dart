@@ -10,8 +10,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ToolsScreen extends GetView<SettingController> {
-  const ToolsScreen({super.key});
+class SettingScreen extends GetView<SettingController> {
+  const SettingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +107,7 @@ class ToolsScreen extends GetView<SettingController> {
                   title: 'sp_backup_title'.tr,
                   subtitle: 'sp_backup_desc'.tr,
                   icon: RemixIcons.cloud_line,
-                  onTap: () => Get.to(() => BackupRestoreScreen()),
+                  onTap: () => Get.to(() => BackupScreen()),
                 ),
                 _buildSettingTile(
                   theme: theme,

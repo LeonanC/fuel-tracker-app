@@ -24,45 +24,42 @@ class LoadingController extends GetxController {
       temErro.value = false;
 
       statusMensagem.value = "Autenticando motorista...";
+      await Future.delayed(const Duration(milliseconds: 500));
       final session = _supabase.auth.currentSession;
 
-      if (session == null || session.user == null) {
+      if (session == null) {
+        print("Nenhuma sessão encontrada. Redirecionando para Login...");
+        statusMensagem.value = "Usuário não identificado. Indo para login...";
+        progresso.value = 1.0;
+
         await Future.delayed(const Duration(seconds: 1));
         Get.offAllNamed('/login');
         return;
       }
 
-      final user = session.user!;
-      progresso.value = 0.1;
+      final user = session.user;
+      progresso.value = 0.2;
 
-      statusMensagem.value = "Carregando dados do veículo...";
-      final veiculoData = await _supabase.from('veiculos').select();
-      progresso.value = 0.4;
-
-      statusMensagem.value = "Sincronizando abastecimentos...";
-      final List<dynamic> historicoData = await _supabase
-          .from('abastecimentos')
-          .select()
-          .eq('fk_usuario', user.id)
-          .order('data', ascending: false);
+      statusMensagem.value = "Sincronizando garagem...";
+      final responses = await Future.wait([
+        _supabase.from('veiculos').select(),
+        _supabase.from('abastecimentos').select().eq('fk_usuario', user.id).order('data'),
+      ]);
       progresso.value = 0.8;
 
-      if (Get.isRegistered<HomeController>()) {
-        final homeController = Get.find<HomeController>();
+      final homeController = Get.put(HomeController(), permanent: true);
 
-        homeController.vehicles.assignAll(
-          veiculoData.map((v) => VehicleModel.fromMap(v)).toList(),
+      homeController.vehicles.assignAll(
+        (responses[0] as List).map((v) => VehicleModel.fromMap(v)).toList(),
         );
-
-        homeController.fuelEntries.assignAll(
-          historicoData.map((e) => FuelEntryModel.fromMap(e)).toList(),
+      homeController.fuelEntries.assignAll(
+        (responses[1] as List).map((e) => FuelEntryModel.fromMap(e)).toList(),
         );
-      }
-
+      
       statusMensagem.value = "Tudo pronto!";
       progresso.value = 1.0;
 
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 600));
       Get.offAllNamed('/main');
     } catch (e) {
       temErro.value = true;

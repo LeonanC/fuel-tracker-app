@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
-import 'package:fuel_tracker_app/modules/auth/login_controller.dart';
+import 'package:fuel_tracker_app/modules/login/controller/login_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 

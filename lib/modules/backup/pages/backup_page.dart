@@ -3,14 +3,14 @@ import 'package:fuel_tracker_app/data/services/backup_service.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
-class BackupRestoreScreen extends StatefulWidget {
-  const BackupRestoreScreen({super.key});
+class BackupScreen extends StatefulWidget {
+  const BackupScreen({super.key});
 
   @override
-  State<BackupRestoreScreen> createState() => _BackupRestoreScreenState();
+  State<BackupScreen> createState() => _BackupScreenState();
 }
 
-class _BackupRestoreScreenState extends State<BackupRestoreScreen> {
+class _BackupScreenState extends State<BackupScreen> {
   final List<Map<String, dynamic>> _tabelasConfig = [
     {
       'id': 'abastecimentos',

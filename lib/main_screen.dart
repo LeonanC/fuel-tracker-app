@@ -19,7 +19,7 @@ class _MainPageState extends State<MainPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
 
-  List<Widget> pages = [HomePage(), DashboardPage(), PerfilPage(), ToolsScreen()];
+  List<Widget> pages = [HomePage(), DashboardPage(), PerfilPage(), SettingScreen()];
 
   void _onItemTapped(int index) {
     setState(() {
