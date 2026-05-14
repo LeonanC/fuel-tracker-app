@@ -10,174 +10,143 @@ import 'package:remixicon/remixicon.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeController extends GetxController {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final _supabase = Supabase.instance.client;
   final settings = Get.find<SettingController>();
 
-  var monthlyExpenses = <double>[].obs;
-  var totalSpent = 0.0.obs;
-  var totalKm = 0.0.obs;
-  var totalEntries = 0.obs;
-
-  var isLoading = false.obs;
-  var searchText = ''.obs;
   var vehicles = <VehicleModel>[].obs;
-  var veiculosMap = <String, Map<String, dynamic>>{}.obs;
+  var fuelEntries = <FuelEntryModel>[].obs;
   var postos = <GasStationModel>[].obs;
-  var postosMap = <String, Map<String, dynamic>>{}.obs;
   var tipos = <TypeGasModel>[].obs;
+
+  var veiculosMap = <String, Map<String, dynamic>>{}.obs;
+  var postosMap = <String, Map<String, dynamic>>{}.obs;
   var tiposMap = <String, Map<String, dynamic>>{}.obs;
 
-  var fuelEntries = <FuelEntryModel>[].obs;
-  var sharedWithMeEntries = <FuelEntryModel>[].obs;
-  var usuariosMap = <String, dynamic>{}.obs;
-  var todosUsarios = <Map<String, dynamic>>[].obs;
+  var selectedVehicleID = RxnString();
+  var selectedTipoID = RxnString();
+  var selectedPostoID = RxnString();
+  var isLoading = false.obs;
+  var searchText = ''.obs;
 
-  var selectedVehicleID = Rxn<dynamic>();
-  var selectedTipoID = Rxn<dynamic>();
-  var selectedPostoID = Rxn<dynamic>();
-
-  var veiculosList = <Map<String, dynamic>>[].obs;
-  var tiposList = <Map<String, dynamic>>[].obs;
-  var postosList = <Map<String, dynamic>>[].obs;
-
-  String get currentUserId => _supabase.auth.currentUser?.id ?? '';
-
-  @override
-  void onInit() {
-    super.onInit();
-    fetchInitialData();
+  double get totalGastoFiltrado {
+    return filteredFuelEntries.fold(0.0, (sum, item) => sum + item.totalCost);
   }
 
-  void calculateMonthlyExpenses() {
-    final filteredList = fuelEntries.where((entry){
-      if(selectedVehicleID.value == null) return true;
-      return entry.vehicleId == selectedVehicleID.value;
-    }).toList();
+  double get kmRodadoTotal {
+    final list = filteredFuelEntries;
+    if (list.length < 2) return 0.0;
+    return list.first.odometerKm - list.last.odometerKm;
+  }
 
-    if(filteredList.isEmpty){
-      totalKm.value = 0.0;
-      totalSpent.value = 0.0;
-      monthlyExpenses.value = List.generate(6, (index) => 0.0);
+  double get consumoMediaGeral {
+    final entries = filteredFuelEntries;
+    if (entries.length < 2) return 0.0;
+    final atual = entries[0];
+    final anterior = entries[1];
+
+    final double distancia = atual.odometerKm - anterior.odometerKm;
+    final double litros = atual.volumeLiters;
+    if (litros <= 0) return 0.0;
+
+    return distancia / litros;
+  }
+
+  double get odometerAnterior {
+    final entries = filteredFuelEntries;
+    if (entries.length >= 2) {
+      return entries[1].odometerKm;
     }
 
-    final now = DateTime.now();
-    List<double> expenses = List.generate(6, (index) => 0.0);
-    double tempTotalSpent = 0.0;
+    final veiculo = vehicles.firstWhereOrNull(
+      (v) => v.id == selectedVehicleID.value,
+    );
+    return veiculo?.initialOdometer ?? 0.0;
+  }
 
-    final sortedEntries = List<FuelEntryModel>.from(filteredList)
-      ..sort((a, b) => a.entryDate!.compareTo(b.entryDate!));
-
-    if(sortedEntries.length > 1){
-      double firstOdometer = sortedEntries.first.odometerKm;
-      double lastOdometer = sortedEntries.last.odometerKm;
-      totalKm.value = lastOdometer - firstOdometer;
-    }else{
-      totalKm.value = 0.0;
+  Map<String, double> get gastosPorMes {
+    Map<String, double> totais = {};
+    for (var entry in filteredFuelEntries) {
+      if (entry.entryDate == null) continue;
+      String chaveMes =
+          "${entry.entryDate!.month.toString().padLeft(2, '0')}/${entry.entryDate!.year}";
+      totais[chaveMes] = (totais[chaveMes] ?? 0.0) + entry.totalCost;
     }
+    return totais;
+  }
 
-    for (var entry in filteredList) {
-      double entryTotal = (entry.pricePerLiter) * (entry.volumeLiters);
-      tempTotalSpent += entryTotal;
+  List<double> get ultimosSeisMeses {
+    final agora = DateTime.now();
+    List<double> valores = List.filled(6, 0.0);
 
-      if (entry.entryDate != null) {
-        int monthDiff =
-            (now.year - entry.entryDate!.year) * 12 +
-            now.month -
-            entry.entryDate!.month;
+    for (var entry in filteredFuelEntries) {
+      if (entry.entryDate == null) continue;
+      int diffMeses =
+          (agora.year - entry.entryDate!.year) * 12 +
+          (agora.month - entry.entryDate!.month);
 
-        if (monthDiff >= 0 && monthDiff < 6) {
-          expenses[5 - monthDiff] += entryTotal;
-        }
+      if (diffMeses >= 0 && diffMeses < 6) {
+        valores[5 - diffMeses] += entry.totalCost;
       }
     }
-    monthlyExpenses.value = expenses;
-    totalSpent.value = tempTotalSpent;
-    totalEntries.value = filteredList.length;
+    return valores;
   }
 
-  Future<void> fetchInitialData() async {
-    try {
-      isLoading.value = true;
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return;
+  List<FuelEntryModel> get filteredFuelEntries {
+    List<FuelEntryModel> list = fuelEntries.toList();
 
-      final results = await Future.wait([
-        _supabase.from('veiculos').select(),
-        _supabase.from('usuarios').select('id, nome, foto_url'),
-        _supabase.from('postos').select(),
-        _supabase.from('tipo_combustivel').select(),
-        _supabase
-            .from('abastecimentos')
-            .select()
-            .or('fk_usuario.eq.$userId, shared_with.cs.{$userId}')
-            .order('data', ascending: false),
-      ]);
-
-      final vehicleData = results[0] as List;
-      vehicles.value = vehicleData.map((e) => VehicleModel.fromMap(e)).toList();
-      veiculosMap.value = {for (var v in vehicleData) v['id'].toString(): v};
-
-      final usersData = results[1] as List;
-      todosUsarios.value = List<Map<String, dynamic>>.from(usersData);
-      usuariosMap.value = {for (var u in usersData) u['id'].toString(): u};
-
-      final postosData = results[2] as List;
-      postos.value = postosData.map((e) => GasStationModel.fromMap(e)).toList();
-      postosMap.value = {for (var p in postosData) p['pk_posto'].toString(): p};
-
-      final tiposData = results[3] as List;
-      tipos.value = tiposData.map((e) => TypeGasModel.fromMap(e)).toList();
-      tiposMap.value = {for (var t in tiposData) t['pk_tipo'].toString(): t};
-
-      final fuelData = results[4] as List;
-      fuelEntries.value = fuelData
-          .map((e) => FuelEntryModel.fromMap(e))
-          .toList();
-
-      calculateMonthlyExpenses();
-    } catch (e) {
-      debugPrint("Erro na inicialização: $e");
-    } finally {
-      isLoading.value = false;
+    if (selectedVehicleID.value != null && selectedVehicleID.value!.isNotEmpty) {
+      list = list.where((e) => e.vehicleId == selectedVehicleID.value).toList();
     }
+
+    if (searchText.value.isNotEmpty) {
+      final query = searchText.value.toLowerCase();
+      list = list.where((e) {
+        final posto =
+            postosMap[e.gasStationId]?['nome']?.toString().toLowerCase() ?? '';
+        return posto.contains(query);
+      }).toList();
+    }
+    return list;
   }
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
-      await _supabase.from('abastecimentos').insert(data);
-      Get.back(result: true);
-      
+      isLoading.value = true;
+      final response = await _supabase
+          .from('abastecimentos')
+          .insert(data)
+          .select()
+          .single();
+
+      final newEntry = FuelEntryModel.fromMap(response);
+      fuelEntries.insert(0, newEntry);
+
+      _showSnackbar("Sucesso", "Abastecimento registrado!");
     } catch (e) {
-      _showSnackbar('Erro', 'Falha ao salvar', isError: true);
+      _showSnackbar("Erro", "Falha ao salvar no banco", isError: true);
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<void> updateFuel(FuelEntryModel model) async {
+  Future<void> updateFuel(FuelEntryModel data) async {
     try {
-      if (model.id == null) return;
       isLoading.value = true;
 
       await _supabase
           .from('abastecimentos')
-          .update(model.toMap())
-          .eq('pk_fuel', model.id!);
-      Get.back(result: true);
-    } catch (e) {
-      _showSnackbar("Erro", "Falha ao atualizar: $e", isError: true);
-    } finally {
-      isLoading.value = false;
-    }
-  }
+          .update(data.toMap())
+          .eq('pk_fuel', data.id!);
 
-  Future<void> deleteFuel(String id) async {
-    try {
-      await _supabase.from('abastecimentos').delete().eq('pk_fuel', id);
-      fuelEntries.removeWhere((element) => element.id == id);
-      _showSnackbar("Sucesso", "Item removido com sucesso!");
+      final index = fuelEntries.indexWhere((e) => e.id == data.id);
+      if (index != -1) {
+        fuelEntries[index] = data;
+        fuelEntries.refresh();
+      }
+
+      _showSnackbar("Sucesso", "Registro atualizado!");
     } catch (e) {
-      _showSnackbar("Erro", "Não foi possível deletar", isError: true);
+      _showSnackbar("Erro", "Falha na atualização", isError: true);
     } finally {
       isLoading.value = false;
     }
@@ -193,139 +162,36 @@ class HomeController extends GetxController {
           .update({'initial_odometer': newOdometer})
           .eq('id', vehicleId);
 
-      int index = vehicles.indexWhere((v) => v.id == vehicleId);
+      int index = vehicles.indexWhere((e) => e.id == vehicleId);
       if (index != -1) {
-        var v = vehicles[index];
-        vehicles[index] = VehicleModel(
-          id: v.id,
-          nickname: v.nickname,
-          plate: v.plate,
-          city: v.city,
-          make: v.make,
-          model: v.model,
-          fuelType: v.fuelType,
-          imagem: v.imagem,
-          year: v.year,
-          initialOdometer: newOdometer,
-          tankCapacity: v.tankCapacity,
-        );
+        vehicles[index] = vehicles[index].copyWith(initialOdometer: newOdometer);
+        if(veiculosMap.containsKey(vehicleId)){
+          veiculosMap[vehicleId]!['initial_odometer'] = newOdometer;
+        }
         vehicles.refresh();
-
-        fetchInitialData();
+        veiculosMap.refresh();
       }
     } catch (e) {
-      print("Erro ao atualizar odômetro do veículo: $e");
+      _showSnackbar("Erro", "Erro ao sincronizar odômetro: $e", isError: true);
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  Future<void> shareEntry(String entryId, List<String> userIds) async {
+  Future<void> deleteFuel(String id) async {
     try {
-      await _supabase
-          .from('abastecimentos')
-          .update({'shared_with': userIds})
-          .eq('pk_fuel', entryId);
-      await fetchInitialData();
-      _showSnackbar("Sucesso", "Compartilhamento atualizado!");
+      await _supabase.from('abastecimentos').delete().eq('pk_fuel', id);
+      fuelEntries.removeWhere((element) => element.id == id);
+      _showSnackbar("Sucesso", "Registro removido!");
     } catch (e) {
-      _showSnackbar("Erro", "Falha ao compartilhar", isError: true);
+      _showSnackbar("Erro", "Não foi possível deletar", isError: true);
     }
   }
 
-  double getLatestOdometerForVehicle(dynamic vehicleId) {
-    try {
-      final lastEntry = fuelEntries.firstWhereOrNull(
-        (e) => e.vehicleId == vehicleId,
-      );
-      if (lastEntry != null) {
-        return lastEntry.odometerKm;
-      }
-      final vehicle = vehicles.firstWhereOrNull((v) => v.id == vehicleId);
-      return vehicle?.initialOdometer ?? 0.0;
-    } catch (e) {
-      final veiculoData = veiculosMap[vehicleId];
-      return (veiculoData?['initial_odometer'] as num? ?? 0.0).toDouble();
-    }
-  }
+  Future<void> refreshData() async {}
 
-  void onVehicleChanged(String? vehicleId){
+  void onVehicleChanged(String? vehicleId) {
     selectedVehicleID.value = vehicleId;
-    calculateMonthlyExpenses();
-  }
-
-  List<FuelEntryModel> get filteredFuelEntries {
-    List<FuelEntryModel> list = fuelEntries;
-    if (selectedVehicleID.value != null) {
-      list = list.where((e) => e.vehicleId == selectedVehicleID.value).toList();
-    }
-    if (selectedTipoID.value != null) {
-      list = list.where((e) => e.fuelTypeId == selectedTipoID.value).toList();
-    }
-    if (selectedPostoID.value != null) {
-      list = list
-          .where((e) => e.gasStationId == selectedPostoID.value)
-          .toList();
-    }
-
-    if (searchText.value.isNotEmpty) {
-      final query = searchText.value.toLowerCase();
-      list = list.where((e) {
-        final dadosPosto = postosMap[e.gasStationId];
-        final nomePosto = dadosPosto?['nome']?.toString().toLowerCase() ?? '';
-        final dadosVeiculo = veiculosMap[e.vehicleId];
-        final nomeVeiculo =
-            dadosVeiculo?['nickname']?.toString().toLowerCase() ?? '';
-
-        final dadosTipo = veiculosMap[e.fuelTypeId];
-        final nomeTipo = dadosTipo?['nome']?.toString().toLowerCase() ?? '';
-
-        return nomePosto.contains(query) ||
-            nomeVeiculo.contains(query) ||
-            nomeTipo.contains(query);
-      }).toList();
-    }
-    return list;
-  }
-
-  List<FuelEntryModel> get meusAbastecimentos {
-    final uid = _supabase.auth.currentUser?.id;
-    return filteredFuelEntries.where((entry) => entry.user == uid).toList();
-  }
-
-  List<FuelEntryModel> get fuelEntriesCompartilhados {
-    final uid = _supabase.auth.currentUser?.id;
-    return filteredFuelEntries.where((entry) => entry.user != uid).toList();
-  }
-
-  double get consumoMediaGeral {
-    final entries = selectedVehicleID.value != null
-        ? filteredFuelEntries
-              .where((e) => e.vehicleId == selectedVehicleID.value)
-              .toList()
-        : fuelEntries.toList();
-
-    if (entries.length < 2) return 0.0;
-    final atual = entries[0];
-    final anterior = entries[1];
-
-    final double distancia = atual.odometerKm - anterior.odometerKm;
-    final double litros = atual.volumeLiters;
-
-    return distancia / litros;
-  }
-
-  double get custoMedioGeral {
-    final entries = selectedVehicleID.value != null
-        ? filteredFuelEntries
-              .where((e) => e.vehicleId == selectedVehicleID.value)
-              .toList()
-        : fuelEntries.toList();
-
-    if (entries.isEmpty) return 0.0;
-    double totalCusto = entries.fold(0, (sum, item) => sum + item.totalCost);
-    double totalKm =
-        entries.first.odometerKm - (vehicles.first.initialOdometer);
-
-    return totalKm > 0 ? totalCusto / totalKm : 0.0;
   }
 
   Map<String, String>? get fuelAlertData {
@@ -366,106 +232,19 @@ class HomeController extends GetxController {
     };
   }
 
-  void mostrarCompartilhar(FuelEntryModel entry) {
-    final meuId = _supabase.auth.currentUser?.id;
-    Get.defaultDialog(
-      title: "Compartilhar com...",
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 300,
-        child: SingleChildScrollView(
-          child: Obx(() {
-            if (todosUsarios.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(20.0),
-                child: Text("Nenhum usuário encontrado."),
-              );
-            }
-
-            final listaFiltrada = todosUsarios
-                .where((u) => u['id'] != meuId)
-                .toList();
-
-            return ListView.builder(
-              shrinkWrap: true,
-              itemCount: listaFiltrada.length,
-              itemBuilder: (context, index) {
-                final user = listaFiltrada[index];
-                final String userId = user['id']?.toString() ?? "";
-                final String nomeUsuario =
-                    user['nome']?.toString() ?? "Usuário sem nome";
-                final String? fotoUrl = user['foto_url']?.toString();
-
-                if (userId == meuId || userId.isEmpty) return SizedBox.shrink();
-                final bool isShared = entry.sharedWith.contains(userId);
-
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: isShared ? Colors.green.shade200 : null,
-                    backgroundImage: (fotoUrl != null && fotoUrl.isNotEmpty)
-                        ? NetworkImage(fotoUrl)
-                        : null,
-                    child: Icon(
-                      RemixIcons.user_3_line,
-                      color: isShared ? Colors.green : Colors.grey,
-                    ),
-                  ),
-                  title: Text(
-                    nomeUsuario,
-                    style: TextStyle(
-                      fontWeight: isShared
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: isShared ? Colors.green.shade700 : Colors.black87,
-                    ),
-                  ),
-                  subtitle: Text(""),
-                  onTap: () {
-                    List<String> novaLista = List<String>.from(
-                      entry.sharedWith,
-                    );
-                    if (isShared) {
-                      novaLista.remove(userId);
-                    } else {
-                      novaLista.add(userId);
-                    }
-                    shareEntry(entry.id!, novaLista);
-                    Get.back();
-                  },
-                );
-              },
-            );
-          }),
-        ),
-      ),
-    );
-  }
-
-  double get totalGastoNoMes {
-    final agora = DateTime.now();
-
-    return fuelEntries.where((home) {
-      final dataHome = DateTime.parse(home.entryDate.toString());
-      final mesmoMes = dataHome.month == agora.month;
-      final mesmoAno = dataHome.year == agora.year;
-      
-      return mesmoMes && mesmoAno;
-    }).fold(0.0, (soma, home) => soma + (home.totalCost));
-  }
-
   void navigateToAddEntry(BuildContext context) async {
     final result = await Get.toNamed('/fuel_entry');
     if (result != null) {
-      if(result is Map<String, dynamic>){
-        await saveFuel(result);
-      }else{
-        fetchInitialData();
+      if (result is Map<String, dynamic>) {
+        // await saveFuel(result);
+      } else {
+        // fetchInitialData();
       }
     }
   }
 
   void navigateToEditEntry(BuildContext context, FuelEntryModel entry) async {
-    double odometerToSend = getLatestOdometerForVehicle(entry.vehicleId);
+    double odometerToSend = odometerAnterior;
 
     final result = await Get.to(
       () => HomeEntryPage(lastOdometer: odometerToSend, entry: entry),
@@ -473,7 +252,7 @@ class HomeController extends GetxController {
     );
     if (result == true) {
       _showSnackbar("Sucesso", "Registro atualizado!");
-      fetchInitialData();
+      // fetchInitialData();
     }
   }
 

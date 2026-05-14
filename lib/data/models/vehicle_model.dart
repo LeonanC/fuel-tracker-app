@@ -27,7 +27,7 @@ class VehicleModel {
 
   Map<String, dynamic> toMap() {
     return {
-      if(id != null) 'id': id,
+      if (id != null) 'id': id,
       'nickname': nickname,
       'plate': plate,
       'city': city,
@@ -42,7 +42,7 @@ class VehicleModel {
   }
 
   factory VehicleModel.fromMap(Map<String, dynamic> map, [String? docId]) {
-   return VehicleModel(
+    return VehicleModel(
       id: (map['id'] ?? docId)?.toString(),
       nickname: map['nickname'],
       plate: map['plate'] ?? '',
@@ -54,6 +54,34 @@ class VehicleModel {
       year: map['year'] as int,
       initialOdometer: (map['initial_odometer'] as num).toDouble(),
       tankCapacity: (map['tank_capacity'] as num).toDouble(),
+    );
+  }
+
+  VehicleModel copyWith({
+    String? id,
+    String? nickname,
+    String? plate,
+    String? city,
+    String? make,
+    String? model,
+    String? fuelType,
+    String? imagem,
+    int? year,
+    double? initialOdometer,
+    double? tankCapacity,
+  }) {
+    return VehicleModel(
+      id: id ?? this.id,
+      nickname: nickname ?? this.nickname,
+      plate: plate ?? this.plate,
+      city: city ?? this.city,
+      make: make ?? this.make,
+      model: model ?? this.model,
+      fuelType: fuelType ?? this.fuelType,
+      imagem: imagem ?? this.imagem,
+      year: year ?? this.year,
+      initialOdometer: initialOdometer ?? this.initialOdometer,
+      tankCapacity: tankCapacity ?? this.tankCapacity,
     );
   }
 }

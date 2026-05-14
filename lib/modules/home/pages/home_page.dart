@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_alert_card.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_list_filter_menu.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
-import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_card.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
-import 'package:shimmer/shimmer.dart';
 
 class HomePage extends GetView<HomeController> {
   HomePage({super.key});
@@ -23,7 +20,7 @@ class HomePage extends GetView<HomeController> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: RefreshIndicator(
-        onRefresh: () => controller.fetchInitialData(),
+        onRefresh: () => controller.refreshData(),
         edgeOffset: 100,
         color: Colors.blueAccent,
         child: CustomScrollView(
@@ -34,7 +31,6 @@ class HomePage extends GetView<HomeController> {
               child: Column(
                 children: [
                   _buildHeroStats(),
-                  _buildAlertSection(theme),
                   FuelAlertCard(),
                   _buildSearchBar(theme),
                 ],
@@ -49,37 +45,9 @@ class HomePage extends GetView<HomeController> {
     );
   }
 
-  Widget _buildAlertSection(ThemeData theme) {
-    return Obx(() {
-      final alerta = settings.alertaVencimento();
-      if (alerta == null) return const SizedBox.shrink();
-
-      return Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        decoration: BoxDecoration(
-          color: Colors.amber.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.amber.withOpacity(0.2)),
-        ),
-        child: ListTile(
-          dense: true,
-          leading: Icon(RemixIcons.error_warning_line, color: Colors.amber),
-          title: Text(
-            alerta,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          ),
-          subtitle: Text(
-            'Consulte Bradesco ou Sefaz-RJ para pagamento.',
-            style: const TextStyle(fontSize: 11),
-          ),
-        ),
-      );
-    });
-  }
-
   Widget _buildSliverAppBar(ThemeData theme) {
     return SliverAppBar(
-      expandedHeight: 120.0,
+      expandedHeight: 100.0,
       floating: true,
       pinned: true,
       elevation: 0,
@@ -100,10 +68,6 @@ class HomePage extends GetView<HomeController> {
         ),
       ),
       actions: [
-        IconButton(
-          icon: Icon(RemixIcons.refresh_line, size: 20),
-          onPressed: () => controller.fetchInitialData(),
-        ),
         FuelListFilterMenu(),
         IconButton(
           icon: Icon(RemixIcons.information_line, size: 20),
@@ -127,7 +91,7 @@ class HomePage extends GetView<HomeController> {
           fontWeight: FontWeight.w800,
           fontSize: 12,
           letterSpacing: 1,
-          color: Colors.white
+          color: Colors.white,
         ),
       ),
     );
@@ -135,100 +99,25 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildMainList(ThemeData theme) {
     return Obx(() {
-      if (controller.isLoading.value) {
-        return SliverToBoxAdapter(child: _buildLoadingShimmer(theme));
-      }
+      final entries = controller.filteredFuelEntries;
 
-      final query = controller.searchText.value.toLowerCase();
-      final filteredEntries = controller.filteredFuelEntries.where((e) {
-        return e.vehicleId.toLowerCase().contains(query) ||
-            e.gasStationId.toLowerCase().contains(query);
-      }).toList();
-
-      if (filteredEntries.isEmpty) {
+      if (entries.isEmpty) {
         return SliverFillRemaining(
           hasScrollBody: false,
           child: _buildEmptyState(theme),
         );
       }
 
-      final meusRegistros = filteredEntries
-          .where((e) => e.user == controller.currentUserId)
-          .toList();
-      final compartilhado = filteredEntries
-          .where((e) => e.user != controller.currentUserId)
-          .toList();
-
       return SliverList(
-        delegate: SliverChildListDelegate([
-          if (meusRegistros.isNotEmpty) ...[
-            _buildSectionHeader("Meus Abastecimentos", theme),
-            ..._buildGroupedList(meusRegistros, theme),
-          ],
-
-          if (compartilhado.isNotEmpty) ...[
-            _buildSectionHeader("Compartilhados", theme),
-            ..._buildGroupedList(compartilhado, theme),
-          ],
-        ]),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            print(entries[index]);
+            return FuelCard(entry: entries[index], controller: controller);
+          },
+          childCount: entries.length,
+        ),
       );
     });
-  }
-
-  Widget _buildSectionHeader(String title, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 16, 8),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 16,
-            decoration: BoxDecoration(
-              color: Colors.blueAccent,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Text(
-            title.toUpperCase(),
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.primary.withOpacity(0.8),
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildGroupedList(
-    List<FuelEntryModel> entries,
-    ThemeData theme,
-  ) {
-    final grouped = _groupEntries(entries);
-    List<Widget> children = [];
-
-    for (var date in grouped.keys) {
-      children.add(_sectionDateHeader(date, theme));
-      children.addAll(
-        grouped[date]!.map((e) => FuelCard(entry: e, controller: controller)),
-      );
-    }
-
-    return children;
-  }
-
-  Widget _sectionDateHeader(String text, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
-      child: Text(
-        text,
-        style: theme.textTheme.bodySmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-        ),
-      ),
-    );
   }
 
   Widget _buildEmptyState(ThemeData theme) {
@@ -250,45 +139,6 @@ class HomePage extends GetView<HomeController> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Map<String, List<FuelEntryModel>> _groupEntries(List<FuelEntryModel> list) {
-    Map<String, List<FuelEntryModel>> map = {};
-
-    for (var e in list) {
-      if (e.entryDate == null) continue;
-      String key = _formatDateKey(e.entryDate!);
-      (map[key] ??= []).add(e);
-    }
-    return map;
-  }
-
-  String _formatDateKey(DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final entryDate = DateTime(date.year, date.month, date.day);
-
-    if (entryDate == today) return "Hoje";
-    if (entryDate == yesterday) return "Ontem";
-    return DateFormat('dd MMMM, yyyy', 'pt_BR').format(date);
-  }
-
-  Widget _buildLoadingShimmer(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Shimmer.fromColors(
-        baseColor: theme.cardColor,
-        highlightColor: theme.highlightColor,
-        child: Column(
-          children: List.generate(3, (i) => Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            height: 100,
-            decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20)),
-          )),
-        ),
       ),
     );
   }
@@ -332,7 +182,7 @@ class HomePage extends GetView<HomeController> {
                 RemixIcons.coins_line,
                 Color(0xFF007268),
                 "CUSTO MÉDIO",
-                settings.formatarCurrency(controller.custoMedioGeral),
+                settings.formatarCurrency(controller.kmRodadoTotal),
               ),
             ],
           ),

@@ -207,22 +207,17 @@ class HomeEntryController extends GetxController {
       };
 
       if (editingEntry != null) {
-        final updatedModel = FuelEntryModel.fromMap(
-          fuelData,
-          editingEntry!.id!,
-        );
-        await controller.updateFuel(updatedModel);
-        await controller.updateVehicleOdometer(
-          selectedVeiculos.value!,
-          double.tryParse(kmController.text) ?? 0.0,
+        await controller.updateFuel(
+          FuelEntryModel.fromMap(fuelData, editingEntry!.id!),
         );
       } else {
         await controller.saveFuel(fuelData);
-        await controller.updateVehicleOdometer(
-          selectedVeiculos.value!,
-          double.tryParse(kmController.text) ?? 0.0,
-        );
       }
+
+      await controller.updateVehicleOdometer(
+        selectedVeiculos.value!,
+        double.tryParse(kmController.text) ?? 0.0,
+      );
 
       Get.back(result: true);
     } catch (e) {

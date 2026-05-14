@@ -13,7 +13,7 @@ class DashboardPage extends GetView<HomeController> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    controller.calculateMonthlyExpenses();
+    controller.gastosPorMes;
 
     return Scaffold(
       body: CustomScrollView(
@@ -151,75 +151,16 @@ class DashboardPage extends GetView<HomeController> {
         ],
       ),
       child: Obx(() {
-        if (controller.monthlyExpenses.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
+        final dados = controller.ultimosSeisMeses;
 
         return LineChart(
           LineChartData(
-            gridData: FlGridData(
-              show: true,
-              drawVerticalLine: false,
-              getDrawingHorizontalLine: (value) =>
-                  FlLine(color: Colors.grey.withOpacity(0.1), strokeWidth: 1),
-            ),
-            titlesData: FlTitlesData(
-              rightTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: false),
-              ),
-              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  getTitlesWidget: (value, meta) {
-                    const months = [
-                      'Jan',
-                      'Fev',
-                      'Mar',
-                      'Abr',
-                      'Mai',
-                      'Jun',
-                      'Jul',
-                      'Ago',
-                      'Set',
-                      'Out',
-                      'Nov',
-                      'Dez',
-                    ];
-                    DateTime date = DateTime.now().subtract(
-                      Duration(days: (5 - value.toInt()) * 30),
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        months[date.month - 1],
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              leftTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 44,
-                  getTitlesWidget: (value, meta) {
-                    return Text(
-                      'R\$ ${value.toInt()}',
-                      style: TextStyle(color: Colors.grey, fontSize: 8),
-                    );
-                  },
-                ),
-              ),
-            ),
+            gridData: FlGridData(show: false),
+            titlesData: _buildChartTitles(),
             borderData: FlBorderData(show: false),
             lineBarsData: [
               LineChartBarData(
-                spots: controller.monthlyExpenses
+                spots: dados
                     .asMap()
                     .entries
                     .map((e) => FlSpot(e.key.toDouble(), e.value))
@@ -227,17 +168,7 @@ class DashboardPage extends GetView<HomeController> {
                 isCurved: true,
                 color: colorScheme.primary,
                 barWidth: 4,
-                isStrokeCapRound: true,
-                dotData: FlDotData(
-                  show: true,
-                  getDotPainter: (spot, xPercentage, barData, index) =>
-                      FlDotCirclePainter(
-                        radius: 4,
-                        color: colorScheme.primary,
-                        strokeWidth: 2,
-                        strokeColor: Colors.white,
-                      ),
-                ),
+                dotData: FlDotData(show: true),
                 belowBarData: BarAreaData(
                   show: true,
                   color: colorScheme.primary.withOpacity(0.12),
@@ -247,6 +178,48 @@ class DashboardPage extends GetView<HomeController> {
           ),
         );
       }),
+    );
+  }
+
+  FlTitlesData _buildChartTitles() {
+    return FlTitlesData(
+      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (value, meta) {
+            const months = [
+              'Jan',
+              'Fev',
+              'Mar',
+              'Abr',
+              'Mai',
+              'Jun',
+              'Jul',
+              'Ago',
+              'Set',
+              'Out',
+              'Nov',
+              'Dez',
+            ];
+            DateTime date = DateTime.now().subtract(
+              Duration(days: (5 - value.toInt()) * 30),
+            );
+            return Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                months[date.month - 1],
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
@@ -262,24 +235,24 @@ class DashboardPage extends GetView<HomeController> {
         children: [
           _statCard(
             "Total Gasto",
-            controller.settings.formatarCurrency(controller.totalSpent.value),
+            controller.settings.formatarCurrency(controller.totalGastoFiltrado),
             RemixIcons.money_dollar_circle_line,
             Colors.green,
           ),
           _statCard(
             "KM Rodados",
-            controller.settings.formatarDistancia(controller.totalKm.value),
+            controller.settings.formatarDistancia(controller.kmRodadoTotal),
             RemixIcons.roadster_line,
             Colors.orange,
           ),
           _statCard(
-            "Abastecimentos",
-            "${controller.totalEntries.value}",
+            "Registros",
+            "${controller.filteredFuelEntries.length}",
             RemixIcons.gas_station_line,
             Colors.blue,
           ),
           _statCard(
-            "Média Eficiência",
+            "Média KM/L",
             controller.settings.formatarConsumo(controller.consumoMediaGeral),
             RemixIcons.pulse_line,
             Colors.purple,

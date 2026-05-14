@@ -17,8 +17,6 @@ class FuelCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final meuId = controller.currentUserId;
-    final isShared = entry.user != meuId;
 
     final vehicle = controller.veiculosMap[entry.vehicleId];
     final station = controller.postosMap[entry.gasStationId]?['nome'] ?? '---';
@@ -94,34 +92,6 @@ class FuelCard extends StatelessWidget {
               ),
             ),
           ),
-          if (isShared)
-            Positioned(
-              top: 50,
-              right: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange.withOpacity(0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(RemixIcons.share_line, size: 12, color: Colors.orange),
-                    const SizedBox(width: 4),
-                    Text(
-                      'COMPARTILHADO',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -143,15 +113,6 @@ class FuelCard extends StatelessWidget {
                   Text(
                     vehicle?['nickname'] ?? "---",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => controller.mostrarCompartilhar(entry),
-                    icon: Icon(
-                      RemixIcons.share_forward_line,
-                      size: 20,
-                      color: Colors.blueAccent,
-                    ),
                   ),
                 ],
               ),

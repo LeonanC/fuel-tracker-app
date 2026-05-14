@@ -38,7 +38,7 @@ Future<void> main() async {
   await NotificationService.requestPermissions();
   
   final session = Supabase.instance.client.auth.currentSession;
-  String rotaInitial = session == null ? '/login' : '/main';
+  String rotaInitial = session == null ? '/login' : '/loading';
 
   runApp(MyApp(rotaInitial: rotaInitial));
 }

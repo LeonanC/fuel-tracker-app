@@ -46,7 +46,7 @@ class AuthService extends GetxController {
       );
 
       if (res.user != null) {
-        _showCustomSnackbar("Sucesso", "Login realizado com sucesso!");
+        // _showCustomSnackbar("Sucesso", "Login realizado com sucesso!");
       }
     } on AuthException catch (error) {
       _showCustomSnackbar("Erro de Autenticação", error.message, isError: true);
