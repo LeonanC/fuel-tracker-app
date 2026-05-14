@@ -6,7 +6,6 @@ import 'package:fuel_tracker_app/modules/auth/login_controller.dart';
 import 'package:fuel_tracker_app/modules/backup/controller/backup_controller.dart';
 import 'package:fuel_tracker_app/modules/gas/controller/gasStation_controller.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
-import 'package:fuel_tracker_app/modules/maps/controller/map_controller.dart';
 import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/registro/controller/home_entry_controller.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
@@ -32,10 +31,6 @@ class HomeBindings implements Bindings {
     Get.lazyPut<HomeEntryController>(() => HomeEntryController(), fenix: true);
     Get.lazyPut<PerfilController>(() => PerfilController(), fenix: true);
     Get.lazyPut<SettingController>(() => SettingController(), fenix: true);
-    Get.lazyPut<MapNavigationController>(
-      () => MapNavigationController(),
-      fenix: true,
-    );
     Get.lazyPut<AppController>(() => AppController(), fenix: true);
     Get.lazyPut<BackupController>(() => BackupController(), fenix: true);
   }

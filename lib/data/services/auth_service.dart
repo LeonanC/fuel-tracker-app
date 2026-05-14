@@ -127,7 +127,7 @@ class AuthService extends GetxController {
     Get.snackbar(
       titulo,
       mensagem,
-      snackPosition: SnackPosition.BOTTOM,
+      snackPosition: SnackPosition.TOP,
       backgroundColor: isError
           ? const Color(0xFF991B1B)
           : const Color(0xFF065F46),

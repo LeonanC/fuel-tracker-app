@@ -3,7 +3,7 @@ description: "A new Flutter project."
 
 publish_to: 'none'
 
-version: 10.1.0
+version: 10.2.0
 
 environment:
   sdk: ^3.8.1
@@ -12,7 +12,7 @@ dependencies:
   clipboard: ^3.0.14
   csv: ^6.0.0
   file_picker: ^10.3.3
-  fl_chart: ^1.1.1
+  fl_chart: ^1.2.0
   flutter:
     sdk: flutter
   flutter_animate: ^4.5.2

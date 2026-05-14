@@ -3,6 +3,7 @@ import 'package:fuel_tracker_app/data/models/reminder_model.dart';
 import 'package:fuel_tracker_app/modules/remider/controller/reminder_controller.dart';
 import 'package:fuel_tracker_app/data/global/unit_nums.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
 
 class RemindersPages extends GetView<ReminderController> {
@@ -15,97 +16,165 @@ class RemindersPages extends GetView<ReminderController> {
     }
 
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('rem_titulo'.tr),
-        elevation: 0,
-        centerTitle: true,
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Obx(() {
         final isEnabled = controller.isReminderEnabled.value;
         final selectedFreq = controller.selectedFrequency.value;
         final selectedTime = controller.selectedReminderTime.value;
 
-        return ListView(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          children: [
-            SwitchListTile(
-              title: Text(
-                'rem_enable_titulo'.tr,
-                style: TextStyle(fontWeight: FontWeight.bold),
+        return CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120.0,
+              pinned: true,
+              stretch: true,
+              backgroundColor: theme.scaffoldBackgroundColor,
+              elevation: 0,
+              centerTitle: true,
+              leading: IconButton(
+                icon: Icon(RemixIcons.arrow_left_s_line),
+                onPressed: () => Get.back(),
               ),
-              subtitle: Text('rem_enable_desc'.tr),
-              value: isEnabled,
-              onChanged: (value) => controller.toggleReminder(value),
-              secondary: Icon(
-                RemixIcons.notification_line,
-                color: isEnabled ? theme.colorScheme.primary : Colors.grey,
-              ),
-            ),
-            const Divider(),
-
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                'rem_frequency_titulo'.tr,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: isEnabled ? theme.colorScheme.primary : Colors.grey,
-                  fontWeight: FontWeight.bold,
+              flexibleSpace: FlexibleSpaceBar(
+                centerTitle: true,
+                title: Text(
+                  'rem_titulo'.tr,
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: theme.textTheme.titleLarge?.color,
+                  ),
                 ),
               ),
             ),
-            ...availableFrequencies.map((option) {
-              return RadioListTile<ReminderFrequency>(
-                value: option.frequency,
-                groupValue: selectedFreq,
-                title: Text(option.title),
-                subtitle: Text(option.subtitle),
-                onChanged: isEnabled
-                    ? (val) => controller.setFrequency(val!)
-                    : null,
-                activeColor: theme.colorScheme.primary,
-              );
-            }),
-
-            const Divider(),
-            ListTile(
-              enabled: isEnabled,
-              leading: Icon(RemixIcons.time_line),
-              title: Text('rem_time_titulo'.tr),
-              subtitle: Text(
-                '${'rem_time_subtitulo'.tr}${selectedTime.format(context)}',
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: isEnabled ? () => _selectTime(context) : null,
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isEnabled
-                      ? theme.colorScheme.primary.withOpacity(0.05)
-                      : Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      size: 20,
-                      color: Colors.grey,
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildCard(
+                    theme: theme,
+                    child: SwitchListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                      title: Text(
+                        'rem_enable_titulo'.tr,
+                        style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'rem_enable_desc'.tr,
+                        style: GoogleFonts.montserrat(fontSize: 12),
+                      ),
+                      value: isEnabled,
+                      onChanged: (value) => controller.toggleReminder(value),
+                      secondary: Icon(
+                        isEnabled
+                            ? RemixIcons.notification_3_fill
+                            : RemixIcons.notification_3_line,
+                        color: isEnabled ? colorScheme.primary : Colors.grey,
+                      ),
+                      activeColor: Colors.greenAccent,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'rem_battery_info'.tr,
-                        style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 25),
+                  _buildSectionHeader(
+                    'rem_frequency_titulo'.tr,
+                    colorScheme.primary,
+                    isEnabled,
+                  ),
+
+                  _buildCard(
+                    theme: theme,
+                    child: Column(
+                      children: availableFrequencies.map((option) {
+                        return RadioListTile<ReminderFrequency>(
+                          value: option.frequency,
+                          groupValue: selectedFreq,
+                          title: Text(
+                            option.title,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            option.subtitle,
+                            style: GoogleFonts.montserrat(fontSize: 11),
+                          ),
+                          onChanged: isEnabled
+                              ? (val) => controller.setFrequency(val!)
+                              : null,
+                          activeColor: colorScheme.primary,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+                  _buildSectionHeader(
+                    'rem_time_titulo'.tr,
+                    colorScheme.primary,
+                    isEnabled,
+                  ),
+
+                  _buildCard(
+                    theme: theme,
+                    child: ListTile(
+                      enabled: isEnabled,
+                      leading: Icon(RemixIcons.time_line, color: isEnabled ? colorScheme.primary : Colors.grey),
+                      title: Text(
+                        '${'rem_time_subtitulo'.tr}${selectedTime.format(context)}',
+                        style: GoogleFonts.firaCode(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      trailing: Icon(
+                        RemixIcons.edit_2_line,
+                        size: 18,
+                        color: isEnabled ? colorScheme.primary : Colors.transparent,
+                      ),
+                      onTap: isEnabled ? () => _selectTime(context) : null,
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isEnabled
+                          ? colorScheme.primary.withOpacity(0.05)
+                          : Colors.grey.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isEnabled ? colorScheme.primary.withOpacity(0.1) : Colors.white10,
                       ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        Icon(RemixIcons.information_line,
+                          size: 20,
+                          color: isEnabled ? colorScheme.primary : Colors.grey,
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: Text(
+                            'rem_battery_info'.tr,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              color: theme.textTheme.bodySmall?.color,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
               ),
             ),
           ],
@@ -114,21 +183,36 @@ class RemindersPages extends GetView<ReminderController> {
     );
   }
 
+  Widget _buildSectionHeader(String title, Color primary, bool isEnabled) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 12),
+      child: Text(
+        title,
+        style: GoogleFonts.montserrat(
+          color: isEnabled ? primary : Colors.grey,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard({required ThemeData theme, required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: ClipRRect(borderRadius: BorderRadius.circular(24), child: child),
+    );
+  }
+
   Future<void> _selectTime(BuildContext context) async {
     final TimeOfDay? newTime = await showTimePicker(
       context: context,
       initialTime: controller.selectedReminderTime.value,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Theme.of(context).colorScheme.primary,
-              brightness: Theme.of(context).brightness,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
 
     if (newTime != null) {

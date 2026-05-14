@@ -59,7 +59,7 @@ class LoginController extends GetxController {
 
         await Future.delayed(const Duration(milliseconds: 100));
         
-        Get.offAllNamed('/main');
+        Get.offAllNamed('/loading');
       } else {
         String? vehicleId = selectedVeiculos.value;
         if(vehicleId != null && vehicleId.isEmpty) vehicleId = null;

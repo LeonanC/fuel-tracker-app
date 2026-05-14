@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
@@ -76,7 +75,7 @@ class HomeEntryController extends GetxController {
     pricePerLiterController.addListener(() => _calcularLitros(from: 'preco'));
     totalPriceController.addListener(() => _calcularLitros(from: 'total'));
 
-    pricePerLiterController.addListener((){
+    pricePerLiterController.addListener(() {
       precoAtual.value = pricePerLiterController.numberValue;
     });
   }
@@ -101,7 +100,7 @@ class HomeEntryController extends GetxController {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate.value,
-      firstDate: DateTime(2020),
+      firstDate: DateTime(2000),
       lastDate: DateTime.now(),
       helpText: 'SELECIONE A DATA DO ABASTECIMENTO',
       cancelText: 'CANCELAR',
@@ -125,11 +124,9 @@ class HomeEntryController extends GetxController {
           pickedTime.hour,
           pickedTime.minute,
         );
+      } else {
+        selectedDate.value = picked;
       }
-    }
-
-    if (picked != null && picked != selectedDate.value) {
-      selectedDate.value = picked;
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
@@ -66,16 +68,34 @@ class VehicleEntryController extends GetxController {
   }
 
   Future<void> pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
+    if(pickedFile != null){
+      selectedImageUrl.value = pickedFile.path;
+    }
+  }
+
+  Future<String?> _processarUpload() async {
+    if(selectedImageUrl.value.isEmpty || selectedImageUrl.value.startsWith('http')){
+      return selectedImageUrl.value;
+    }
     try {
-      final XFile? pickedFile = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
+      final file = File(selectedImageUrl.value);
+      final fileName = 'veiculo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final path = 'veiculos/$fileName';
+
+      await _supabase.storage
+      .from('fotos_perfil')
+      .upload(
+        path,
+        file,
+        fileOptions: FileOptions(contentType: 'image/jpeg', upsert: true),
       );
-      if (pickedFile != null) {
-        selectedImageUrl.value = pickedFile.path;
-        Get.snackbar('Imagem Selecionada', 'Imagem Selecionada com sucesso');
-      }
+
+      return _supabase.storage.from('fotos_perfil').getPublicUrl(path);    
     } catch (e) {
       Get.snackbar('Erro', 'Falha ao selecionar imagem: $e');
+      return null;
     }
   }
 
@@ -83,6 +103,8 @@ class VehicleEntryController extends GetxController {
     if (!formKey.currentState!.validate()) return;
 
     isLoading.value = true;
+
+    String? remoteUrl = await _processarUpload();
 
     try {
       final Map<String, dynamic> vehicleData = {
@@ -97,6 +119,7 @@ class VehicleEntryController extends GetxController {
         'is_mercosul': isMercosul.value,
         'city': cityController.text,
         'fk_type_fuel': selectedTipo.value,
+        'imagem': remoteUrl,
       };
 
       if (editingEntry != null) {

@@ -7,119 +7,175 @@ import 'package:remixicon/remixicon.dart';
 class FuelListFilterMenu extends GetView<HomeController> {
   const FuelListFilterMenu({super.key});
 
-  PopupMenuItem<String> _buildFilterItem({
-    required String value,
-    required String label,
-    required bool isSelected,
-  }) {
-    return PopupMenuItem<String>(
-      value: value,
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return PopupMenuButton<String>(
+      icon: Icon(RemixIcons.filter_3_line, color: colorScheme.onSurface),
+      tooltip: "Filtrar registros",
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      offset: Offset(0, 45),
+      onSelected: (value) => _handleSelection(value),
+      itemBuilder: (BuildContext context) {
+        return [
+          _buildSectionHeader(RemixIcons.car_line, "Veículos", colorScheme),
+          ...controller.veiculosMap.entries.map((entry) {
+            return _buildFilterItem(
+              value: 'SetVeiculo:${entry.key}',
+              label: '${entry.value["nickname"]}',
+              isSelected: controller.selectedVehicleID.value == entry.key,
+              colorScheme: colorScheme,
+            );
+          }),
+          _buildClearItem(
+            "ClearVeiculo",
+            "Limpar Veículo",
+            controller.selectedVehicleID.value != null,
+          ),
+          const PopupMenuDivider(),
+          _buildSectionHeader(
+            RemixIcons.gas_station_line,
+            "Combustível",
+            colorScheme,
+          ),
+          ...controller.tiposMap.entries.map((entry) {
+            return _buildFilterItem(
+              value: 'SetFuel:${entry.key}',
+              label: '${entry.value["nome"]}',
+              isSelected: controller.selectedTipoID.value == entry.key,
+              colorScheme: colorScheme,
+            );
+          }),
+          _buildClearItem(
+            "ClearFuel",
+            "Limpar Combustível",
+            controller.selectedTipoID.value != null,
+          ),
+          const PopupMenuDivider(),
+
+          _buildSectionHeader(RemixIcons.map_pin_2_line, "Postos", colorScheme),
+          ...controller.postosMap.entries.map((entry) {
+            return _buildFilterItem(
+              value: 'SetStation:${entry.key}',
+              label: '${entry.value["nome"]}',
+              isSelected: controller.selectedPostoID.value == entry.key,
+              colorScheme: colorScheme,
+            );
+          }),
+          _buildClearItem(
+            "ClearStation",
+            "Limpar Posto",
+            controller.selectedPostoID.value != null,
+          ),
+        ];
+      },
+    );
+  }
+
+  void _handleSelection(String value) {
+    if (value.startsWith('SetVeiculo:')) {
+      controller.selectedVehicleID.value = value.split(':')[1];
+    } else if (value == 'ClearVeiculo') {
+      controller.selectedVehicleID.value = null;
+    } else if (value.startsWith('SetFuel:')) {
+      controller.selectedTipoID.value = value.split(':')[1];
+    } else if (value == 'ClearFuel') {
+      controller.selectedTipoID.value = null;
+    } else if (value.startsWith('SetStation:')) {
+      controller.selectedPostoID.value = value.split(':')[1];
+    } else if (value == 'ClearStation') {
+      controller.selectedPostoID.value = null;
+    }
+  }
+
+  PopupMenuItem<String> _buildSectionHeader(
+    IconData icon,
+    String title,
+    ColorScheme color,
+  ) {
+    return PopupMenuItem(
+      enabled: false,
+      height: 32,
       child: Row(
         children: [
-          Icon(
-            isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
-            size: 20,
-            color: isSelected ? Colors.green : Colors.grey,
-          ),
+          Icon(icon, size: 14, color: color.primary),
           const SizedBox(width: 8),
           Text(
-            label,
-            style: TextStyle(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            title.toUpperCase(),
+            style: GoogleFonts.montserrat(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+              color: color.primary,
             ),
-          ),
+          )
         ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return PopupMenuButton<String>(
-      icon: Icon(RemixIcons.filter_3_line, color: theme.colorScheme.onSurface),
-      onSelected: (value) {
-        if (value.startsWith('SetVeiculo:')) {
-          controller.selectedVehicleID.value = value.split(':')[1];
-        } else if (value == 'ClearVeiculo') {
-          controller.selectedVehicleID.value = null;
-        } else if (value.startsWith('SetFuel:')) {
-          controller.selectedTipoID.value = value.split(':')[1];
-        } else if (value == 'ClearFuel') {
-          controller.selectedTipoID.value = null;
-        } else if (value.startsWith('SetStation:')) {
-          controller.selectedPostoID.value = value.split(':')[1];
-        } else if (value == 'ClearStation') {
-          controller.selectedPostoID.value = null;
-        }
-      },
-      itemBuilder: (BuildContext context) {
-        List<PopupMenuEntry<String>> items = [];
-
-        items.add(_buildSectionHeader("Veículos"));
-        controller.veiculosMap.forEach((id, nome) {
-          items.add(
-            _buildFilterItem(
-              value: 'SetVeiculo:$id',
-              label: '${controller.veiculosMap[id]?['nickname']}',
-              isSelected: controller.selectedVehicleID.value == id,
-            ),
-          );
-        });
-        items.add(_buildClearItem('ClearVeiculo', "Limpar Veículo"));
-        items.add(PopupMenuDivider());
-
-        items.add(_buildSectionHeader("Combustível"));
-        controller.tiposMap.forEach((id, nome) {
-          items.add(
-            _buildFilterItem(
-              value: 'SetFuel:$id',
-              label: '${controller.tiposMap[id]?['nome']}',
-              isSelected: controller.selectedTipoID.value == id,
-            ),
-          );
-        });
-
-        items.add(_buildClearItem("ClearFuel", "Limpar Combustível"));
-        items.add(const PopupMenuDivider());
-
-        items.add(_buildSectionHeader("Postos"));
-        controller.postosMap.forEach((id, nome) {
-          items.add(
-            _buildFilterItem(
-              value: 'SetStation:$id',
-              label: '${controller.postosMap[id]?['nome']}',
-              isSelected: controller.selectedPostoID.value == id,
-            ),
-          );
-        });
-
-        items.add(_buildClearItem('ClearStation', 'Limpar Posto'));
-
-        return items;
-      },
-    );
-  }
-
-  PopupMenuItem<String> _buildClearItem(String value, String label) {
-    return PopupMenuItem(
+  PopupMenuItem<String> _buildFilterItem({
+    required String value,
+    required String label,
+    required bool isSelected,
+    required ColorScheme colorScheme,
+  }) {
+    return PopupMenuItem<String>(
       value: value,
-      child: Text(
-        label,
-        style: GoogleFonts.lato(fontWeight: FontWeight.bold, color: Colors.red),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isSelected ? colorScheme.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected
+                  ? RemixIcons.checkbox_circle_fill
+                  : RemixIcons.checkbox_blank_circle_line,
+                size: 18,
+                color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                  color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  PopupMenuItem<String> _buildSectionHeader(String title) {
+  PopupMenuItem<String> _buildClearItem(
+    String value,
+    String label,
+    bool isVisible,
+  ) {
+    if (!isVisible)
+      return PopupMenuItem(enabled: false, height: 0, child: SizedBox.shrink());
+
     return PopupMenuItem(
-      enabled: false,
-      child: Text(
-        title,
-        style: GoogleFonts.lato(
-          fontWeight: FontWeight.bold,
-          color: Colors.indigo,
+      value: value,
+      height: 35,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 30),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.redAccent,
+          ),
         ),
       ),
     );

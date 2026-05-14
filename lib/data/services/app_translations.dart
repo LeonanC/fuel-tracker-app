@@ -75,7 +75,7 @@ class AppTranslations extends Translations {
       // NAVIGATION PAGE
       'nav_fuel_entries': 'Abastecimentos',
       'nav_search': 'Procurar',
-      'nav_map': 'Postos Próximos',
+      'nav_dashboard': 'Painel',
       'nav_perfil': 'Perfil',
       'nav_tools': 'Ferramentas',
 
@@ -391,7 +391,7 @@ class AppTranslations extends Translations {
 
       'nav_fuel_entries': 'Fuel Stations',
       'nav_search': 'Search',
-      'nav_map': 'Nearby Gas Stations',
+      'nav_dashboard': 'Dashboard',
       'nav_perfil': 'Profile',
       'nav_tools': 'Tools',
 
@@ -707,7 +707,7 @@ class AppTranslations extends Translations {
 
       'nav_fuel_entries': 'Estaciones de servicio',
       'nav_search': 'Buscar',
-      'nav_map': 'Gasolineras cercanas',
+      'nav_dashboard': 'Panel',
       'nav_perfil': 'Perfil',
       'nav_tools': 'Herramientas',
 

@@ -5,9 +5,10 @@ import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/registro/controller/home_entry_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
-class HomeEntryPage extends StatelessWidget {
+class HomeEntryPage extends GetView<HomeEntryController> {
   final double? lastOdometer;
   final FuelEntryModel? entry;
   HomeEntryPage({super.key, this.lastOdometer, this.entry}) {
@@ -16,60 +17,95 @@ class HomeEntryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = Get.find<HomeEntryController>();
-
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor,
-        centerTitle: false,
-        elevation: 0,
-        title: Text(c.editingEntry != null ? 'he_edit'.tr : 'he_new'.tr),
-        actions: [
-          Obx(
-            () => c.isLoading.value
-                ? Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(15),
-                      child: CircularProgressIndicator(strokeWidth: 1),
+      body: Form(
+        key: controller.formKey,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            _buildSliverAppBar(controller, theme),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle("INFORMAÇÕES BÁSICAS", theme),
+                    _buildCardContainer(child: _buildDropdowns(controller)),
+              
+                    const SizedBox(height: 20),
+                    _buildSectionTitle("VALORES E MEDIÇÃO", theme),
+                    _buildCardContainer(child: _buildInputField(controller, theme)),
+                    _buildComparisonCard(controller, theme),
+                    const SizedBox(height: 20),
+                    _buildImagePicker(controller, theme),
+                    const SizedBox(height: 25),
+                    _buildCardContainer(
+                      child: Obx(() => SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          "Tanque Cheio?",
+                          style: GoogleFonts.montserrat(fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        value: controller.isTankFull.value,
+                        secondary: Icon(RemixIcons.gas_station_fill, color: colorScheme.primary),
+                        onChanged: (v) => controller.isTankFull.value = v,
+                        activeColor: Colors.greenAccent,
+                      ))
                     ),
-                  )
-                : IconButton(
-                    icon: Icon(
-                      RemixIcons.check_double_line,
-                      size: 28,
-                      color: Colors.greenAccent,
-                    ),
-                    onPressed: c.submit,
-                  ),
-          ),
-        ],
-        leading: IconButton(
-          icon: Icon(RemixIcons.arrow_left_line),
-          onPressed: () => Get.back(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      body: Form(
-        key: c.formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionTitle("INFORMAÇÕES BÁSICAS", theme),
-              _buildCardContainer(child: _buildDropdowns(c)),
+    );
+  }
 
-              const SizedBox(height: 20),
-              _buildSectionTitle("VALORES E MEDIÇÃO", theme),
-              _buildCardContainer(child: _buildInputField(c)),
-              _buildComparisonCard(c, theme),
-              const SizedBox(height: 20),
-              _buildImagePicker(c, theme),
-              const SizedBox(height: 20),
-              _buildSwitches(c, theme),
-            ],
+  Widget _buildSliverAppBar(HomeEntryController c, ThemeData theme) {
+    return SliverAppBar(
+      expandedHeight: 120.0,
+      pinned: true,
+      elevation: 0,
+      stretch: true,
+      backgroundColor: theme.appBarTheme.backgroundColor,
+      leading: IconButton(
+        icon: Icon(RemixIcons.arrow_left_line),
+        onPressed: () => Get.back(),
+      ),
+      actions: [
+        Obx(
+          () => controller.isLoading.value
+              ? Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(15),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: Icon(
+                    RemixIcons.check_double_line,
+                    size: 28,
+                    color: Colors.greenAccent,
+                  ),
+                  onPressed: controller.submit,
+                ),
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsetsDirectional.only(start: 50, bottom: 16),
+        centerTitle: false,
+        title: Text(
+          controller.editingEntry != null ? 'he_edit'.tr : 'he_new'.tr,
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ),
@@ -78,14 +114,14 @@ class HomeEntryPage extends StatelessWidget {
 
   Widget _buildSectionTitle(String title, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 8),
+      padding: const EdgeInsets.only(left: 8, bottom: 12),
       child: Text(
         title,
         style: GoogleFonts.montserrat(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: Colors.blueAccent,
-          letterSpacing: 1.2,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: theme.colorScheme.primary.withOpacity(0.8),
+          letterSpacing: 1.5,
         ),
       ),
     );
@@ -93,23 +129,17 @@ class HomeEntryPage extends StatelessWidget {
 
   Widget _buildCardContainer({required Widget child}) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: child,
     );
   }
 
-  Widget _buildInputField(HomeEntryController c) {
+  Widget _buildInputField(HomeEntryController c, ThemeData theme) {
     return Column(
       children: [
         _customTextField(
@@ -117,10 +147,11 @@ class HomeEntryPage extends StatelessWidget {
           label: "Odômetro Atual",
           icon: RemixIcons.dashboard_3_line,
           suffix: "km",
+          theme: theme,
         ),
         const SizedBox(height: 15),
         _buildDatePickerField(c),
-        const Divider(height: 30, color: Colors.white10),
+        const Divider(height: 40, color: Colors.white10),
         Row(
           children: [
             Expanded(
@@ -128,6 +159,7 @@ class HomeEntryPage extends StatelessWidget {
                 controller: c.litrosController,
                 label: "Litro",
                 icon: RemixIcons.drop_line,
+                theme: theme,
               ),
             ),
             const SizedBox(width: 15),
@@ -136,6 +168,7 @@ class HomeEntryPage extends StatelessWidget {
                 controller: c.pricePerLiterController,
                 label: "Preço/Litro",
                 icon: RemixIcons.price_tag_3_line,
+                theme: theme,
               ),
             ),
           ],
@@ -146,6 +179,7 @@ class HomeEntryPage extends StatelessWidget {
           label: "Valor Total",
           icon: RemixIcons.money_dollar_circle_line,
           isBold: true,
+          theme: theme,
         ),
       ],
     );
@@ -159,11 +193,13 @@ class HomeEntryPage extends StatelessWidget {
       const double precoGasolinaReferencia = 5.89;
       const double precoEtanolReferencia = 4.10;
 
-      if (precoDigitado == null || precoDigitado <= 0){
+      if (precoDigitado == null || precoDigitado <= 0) {
         return const SizedBox.shrink();
       }
 
-      final gasObj = c.controller.tipos.firstWhereOrNull((g) => g.id == selectedGasId);
+      final gasObj = c.controller.tipos.firstWhereOrNull(
+        (g) => g.id == selectedGasId,
+      );
       final String gasName = gasObj?.nome ?? "";
 
       bool isEtanol = gasName.contains('Etanol / Flex');
@@ -221,44 +257,39 @@ class HomeEntryPage extends StatelessWidget {
   Widget _buildDatePickerField(HomeEntryController c) {
     return Obx(() {
       final date = c.selectedDate.value;
-      final dateStr =
-          "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
-      final timeStr =
-          "${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}";
+      final dateStr = DateFormat('dd/MM/yyyy').format(date);
+      final timeStr = DateFormat('HH:mm').format(date);
       return InkWell(
         onTap: () => c.selecionarData(Get.context!),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           decoration: BoxDecoration(
-            color: Colors.black26,
-            borderRadius: BorderRadius.circular(12),
+            color: Colors.black.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
             children: [
-              Icon(
-                RemixIcons.calendar_event_line,
-                size: 20,
-                color: Colors.blueAccent,
-              ),
-              const SizedBox(width: 12),
+              Icon(RemixIcons.calendar_event_line, size: 20, color: Colors.blueAccent),
+              const SizedBox(width: 15),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Data do Abastecimento",
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: Colors.white54, fontSize: 10),
                   ),
                   Text(
                     "$dateStr às $timeStr",
                     style: GoogleFonts.firaCode(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
                 ],
               ),
               const Spacer(),
-              Icon(RemixIcons.edit_line, size: 18, color: Colors.white10),
+              Icon(RemixIcons.edit_2_line, size: 16, color: Colors.white24),
             ],
           ),
         ),
@@ -270,26 +301,30 @@ class HomeEntryPage extends StatelessWidget {
     required TextEditingController controller,
     required String label,
     required IconData icon,
+    required ThemeData theme,
     String? suffix,
     bool isBold = false,
   }) {
     return TextFormField(
       controller: controller,
-      keyboardType: TextInputType.number,
+      keyboardType: TextInputType.numberWithOptions(decimal: true),
       style: GoogleFonts.firaCode(
         fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
         color: isBold ? Colors.greenAccent : Colors.white,
+        fontSize: 15,
       ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20),
+        labelStyle: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54),
+        prefixIcon: Icon(icon, size: 20, color: theme.colorScheme.primary),
         suffixText: suffix,
+        suffixStyle: TextStyle(color: Colors.white30),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         filled: true,
-        fillColor: Colors.black26,
+        fillColor: Colors.black.withOpacity(0.3),
       ),
     );
   }
@@ -397,14 +432,4 @@ class HomeEntryPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSwitches(HomeEntryController c, ThemeData theme) {
-    return Obx(
-      () => SwitchListTile(
-        title: Text("Tanque Cheio?"),
-        value: c.isTankFull.value,
-        secondary: Icon(RemixIcons.gas_station_fill),
-        onChanged: (v) => c.isTankFull.value = v,
-      ),
-    );
-  }
 }

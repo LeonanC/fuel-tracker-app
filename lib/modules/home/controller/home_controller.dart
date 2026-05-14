@@ -13,6 +13,11 @@ class HomeController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
   final settings = Get.find<SettingController>();
 
+  var monthlyExpenses = <double>[].obs;
+  var totalSpent = 0.0.obs;
+  var totalKm = 0.0.obs;
+  var totalEntries = 0.obs;
+
   var isLoading = false.obs;
   var searchText = ''.obs;
   var vehicles = <VehicleModel>[].obs;
@@ -41,6 +46,53 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     fetchInitialData();
+  }
+
+  void calculateMonthlyExpenses() {
+    final filteredList = fuelEntries.where((entry){
+      if(selectedVehicleID.value == null) return true;
+      return entry.vehicleId == selectedVehicleID.value;
+    }).toList();
+
+    if(filteredList.isEmpty){
+      totalKm.value = 0.0;
+      totalSpent.value = 0.0;
+      monthlyExpenses.value = List.generate(6, (index) => 0.0);
+    }
+
+    final now = DateTime.now();
+    List<double> expenses = List.generate(6, (index) => 0.0);
+    double tempTotalSpent = 0.0;
+
+    final sortedEntries = List<FuelEntryModel>.from(filteredList)
+      ..sort((a, b) => a.entryDate!.compareTo(b.entryDate!));
+
+    if(sortedEntries.length > 1){
+      double firstOdometer = sortedEntries.first.odometerKm;
+      double lastOdometer = sortedEntries.last.odometerKm;
+      totalKm.value = lastOdometer - firstOdometer;
+    }else{
+      totalKm.value = 0.0;
+    }
+
+    for (var entry in filteredList) {
+      double entryTotal = (entry.pricePerLiter) * (entry.volumeLiters);
+      tempTotalSpent += entryTotal;
+
+      if (entry.entryDate != null) {
+        int monthDiff =
+            (now.year - entry.entryDate!.year) * 12 +
+            now.month -
+            entry.entryDate!.month;
+
+        if (monthDiff >= 0 && monthDiff < 6) {
+          expenses[5 - monthDiff] += entryTotal;
+        }
+      }
+    }
+    monthlyExpenses.value = expenses;
+    totalSpent.value = tempTotalSpent;
+    totalEntries.value = filteredList.length;
   }
 
   Future<void> fetchInitialData() async {
@@ -78,9 +130,11 @@ class HomeController extends GetxController {
       tiposMap.value = {for (var t in tiposData) t['pk_tipo'].toString(): t};
 
       final fuelData = results[4] as List;
-      fuelEntries.value = fuelData.map((e) => FuelEntryModel.fromMap(e)).toList();
+      fuelEntries.value = fuelData
+          .map((e) => FuelEntryModel.fromMap(e))
+          .toList();
 
-      
+      calculateMonthlyExpenses();
     } catch (e) {
       debugPrint("Erro na inicialização: $e");
     } finally {
@@ -88,12 +142,11 @@ class HomeController extends GetxController {
     }
   }
 
-
-
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
       await _supabase.from('abastecimentos').insert(data);
       Get.back(result: true);
+      
     } catch (e) {
       _showSnackbar('Erro', 'Falha ao salvar', isError: true);
     } finally {
@@ -151,6 +204,7 @@ class HomeController extends GetxController {
           make: v.make,
           model: v.model,
           fuelType: v.fuelType,
+          imagem: v.imagem,
           year: v.year,
           initialOdometer: newOdometer,
           tankCapacity: v.tankCapacity,
@@ -193,6 +247,11 @@ class HomeController extends GetxController {
     }
   }
 
+  void onVehicleChanged(String? vehicleId){
+    selectedVehicleID.value = vehicleId;
+    calculateMonthlyExpenses();
+  }
+
   List<FuelEntryModel> get filteredFuelEntries {
     List<FuelEntryModel> list = fuelEntries;
     if (selectedVehicleID.value != null) {
@@ -227,8 +286,7 @@ class HomeController extends GetxController {
     return list;
   }
 
-  
-  List<FuelEntryModel> get meusAbastecimentos{
+  List<FuelEntryModel> get meusAbastecimentos {
     final uid = _supabase.auth.currentUser?.id;
     return filteredFuelEntries.where((entry) => entry.user == uid).toList();
   }
@@ -240,8 +298,10 @@ class HomeController extends GetxController {
 
   double get consumoMediaGeral {
     final entries = selectedVehicleID.value != null
-    ? filteredFuelEntries.where((e) => e.vehicleId == selectedVehicleID.value).toList()
-    : fuelEntries.toList();
+        ? filteredFuelEntries
+              .where((e) => e.vehicleId == selectedVehicleID.value)
+              .toList()
+        : fuelEntries.toList();
 
     if (entries.length < 2) return 0.0;
     final atual = entries[0];
@@ -255,14 +315,13 @@ class HomeController extends GetxController {
 
   double get custoMedioGeral {
     final entries = selectedVehicleID.value != null
-    ? filteredFuelEntries.where((e) => e.vehicleId == selectedVehicleID.value).toList()
-    : fuelEntries.toList();
+        ? filteredFuelEntries
+              .where((e) => e.vehicleId == selectedVehicleID.value)
+              .toList()
+        : fuelEntries.toList();
 
     if (entries.isEmpty) return 0.0;
-    double totalCusto = entries.fold(
-      0,
-      (sum, item) => sum + item.totalCost,
-    );
+    double totalCusto = entries.fold(0, (sum, item) => sum + item.totalCost);
     double totalKm =
         entries.first.odometerKm - (vehicles.first.initialOdometer);
 
@@ -278,16 +337,18 @@ class HomeController extends GetxController {
     if (vehicleEntries.isEmpty) return null;
 
     final last = vehicleEntries.first;
-    
+
     final double currentLevel = last.tankCapacity;
     if (currentLevel > 10.0) return null;
 
     final vehicleInfo = veiculosMap[selectedVehicleID.value.toString()];
-    final String nickname = vehicleInfo?['nickname'] ?? vehicleInfo?['modelo'] ?? "Veiculo";
-    final double totalCap = (vehicleInfo?['tank_capacity'] as num? ?? 0.0).toDouble();
+    final String nickname =
+        vehicleInfo?['nickname'] ?? vehicleInfo?['modelo'] ?? "Veiculo";
+    final double totalCap = (vehicleInfo?['tank_capacity'] as num? ?? 0.0)
+        .toDouble();
 
     String consumoNoTrajeto = "---";
-    if(vehicleEntries.length >= 2){
+    if (vehicleEntries.length >= 2) {
       double media = last.calculateConsumption(vehicleEntries[1]);
       consumoNoTrajeto = "${media.toStringAsFixed(2)} km/L";
     }
@@ -295,11 +356,13 @@ class HomeController extends GetxController {
     return {
       'vehicleName': nickname,
       'tank': totalCap.toString(),
-      'displayRange': currentLevel > 0 ? currentLevel.toStringAsFixed(1) : "---",
+      'displayRange': currentLevel > 0
+          ? currentLevel.toStringAsFixed(1)
+          : "---",
       'level': currentLevel.toString(),
       'consumptionValue': consumoNoTrajeto,
       'message': currentLevel <= 5.0 ? "Reserva Critica!" : "Nível Baixo",
-      'distanceUnit': 'L',      
+      'distanceUnit': 'L',
     };
   }
 
@@ -378,11 +441,26 @@ class HomeController extends GetxController {
     );
   }
 
+  double get totalGastoNoMes {
+    final agora = DateTime.now();
+
+    return fuelEntries.where((home) {
+      final dataHome = DateTime.parse(home.entryDate.toString());
+      final mesmoMes = dataHome.month == agora.month;
+      final mesmoAno = dataHome.year == agora.year;
+      
+      return mesmoMes && mesmoAno;
+    }).fold(0.0, (soma, home) => soma + (home.totalCost));
+  }
+
   void navigateToAddEntry(BuildContext context) async {
-    final result = await Get.to(() => HomeEntryPage());
-    if (result == true) {
-      _showSnackbar("Sucesso", "Abastecimento registrado!");
-      fetchInitialData();
+    final result = await Get.toNamed('/fuel_entry');
+    if (result != null) {
+      if(result is Map<String, dynamic>){
+        await saveFuel(result);
+      }else{
+        fetchInitialData();
+      }
     }
   }
 

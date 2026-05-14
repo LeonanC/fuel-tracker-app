@@ -6,6 +6,7 @@ class VehicleModel {
   final String make;
   final String model;
   final String fuelType;
+  final String imagem;
   final int year;
   final double initialOdometer;
   final double tankCapacity;
@@ -18,6 +19,7 @@ class VehicleModel {
     required this.make,
     required this.model,
     required this.fuelType,
+    required this.imagem,
     required this.year,
     required this.initialOdometer,
     required this.tankCapacity,
@@ -32,6 +34,7 @@ class VehicleModel {
       'make': make,
       'model': model,
       'fk_type_fuel': fuelType,
+      'imagem': imagem,
       'year': year,
       'initial_odometer': initialOdometer,
       'tank_capacity': tankCapacity,
@@ -47,6 +50,7 @@ class VehicleModel {
       make: map['make'],
       model: map['model'],
       fuelType: map['fk_type_fuel'] ?? '',
+      imagem: map['imagem'] ?? '',
       year: map['year'] as int,
       initialOdometer: (map['initial_odometer'] as num).toDouble(),
       tankCapacity: (map['tank_capacity'] as num).toDouble(),

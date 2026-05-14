@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/modules/home/pages/home_page.dart';
-import 'package:fuel_tracker_app/modules/maps/pages/map_screen.dart';
+import 'package:fuel_tracker_app/modules/dashboard/pages/dashboard_screen.dart';
 import 'package:fuel_tracker_app/modules/perfil/pages/perfil_pages.dart';
 import 'package:fuel_tracker_app/modules/settings/pages/settings_page.dart';
 import 'package:get/get.dart';
@@ -19,7 +19,7 @@ class _MainPageState extends State<MainPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
 
-  List<Widget> pages = [HomePage(), MapScreen(), PerfilPage(), ToolsScreen()];
+  List<Widget> pages = [HomePage(), DashboardPage(), PerfilPage(), ToolsScreen()];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -93,9 +93,9 @@ class _MainPageState extends State<MainPage> {
               ),
               GButton(
                 icon: _selectedIndex == 1
-                    ? RemixIcons.map_2_fill
-                    : RemixIcons.map_2_line,
-                text: 'nav_map'.tr,
+                    ? RemixIcons.dashboard_2_fill
+                    : RemixIcons.dashboard_2_line,
+                text: 'nav_dashboard'.tr,
                 textStyle: TextStyle(
                   fontFamily: 'Montserrat',
                   color: Colors.blueAccent,

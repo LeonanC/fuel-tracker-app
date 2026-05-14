@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/data/models/user_model.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
+import 'package:fuel_tracker_app/modules/vehicle/controller/vehicle_controller.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 class PerfilPage extends GetView<PerfilController> {
@@ -12,17 +18,17 @@ class PerfilPage extends GetView<PerfilController> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
     final homeController = Get.find<HomeController>();
+    final vehicleController = Get.find<VehicleController>();
     final settingsController = Get.find<SettingController>();
 
     final Color surfaceColor = theme.colorScheme.surfaceContainer;
-    final Color backgroundColor = theme.colorScheme.surface;
     final Color textColor = theme.colorScheme.onSurface;
     final Color textSecondary = theme.colorScheme.onSurfaceVariant;
 
     return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: _buildAppbar(textColor),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Obx(() {
         if (controller.isLoading.value) {
           return Center(
@@ -35,229 +41,217 @@ class PerfilPage extends GetView<PerfilController> {
         final String vehicleId = user.vehicle ?? "";
         final vehicleData = homeController.veiculosMap[vehicleId] ?? {};
 
-        return SingleChildScrollView(
+        return CustomScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
-          child: Column(
-            children: [
-              _buildHeader(
-                user.nome,
-                user.email,
-                user.fotoUrl,
-                textColor,
-                textSecondary,
-                colorScheme.primary,
+          slivers: [
+            _buildSliverAppBar(user, theme, colorScheme),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(25, 20, 25, 40),
+                child: Column(
+                  children: [
+                    _buildStatGrid(
+                      homeController,
+                      settingsController,
+                      surfaceColor,
+                    ),
+                    const SizedBox(height: 25),
+                    _buildDriverRankCard(surfaceColor, colorScheme.primary, textColor, textSecondary),
+                    const SizedBox(height: 30),
+                    _buildSectionHeader(
+                      "Informações da Conta", 
+                      RemixIcons.user_settings_line, 
+                      colorScheme.primary,
+                    ),
+                    _buildDataCard(surfaceColor, [
+                      _buildDataRow(
+                        RemixIcons.user_3_line,
+                        "lg_nome_completo".tr,
+                        user.nome,
+                        textColor,
+                        textSecondary,
+                      ),
+                      _divider(colorScheme.outlineVariant),
+                      _buildDataRow(
+                        RemixIcons.phone_line,
+                        "lg_telefone".tr,
+                        user.telefone,
+                        textColor,
+                        textSecondary,
+                      ),
+                      _divider(colorScheme.outlineVariant),
+                      _buildDataRow(
+                        RemixIcons.map_pin_user_line,
+                        "lg_city".tr,
+                        vehicleData['city'],
+                        textColor,
+                        textSecondary,
+                      ),
+                      _divider(colorScheme.outlineVariant),
+                      _buildDataRow(
+                        RemixIcons.car_line,
+                        "lg_modelo".tr,
+                        vehicleData['nickname'],
+                        textColor,
+                        textSecondary,
+                      ),
+                      _divider(colorScheme.outlineVariant),
+                      _buildDataRow(
+                        RemixIcons.calendar_event_line,
+                        "Membro desde",
+                        DateFormat('yyyy').format(DateTime.parse(user.criadoEm.toString())),
+                        textColor,
+                        textSecondary,
+                      ),
+                    ]),
+                    const SizedBox(height: 25),
+                    const SizedBox(height: 25),
+                  ],
+                ),
               ),
-              const SizedBox(height: 25),
-              _buildEfficiencyGrid(
-                homeController,
-                settingsController,
-                surfaceColor,
-              ),
-              const SizedBox(height: 25),
-              _buildDriverRankCard(
-                surfaceColor,
-                colorScheme.primary,
-                textColor,
-                textSecondary,
-              ),
-              const SizedBox(height: 25),
-              _buildSectionHeader(
-                "lg_veiculo_ativo".tr,
-                RemixIcons.car_fill,
-                colorScheme.primary,
-              ),
-              _buildDataCard(surfaceColor, [
-                _buildDataRow(
-                  RemixIcons.copyright_line,
-                  "lg_marca".tr,
-                  vehicleData['make'] ?? "---",
-                  textColor,
-                  textSecondary,
-                ),
-                _divider(colorScheme.outlineVariant),
-                _buildDataRow(
-                  RemixIcons.settings_3_line,
-                  "lg_modelo".tr,
-                  vehicleData['model'] ?? "---",
-                  textColor,
-                  textSecondary,
-                ),
-                _divider(colorScheme.outlineVariant),
-                _buildDataRow(
-                  RemixIcons.hashtag,
-                  "lg_placa".tr,
-                  vehicleData['plate'] ?? "---",
-                  textColor,
-                  textSecondary,
-                ),
-                _divider(colorScheme.outlineVariant),
-                _buildDataRow(
-                  RemixIcons.map_pin_2_line,
-                  "lg_city".tr,
-                  vehicleData['city'] ?? "---",
-                  textColor,
-                  textSecondary,
-                ),
-                _divider(colorScheme.outlineVariant),
-                _buildDataRow(
-                  RemixIcons.dashboard_3_line,
-                  "lg_odometro".tr,
-                  "${vehicleData['initial_odometer'] ?? 0} km",
-                  textColor,
-                  textSecondary,
-                ),
-                _divider(colorScheme.outlineVariant),
-                _buildDataRow(
-                  RemixIcons.gas_station_line,
-                  "lg_tanque".tr,
-                  "${vehicleData['tank_capacity'] ?? 0} L",
-                  textColor,
-                  textSecondary,
-                ),
-              ]),
-            ],
-          ),
+            ),
+          ],
         );
       }),
     );
   }
 
-  Widget _buildHeader(
-    String nome,
-    String email,
-    String? fotoUrl,
-    Color text,
-    Color secondary,
-    Color primary,
+  Widget _buildSliverAppBar(
+    UserModel2 user,
+    ThemeData theme,
+    ColorScheme colorScheme,
   ) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.bottomRight,
+    return SliverAppBar(
+      expandedHeight: 280.0,
+      pinned: true,
+      stretch: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: [StretchMode.zoomBackground, StretchMode.blurBackground],
+        centerTitle: false,
+        title: Text(
+          user.nome,
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        background: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: primary.withOpacity(0.5), width: 3),
-              ),
-              child: CircleAvatar(
-                radius: 55,
-                backgroundColor: primary.withOpacity(0.1),
-                backgroundImage: (fotoUrl != null && fotoUrl.isNotEmpty)
-                    ? NetworkImage(fotoUrl)
-                    : null,
-                child: (fotoUrl == null || fotoUrl.isEmpty)
-                    ? Icon(RemixIcons.user_3_fill, size: 50, color: primary)
-                    : null,
+            const SizedBox(height: 40),
+            _buildAvatar(user.fotoUrl, colorScheme.primary),
+            const SizedBox(height: 15),
+            Text(
+              user.email,
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: primary,
-              child: Icon(RemixIcons.edit_2_fill, color: Colors.white, size: 16),
-            )
           ],
         ),
-        const SizedBox(height: 15),
-        Text(
-          nome,
-          style: TextStyle(
-            fontFamily: 'Montserrat',
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            color: text,
-          ),
-        ),
-        Text(
-          email,
-          style: TextStyle(
-            fontSize: 14,
-            color: secondary,
-            fontFamily: 'Montserrat',
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildEfficiencyGrid(
-    HomeController home,
-    SettingController settings,
-    Color cardColor,
-  ) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            "Média Mensal",
-            settings.formatarConsumo(home.consumoMediaGeral),
-            Colors.green,
-            cardColor,
-          ),
-        ),
-        const SizedBox(width: 15),
-        Expanded(
-          child: _buildStatCard(
-            "XP Acumulado",
-            "${controller.userModel.value?.xp.toInt() ?? 0} pts",
-            Colors.orange,
-            cardColor,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildAvatar(String? imagem, Color primary) {
+    bool isLocalFile = imagem != null && imagem.startsWith('/');
+    bool isNetwork = imagem != null && imagem.startsWith('http');
 
-  Widget _buildDriverRankCard(
-    Color cardColor,
-    Color primary,
-    Color text,
-    Color secondary,
-  ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: primary.withOpacity(0.2), width: 2),
+      ),
+      child: CircleAvatar(
+        radius: 50,
+        backgroundColor: primary.withOpacity(0.1),
+        backgroundImage: isLocalFile
+            ? FileImage(File(imagem))
+            : (isNetwork ? NetworkImage(imagem) : null) as ImageProvider?,
+        child: imagem == null
+            ? Icon(RemixIcons.user_3_fill, size: 40, color: primary)
+            : null,
+      ),
+    );
+  }
+
+  Widget _buildDriverRankCard(cardColor, primary, text, secondary) {
+    return Container(
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         children: [
           Row(
             children: [
-              Icon(RemixIcons.medal_line, color: Colors.amber, size: 28),
-              SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Motorista Nível ${controller.nivelAtual}",
-                    style: TextStyle(
-                      color: text,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              Icon(RemixIcons.trophy_fill, color: Colors.amber, size: 30),
+              SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Motorista Nível ${controller.nivelAtual}",
+                      style: GoogleFonts.montserrat(
+                        color: text,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  Text(
-                    "Faltam poucos pontos para o próximo nível!",
-                    style: TextStyle(color: secondary, fontSize: 12),
-                  ),
-                ],
+                    Text(
+                      "Faltam XP para subir de nível",
+                      style: GoogleFonts.montserrat(color: secondary, fontSize: 11),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 20),
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: LinearProgressIndicator(
               value: controller.progressoDoNivel,
               backgroundColor: primary.withOpacity(0.1),
-              color: primary,
-              minHeight: 8,
+              color: Colors.green,
+              minHeight: 10,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatGrid(home, settings, Color cardColor) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildStatCard(
+            "hp_total_accumulated".tr,
+            settings.formatarCurrency(home.totalGastoNoMes),
+            Colors.green,
+            cardColor,
+            RemixIcons.money_dollar_circle_line,
+          ),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: _buildStatCard(
+            "Média Mensal",
+            settings.formatarConsumo(home.consumoMediaGeral),
+            Colors.blueAccent,
+            cardColor,
+            RemixIcons.dashboard_3_line,
+          ),
+        ),
+      ],
     );
   }
 
@@ -266,28 +260,35 @@ class PerfilPage extends GetView<PerfilController> {
     String value,
     Color accent,
     Color cardColor,
+    icon,
   ) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.grey.withOpacity(0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(icon, color: accent, size: 12),
+          const SizedBox(height: 12),
           Text(
             label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            style: GoogleFonts.montserrat(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Colors.grey,
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
+            style: GoogleFonts.firaCode(
               color: accent,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              fontFamily: 'Montserrat',
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -295,19 +296,20 @@ class PerfilPage extends GetView<PerfilController> {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, Color primary) {
+  Widget _buildSectionHeader(title, icon, primary) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 15, left: 5),
+      padding: const EdgeInsets.only(bottom: 16, left: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: primary),
+          Icon(icon, size: 18, color: primary),
           const SizedBox(width: 10),
           Text(
             title.toUpperCase(),
-            style: TextStyle(
+            style: GoogleFonts.montserrat(
               fontWeight: FontWeight.w900,
-              fontSize: 13,
+              fontSize: 11,
               letterSpacing: 1.5,
+              color: primary,
             ),
           ),
         ],

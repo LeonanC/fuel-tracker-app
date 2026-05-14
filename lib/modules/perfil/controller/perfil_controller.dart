@@ -98,6 +98,6 @@ class PerfilController extends GetxController {
 
   void logout() async {
     _supabase.auth.signOut();
-    Get.offAllNamed('/welcome');
+    Get.offAllNamed('/login');
   }
 }

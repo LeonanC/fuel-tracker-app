@@ -22,54 +22,112 @@ class HomePage extends GetView<HomeController> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: _buildAppBar(theme),
-      body: Column(
-        children: [
-          _buildHeroStats(),
-          FuelAlertCard(),
-          Obx(() {
-            final alerta = settings.alertaVencimento();
-            if (alerta == null) return SizedBox.shrink();
-
-            return Card(
-              color: Colors.amber.shade100,
-              child: ListTile(
-                leading: Icon(Icons.warning, color: Colors.amber.shade900),
-                title: Text(
-                  alerta,
-                  style: TextStyle(color: theme.colorScheme.primary),
-                ),
-                subtitle: Text(
-                  "Consulte o site do Bradesco ou Sefaz-RJ para pagar",
-                ),
+      body: RefreshIndicator(
+        onRefresh: () => controller.fetchInitialData(),
+        edgeOffset: 100,
+        color: Colors.blueAccent,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            _buildSliverAppBar(theme),
+            SliverToBoxAdapter(
+              child: Column(
+                children: [
+                  _buildHeroStats(),
+                  _buildAlertSection(theme),
+                  FuelAlertCard(),
+                  _buildSearchBar(theme),
+                ],
               ),
-            );
-          }),
-          _buildSearchBar(theme),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => controller.fetchInitialData(),
-              child: _buildMainList(theme),
             ),
-          ),
-        ],
+            _buildMainList(theme),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
-
       floatingActionButton: _buildFAB(context, theme),
+    );
+  }
+
+  Widget _buildAlertSection(ThemeData theme) {
+    return Obx(() {
+      final alerta = settings.alertaVencimento();
+      if (alerta == null) return const SizedBox.shrink();
+
+      return Container(
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        decoration: BoxDecoration(
+          color: Colors.amber.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.amber.withOpacity(0.2)),
+        ),
+        child: ListTile(
+          dense: true,
+          leading: Icon(RemixIcons.error_warning_line, color: Colors.amber),
+          title: Text(
+            alerta,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          ),
+          subtitle: Text(
+            'Consulte Bradesco ou Sefaz-RJ para pagamento.',
+            style: const TextStyle(fontSize: 11),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildSliverAppBar(ThemeData theme) {
+    return SliverAppBar(
+      expandedHeight: 120.0,
+      floating: true,
+      pinned: true,
+      elevation: 0,
+      stretch: true,
+      centerTitle: false,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsetsDirectional.only(start: 16, bottom: 16),
+        centerTitle: false,
+        title: Text(
+          'hp_titulo'.tr,
+          style: GoogleFonts.montserrat(
+            color: theme.textTheme.titleLarge?.color,
+            fontWeight: FontWeight.w800,
+            fontSize: 20,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(RemixIcons.refresh_line, size: 20),
+          onPressed: () => controller.fetchInitialData(),
+        ),
+        FuelListFilterMenu(),
+        IconButton(
+          icon: Icon(RemixIcons.information_line, size: 20),
+          onPressed: () => Get.toNamed('/about'),
+        ),
+        const SizedBox(width: 8),
+      ],
     );
   }
 
   Widget _buildFAB(BuildContext context, ThemeData theme) {
     return FloatingActionButton.extended(
-      onPressed: () => controller.navigateToAddEntry(context),
+      onPressed: () => controller.navigateToAddEntry(Get.context!),
+      elevation: 4,
+      highlightElevation: 8,
       backgroundColor: Colors.blueAccent,
-      icon: Icon(RemixIcons.gas_station_line),
+      icon: Icon(RemixIcons.add_line, color: Colors.white),
       label: Text(
-        'Novo registro',
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontWeight: FontWeight.w900,
+        'NOVO REGISTRO',
+        style: GoogleFonts.montserrat(
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
           letterSpacing: 1,
+          color: Colors.white
         ),
       ),
     );
@@ -77,90 +135,122 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildMainList(ThemeData theme) {
     return Obx(() {
-      if (controller.isLoading.value) return _buildLoadingShimmer(theme);
+      if (controller.isLoading.value) {
+        return SliverToBoxAdapter(child: _buildLoadingShimmer(theme));
+      }
 
       final query = controller.searchText.value.toLowerCase();
-
       final filteredEntries = controller.filteredFuelEntries.where((e) {
         return e.vehicleId.toLowerCase().contains(query) ||
             e.gasStationId.toLowerCase().contains(query);
       }).toList();
 
-      final meusRegistros = filteredEntries
-          .where((e) => e.user == controller.currentUserId)
-          .toList();
-
-      final compartilhadoComigo = filteredEntries
-          .where((e) => e.user != controller.currentUserId)
-          .toList();
-
       if (filteredEntries.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(RemixIcons.ghost_line, size: 48, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(
-                "Nenhum registro encontrado",
-                style: theme.textTheme.bodyMedium,
-              ),
-            ],
-          ),
+        return SliverFillRemaining(
+          hasScrollBody: false,
+          child: _buildEmptyState(theme),
         );
       }
 
-      return CustomScrollView(
-        slivers: [
+      final meusRegistros = filteredEntries
+          .where((e) => e.user == controller.currentUserId)
+          .toList();
+      final compartilhado = filteredEntries
+          .where((e) => e.user != controller.currentUserId)
+          .toList();
+
+      return SliverList(
+        delegate: SliverChildListDelegate([
           if (meusRegistros.isNotEmpty) ...[
-            _buildSliverSectionHeader("Todos os Abastecimentos", theme),
-            _buildSliverEntryList(meusRegistros, theme),
+            _buildSectionHeader("Meus Abastecimentos", theme),
+            ..._buildGroupedList(meusRegistros, theme),
           ],
 
-          if (compartilhadoComigo.isNotEmpty) ...[
-            _buildSliverSectionHeader("Compartilhado", theme),
-            _buildSliverEntryList(compartilhadoComigo, theme),
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          if (compartilhado.isNotEmpty) ...[
+            _buildSectionHeader("Compartilhados", theme),
+            ..._buildGroupedList(compartilhado, theme),
           ],
-        ],
+        ]),
       );
     });
   }
 
-  Widget _buildSliverSectionHeader(String title, ThemeData theme) {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        child: Text(
-          title.toUpperCase(),
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: Colors.blueAccent,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+  Widget _buildSectionHeader(String title, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 16, 8),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 16,
+            decoration: BoxDecoration(
+              color: Colors.blueAccent,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
+          Text(
+            title.toUpperCase(),
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary.withOpacity(0.8),
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildGroupedList(
+    List<FuelEntryModel> entries,
+    ThemeData theme,
+  ) {
+    final grouped = _groupEntries(entries);
+    List<Widget> children = [];
+
+    for (var date in grouped.keys) {
+      children.add(_sectionDateHeader(date, theme));
+      children.addAll(
+        grouped[date]!.map((e) => FuelCard(entry: e, controller: controller)),
+      );
+    }
+
+    return children;
+  }
+
+  Widget _sectionDateHeader(String text, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+      child: Text(
+        text,
+        style: theme.textTheme.bodySmall?.copyWith(
+          fontWeight: FontWeight.bold,
+          color: Colors.grey,
         ),
       ),
     );
   }
 
-  Widget _buildSliverEntryList(List<FuelEntryModel> entries, ThemeData theme) {
-    final grouped = _groupEntries(entries);
-
-    return SliverList(
-      delegate: SliverChildBuilderDelegate((context, i) {
-        String date = grouped.keys.elementAt(i);
-        List<FuelEntryModel> dayEntries = grouped[date]!;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _sectionHeader(date, theme),
-            ...dayEntries.map((e) {
-              return FuelCard(entry: e, controller: controller);
-            }),
-          ],
-        );
-      }, childCount: grouped.keys.length),
+  Widget _buildEmptyState(ThemeData theme) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            RemixIcons.gas_station_fill,
+            size: 64,
+            color: theme.disabledColor.withOpacity(0.2),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "Nenhum registro encontrado",
+            style: TextStyle(
+              color: theme.disabledColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -183,39 +273,21 @@ class HomePage extends GetView<HomeController> {
 
     if (entryDate == today) return "Hoje";
     if (entryDate == yesterday) return "Ontem";
-    return DateFormat(
-      'dd [MMMM]',
-      'pt_BR',
-    ).format(date).replaceAll('[', 'de ').replaceAll(']', '');
+    return DateFormat('dd MMMM, yyyy', 'pt_BR').format(date);
   }
 
   Widget _buildLoadingShimmer(ThemeData theme) {
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: 3,
-      itemBuilder: (context, index) => Shimmer.fromColors(
+      child: Shimmer.fromColors(
         baseColor: theme.cardColor,
         highlightColor: theme.highlightColor,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _sectionHeader(String text, ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      child: Text(
-        text.toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          letterSpacing: 1.5,
-          color: Colors.blueGrey,
+        child: Column(
+          children: List.generate(3, (i) => Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            height: 100,
+            decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20)),
+          )),
         ),
       ),
     );
@@ -224,37 +296,46 @@ class HomePage extends GetView<HomeController> {
   Widget _buildHeroStats() {
     return Obx(
       () => Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF2D2D2D), Color(0xFF1A1A1A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2D3238), Color(0xFF161A1D)],
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: Colors.black26,
-              blurRadius: 12,
-              offset: Offset(0, 6),
+              color: Colors.blueAccent.withOpacity(0.15),
+              blurRadius: 20,
+              offset: Offset(0, 10),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            _statTile(
-              RemixIcons.calculator_line,
-              Colors.blueAccent,
-              "MÉDIA GERAL",
-              settings.formatarConsumo(controller.consumoMediaGeral),
-            ),
-            const VerticalDivider(color: Colors.white10, width: 30),
-            _statTile(
-              RemixIcons.gas_station_line,
-              Colors.orangeAccent,
-              "CUSTO MÉDIO",
-              settings.formatarCurrency(controller.custoMedioGeral),
-            ),
-          ],
+        child: IntrinsicHeight(
+          child: Row(
+            children: [
+              _statTile(
+                RemixIcons.dashboard_3_line,
+                Colors.blueAccent,
+                "MÉDIA GERAL",
+                settings.formatarConsumo(controller.consumoMediaGeral),
+              ),
+              VerticalDivider(
+                color: Colors.white.withOpacity(0.1),
+                thickness: 1,
+                indent: 5,
+                endIndent: 5,
+              ),
+              _statTile(
+                RemixIcons.coins_line,
+                Color(0xFF007268),
+                "CUSTO MÉDIO",
+                settings.formatarCurrency(controller.custoMedioGeral),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -262,31 +343,31 @@ class HomePage extends GetView<HomeController> {
 
   Widget _statTile(IconData icon, Color color, String label, String value) {
     return Expanded(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 12),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: color.withOpacity(0.7),
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color.withOpacity(0.5),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
                 ),
-                Text(
-                  value,
-                  style: GoogleFonts.firaCode(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.firaCode(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -296,49 +377,26 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildSearchBar(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: TextField(
         onChanged: (v) => controller.searchText.value = v,
+        style: TextStyle(fontSize: 14),
         decoration: InputDecoration(
           hintText: "hp_buscar_hint".tr,
-          prefixIcon: Icon(
-            RemixIcons.search_2_line,
-            color: Colors.blueAccent,
-            size: 20,
-          ),
+          prefixIcon: Icon(RemixIcons.search_line, size: 18),
           filled: true,
-          fillColor: theme.cardColor,
+          fillColor: theme.cardColor.withOpacity(0.5),
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(18),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(18),
             borderSide: BorderSide.none,
           ),
         ),
       ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(ThemeData theme) {
-    return AppBar(
-      title: Text(
-        'hp_titulo'.tr,
-        style: GoogleFonts.montserrat(
-          fontWeight: FontWeight.w900,
-          letterSpacing: 2,
-        ),
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(RemixIcons.refresh_line),
-          tooltip: 'hp_refresh'.tr,
-          onPressed: () => controller.fetchInitialData(),
-        ),
-        FuelListFilterMenu(),
-        IconButton(
-          icon: Icon(Icons.info_outline),
-          tooltip: 'ab_about'.tr,
-          onPressed: () => Get.toNamed('/about'),
-        ),
-      ],
     );
   }
 }

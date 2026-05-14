@@ -6,7 +6,8 @@ import 'package:fuel_tracker_app/main_screen.dart';
 import 'package:fuel_tracker_app/modules/about/pages/about_screen.dart';
 import 'package:fuel_tracker_app/modules/auth/completar_perfil.dart';
 import 'package:fuel_tracker_app/modules/auth/login_page.dart';
-import 'package:fuel_tracker_app/modules/welcome/welcome_page.dart';
+import 'package:fuel_tracker_app/modules/welcome/loading_binding.dart';
+import 'package:fuel_tracker_app/modules/welcome/loading_page.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
 import 'package:fuel_tracker_app/modules/home/binding/home_bindings.dart';
@@ -37,7 +38,7 @@ Future<void> main() async {
   await NotificationService.requestPermissions();
   
   final session = Supabase.instance.client.auth.currentSession;
-  String rotaInitial = session == null ? '/welcome' : '/main';
+  String rotaInitial = session == null ? '/login' : '/main';
 
   runApp(MyApp(rotaInitial: rotaInitial));
 }
@@ -73,8 +74,9 @@ class MyApp extends StatelessWidget {
               binding: HomeBindings(),
             ),
             GetPage(
-              name: '/welcome',
-              page: () => WelcomePage(),
+              name: '/loading',
+              page: () => LoadingPage(),
+              binding: LoadingBinding(),
             ),
             GetPage(
               name: '/login',
