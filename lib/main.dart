@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fuel_tracker_app/data/bindings/app_bindings.dart';
 import 'package:fuel_tracker_app/data/controllers/app_controller.dart';
 import 'package:fuel_tracker_app/data/services/app_translations.dart';
 import 'package:fuel_tracker_app/main_screen.dart';
@@ -47,8 +48,6 @@ Future<void> main() async {
   await NotificationService.init();
   await NotificationService.requestPermissions();
 
-  
-
   runApp(const MyApp());
 }
 
@@ -65,42 +64,30 @@ class MyApp extends StatelessWidget {
         return GetMaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Controle de Combustível',
-          initialRoute: '/main',
+          initialRoute: '/loading',
+          initialBinding: AppBinding(),
           translations: AppTranslations(),
           locale: Get.deviceLocale,
           fallbackLocale: Locale('pt_BR', 'BR'),
           themeMode: ThemeMode.system,
           getPages: [
-            GetPage(
-              name: '/loading',
-              page: () => LoadingPage(),
-              binding: LoadingBinding(),
-            ),
-            GetPage(
-              name: '/login',
-              page: () => LoginPage(),
-              binding: LoginBinding(),
-            ),
+            GetPage(name: '/loading', page: () => LoadingPage()),
+            GetPage(name: '/main', page: () => MainPage()),
+            GetPage(name: '/login', page: () => LoginPage()),
+            GetPage(name: '/perfil', page: () => PerfilPage()),
+            GetPage(name: '/settings', page: () => SettingScreen()),
             GetPage(
               name: '/about',
               page: () => AboutScreen(),
               binding: AboutBinding(),
             ),
-            GetPage(
-              name: '/main',
-              page: () => MainPage(),
-              binding: HomeBinding(),
-            ),
+
             GetPage(
               name: '/completar-perfil',
               page: () => CompletarPerfilPage(),
               binding: LoginBinding(),
             ),
-            GetPage(
-              name: '/perfil',
-              page: () => PerfilPage(),
-              binding: SettingBinding(),
-            ),
+
             GetPage(
               name: '/home',
               page: () => HomePage(),
@@ -109,7 +96,6 @@ class MyApp extends StatelessWidget {
             GetPage(
               name: '/fuel_entry',
               page: () => HomeEntryPage(),
-              binding: HomeBinding(),
               transition: Transition.rightToLeftWithFade,
             ),
             GetPage(
@@ -127,20 +113,11 @@ class MyApp extends StatelessWidget {
               page: () => GasStationScreen(),
               binding: GasStationBinding(),
             ),
-            GetPage(
-              name: '/vehicles_pages',
-              page: () => VehicleScreen(),
-              binding: VehicleBinding(),
-            ),
+            GetPage(name: '/vehicles_pages', page: () => VehicleScreen()),
             GetPage(
               name: '/backup_pages',
               page: () => BackupScreen(),
               binding: BackupBinding(),
-            ),
-            GetPage(
-              name: '/settings',
-              page: () => SettingScreen(),
-              binding: SettingBinding(),
             ),
           ],
           theme: ThemeData(
