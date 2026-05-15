@@ -28,6 +28,50 @@ class HomeController extends GetxController {
   var isLoading = false.obs;
   var searchText = ''.obs;
 
+  @override
+  void onInit() {
+    super.onInit();
+    fetchData();
+  }
+
+  Future<void> fetchData() async {
+    try {
+      isLoading.value = true;
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      final results = await Future.wait([
+        _supabase.from('veiculos').select(),
+        _supabase
+            .from('abastecimentos')
+            .select()
+            .eq('fk_usuario', user.id)
+            .order('velocimetro', ascending: false),
+        _supabase.from('postos').select(),
+        _supabase.from('tipo_combustivel').select(),
+      ]);
+
+      final vehicleData = results[0] as List;
+      vehicles.value = vehicleData.map((e) => VehicleModel.fromMap(e)).toList();
+      veiculosMap.value = {for (var v in vehicleData) v['id'].toString(): v};
+
+      final homeData = results[1] as List;
+      fuelEntries.value = homeData
+          .map((f) => FuelEntryModel.fromMap(f))
+          .toList();
+
+      final postoData = results[2] as List;
+      postos.value = postoData.map((p) => GasStationModel.fromMap(p)).toList();
+      postosMap.value = {for (var p in postoData) p['pk_posto'].toString(): p};
+
+      final tiposData = results[3] as List;
+      tipos.value = tiposData.map((t) => TypeGasModel.fromMap(t)).toList();
+      tiposMap.value = {for (var t in tiposData) t['pk_tipo'].toString(): t};
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   double get totalGastoFiltrado {
     return filteredFuelEntries.fold(0.0, (sum, item) => sum + item.totalCost);
   }
@@ -74,6 +118,18 @@ class HomeController extends GetxController {
     return totais;
   }
 
+  double get totalGastoNoMes {
+    final agora = DateTime.now();
+
+    return filteredFuelEntries
+        .where((entry) {
+          if (entry.entryDate == null) return false;
+          return entry.entryDate!.month == agora.month &&
+              entry.entryDate!.year == agora.year;
+        })
+        .fold(0.0, (sum, item) => sum + item.totalCost);
+  }
+
   List<double> get ultimosSeisMeses {
     final agora = DateTime.now();
     List<double> valores = List.filled(6, 0.0);
@@ -92,18 +148,34 @@ class HomeController extends GetxController {
   }
 
   List<FuelEntryModel> get filteredFuelEntries {
-    List<FuelEntryModel> list = fuelEntries.toList();
+    List<FuelEntryModel> list = fuelEntries;
 
-    if (selectedVehicleID.value != null && selectedVehicleID.value!.isNotEmpty) {
+    if (selectedVehicleID.value != null) {
       list = list.where((e) => e.vehicleId == selectedVehicleID.value).toList();
+    }
+    if (selectedTipoID.value != null) {
+      list = list.where((e) => e.fuelTypeId == selectedTipoID.value).toList();
+    }
+    if (selectedPostoID.value != null) {
+      list = list
+          .where((e) => e.gasStationId == selectedPostoID.value)
+          .toList();
     }
 
     if (searchText.value.isNotEmpty) {
       final query = searchText.value.toLowerCase();
       list = list.where((e) {
-        final posto =
-            postosMap[e.gasStationId]?['nome']?.toString().toLowerCase() ?? '';
-        return posto.contains(query);
+        final dadosPosto = postosMap[e.gasStationId];
+        final posto = dadosPosto?['nome']?.toString().toLowerCase() ?? '';
+        final dadosVeiculo = veiculosMap[e.vehicleId];
+        final veiculo =
+            dadosVeiculo?['nickname']?.toString().toLowerCase() ?? '';
+        final dadosTipo = tiposMap[e.fuelTypeId];
+        final tipo = dadosTipo?['nome']?.toString().toLowerCase() ?? '';
+
+        return posto.contains(query) ||
+            veiculo.contains(query) ||
+            tipo.contains(query);
       }).toList();
     }
     return list;
@@ -111,16 +183,7 @@ class HomeController extends GetxController {
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
-      isLoading.value = true;
-      final response = await _supabase
-          .from('abastecimentos')
-          .insert(data)
-          .select()
-          .single();
-
-      final newEntry = FuelEntryModel.fromMap(response);
-      fuelEntries.insert(0, newEntry);
-
+      await _supabase.from('abastecimentos').insert(data);
       _showSnackbar("Sucesso", "Abastecimento registrado!");
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar no banco", isError: true);
@@ -131,19 +194,13 @@ class HomeController extends GetxController {
 
   Future<void> updateFuel(FuelEntryModel data) async {
     try {
+      if (data.id == null) return;
       isLoading.value = true;
 
       await _supabase
           .from('abastecimentos')
           .update(data.toMap())
           .eq('pk_fuel', data.id!);
-
-      final index = fuelEntries.indexWhere((e) => e.id == data.id);
-      if (index != -1) {
-        fuelEntries[index] = data;
-        fuelEntries.refresh();
-      }
-
       _showSnackbar("Sucesso", "Registro atualizado!");
     } catch (e) {
       _showSnackbar("Erro", "Falha na atualização", isError: true);
@@ -164,8 +221,10 @@ class HomeController extends GetxController {
 
       int index = vehicles.indexWhere((e) => e.id == vehicleId);
       if (index != -1) {
-        vehicles[index] = vehicles[index].copyWith(initialOdometer: newOdometer);
-        if(veiculosMap.containsKey(vehicleId)){
+        vehicles[index] = vehicles[index].copyWith(
+          initialOdometer: newOdometer,
+        );
+        if (veiculosMap.containsKey(vehicleId)) {
           veiculosMap[vehicleId]!['initial_odometer'] = newOdometer;
         }
         vehicles.refresh();
@@ -187,8 +246,6 @@ class HomeController extends GetxController {
       _showSnackbar("Erro", "Não foi possível deletar", isError: true);
     }
   }
-
-  Future<void> refreshData() async {}
 
   void onVehicleChanged(String? vehicleId) {
     selectedVehicleID.value = vehicleId;
@@ -234,12 +291,8 @@ class HomeController extends GetxController {
 
   void navigateToAddEntry(BuildContext context) async {
     final result = await Get.toNamed('/fuel_entry');
-    if (result != null) {
-      if (result is Map<String, dynamic>) {
-        // await saveFuel(result);
-      } else {
-        // fetchInitialData();
-      }
+    if (result == true) {
+      fetchData();
     }
   }
 
@@ -252,7 +305,7 @@ class HomeController extends GetxController {
     );
     if (result == true) {
       _showSnackbar("Sucesso", "Registro atualizado!");
-      // fetchInitialData();
+      fetchData();
     }
   }
 

@@ -12,6 +12,7 @@ import 'package:fuel_tracker_app/modules/login/binding/login_binding.dart';
 import 'package:fuel_tracker_app/modules/login/pages/completar_perfil.dart';
 import 'package:fuel_tracker_app/modules/login/pages/login_page.dart';
 import 'package:fuel_tracker_app/modules/perfil/binding/perfil_binding.dart';
+import 'package:fuel_tracker_app/modules/registro/pages/vehicle_entry_screen.dart';
 import 'package:fuel_tracker_app/modules/remider/binding/reminder_binding.dart';
 import 'package:fuel_tracker_app/modules/settings/binding/setting_binding.dart';
 import 'package:fuel_tracker_app/modules/settings/pages/settings_page.dart';
@@ -114,6 +115,7 @@ class MyApp extends StatelessWidget {
               binding: GasStationBinding(),
             ),
             GetPage(name: '/vehicles_pages', page: () => VehicleScreen()),
+            GetPage(name: '/vehicles_entry', page: () => VehicleEntryScreen()),
             GetPage(
               name: '/backup_pages',
               page: () => BackupScreen(),

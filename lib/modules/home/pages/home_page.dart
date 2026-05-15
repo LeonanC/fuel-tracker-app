@@ -20,7 +20,7 @@ class HomePage extends GetView<HomeController> {
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: RefreshIndicator(
-        onRefresh: () => controller.refreshData(),
+        onRefresh: () => controller.fetchData(),
         edgeOffset: 100,
         color: Colors.blueAccent,
         child: CustomScrollView(
@@ -111,7 +111,6 @@ class HomePage extends GetView<HomeController> {
       return SliverList(
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            print(entries[index]);
             return FuelCard(entry: entries[index], controller: controller);
           },
           childCount: entries.length,
@@ -182,7 +181,7 @@ class HomePage extends GetView<HomeController> {
                 RemixIcons.coins_line,
                 Color(0xFF007268),
                 "CUSTO MÉDIO",
-                settings.formatarCurrency(controller.kmRodadoTotal),
+                settings.formatarDistancia(controller.kmRodadoTotal),
               ),
             ],
           ),

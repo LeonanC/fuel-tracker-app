@@ -5,7 +5,6 @@ import 'package:fuel_tracker_app/data/models/user_model.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
-import 'package:fuel_tracker_app/modules/vehicle/controller/vehicle_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -20,7 +19,6 @@ class PerfilPage extends GetView<PerfilController> {
     final colorScheme = theme.colorScheme;
 
     final homeController = Get.find<HomeController>();
-    final vehicleController = Get.find<VehicleController>();
     final settingsController = Get.find<SettingController>();
 
     final Color surfaceColor = theme.colorScheme.surfaceContainer;

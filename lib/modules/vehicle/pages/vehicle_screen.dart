@@ -64,11 +64,11 @@ class VehicleScreen extends GetView<VehicleController> {
         );
       }),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: _buildFab(colorScheme),
+      floatingActionButton: _buildFab(context, colorScheme),
     );
   }
 
-  Widget _buildFab(ColorScheme colorScheme) {
+  Widget _buildFab(BuildContext context, ColorScheme colorScheme) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20.r),
@@ -82,7 +82,7 @@ class VehicleScreen extends GetView<VehicleController> {
       ),
       child: FloatingActionButton.extended(
         backgroundColor: colorScheme.primary,
-        onPressed: () => Get.to(() => VehicleEntryScreen()),
+        onPressed: () => controller.navigateToAddVehicle(context),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20.r),

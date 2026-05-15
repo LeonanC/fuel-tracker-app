@@ -26,8 +26,7 @@ class VehicleModel {
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      if (id != null) 'id': id,
+    final Map<String, dynamic> data = {
       'nickname': nickname,
       'plate': plate,
       'city': city,
@@ -39,6 +38,10 @@ class VehicleModel {
       'initial_odometer': initialOdometer,
       'tank_capacity': tankCapacity,
     };
+    if(id != null){
+      data['id'] = id;
+    }
+    return data;
   }
 
   factory VehicleModel.fromMap(Map<String, dynamic> map, [String? docId]) {

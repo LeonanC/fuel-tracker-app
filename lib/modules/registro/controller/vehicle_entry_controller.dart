@@ -67,82 +67,106 @@ class VehicleEntryController extends GetxController {
     }
   }
 
-  Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera, imageQuality: 70);
-    if(pickedFile != null){
-      selectedImageUrl.value = pickedFile.path;
-    }
-  }
+  Future<void> processarUpload() async {
+    final ImagePicker picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
+    if (pickedFile != null) {
+      isLoading.value = true;
+      try {
+        File file = File(pickedFile.path);
+        final String fileName =
+            'veiculo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final String path = 'veiculos/$fileName';
+        await _supabase.storage
+            .from('fotos_perfil')
+            .upload(
+              path,
+              file,
+              fileOptions: FileOptions(
+                cacheControl: '3600',
+                contentType: 'image/jpeg',
+                upsert: true,
+              ),
+            );
 
-  Future<String?> _processarUpload() async {
-    if(selectedImageUrl.value.isEmpty || selectedImageUrl.value.startsWith('http')){
-      return selectedImageUrl.value;
-    }
-    try {
-      final file = File(selectedImageUrl.value);
-      final fileName = 'veiculo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final path = 'veiculos/$fileName';
+        final String publicUrl = _supabase.storage
+            .from('fotos_perfil')
+            .getPublicUrl(path);
 
-      await _supabase.storage
-      .from('fotos_perfil')
-      .upload(
-        path,
-        file,
-        fileOptions: FileOptions(contentType: 'image/jpeg', upsert: true),
-      );
+        selectedImageUrl.value = publicUrl;
 
-      return _supabase.storage.from('fotos_perfil').getPublicUrl(path);    
-    } catch (e) {
-      Get.snackbar('Erro', 'Falha ao selecionar imagem: $e');
-      return null;
+        _showCustomSnackbar("Sucesso", "Foto carregado com sucesso!");
+      } catch (e) {
+        _showCustomSnackbar("Erro no Upload", e.toString(), isError: true);
+      } finally {
+        isLoading.value = false;
+      }
     }
   }
 
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) return;
 
-    isLoading.value = true;
-
-    String? remoteUrl = await _processarUpload();
-
     try {
-      final Map<String, dynamic> vehicleData = {
-        'pk_vehicle': editingEntry?.id,
+      final vehicleData = {
+        'id': editingEntry?.id,
         'nickname': nicknameController.text,
+        'plate': plateController.text.toUpperCase(),
         'make': makeController.text,
         'model': modelController.text,
         'year': int.tryParse(yearController.text) ?? DateTime.now().year,
-        'plate': plateController.text.toUpperCase(),
-        'tank_capacity': tankCapacityController.numberValue,
         'initial_odometer': odometerController.numberValue,
-        'is_mercosul': isMercosul.value,
-        'city': cityController.text,
+        'tank_capacity': tankCapacityController.numberValue,
         'fk_type_fuel': selectedTipo.value,
-        'imagem': remoteUrl,
+        'city': cityController.text,
+        'imagem': selectedImageUrl.value,
       };
 
       if (editingEntry != null) {
-        final updatedModel = VehicleModel.fromMap(
-          vehicleData,
-          editingEntry!.id!.toString(),
+        await controller.updateVeiculo(
+          VehicleModel.fromMap(vehicleData, editingEntry!.id!),
         );
-        await controller.updateVeiculo(updatedModel);
       } else {
         await controller.saveVeiculo(vehicleData);
       }
 
-      Get.back();
+      Get.back(result: true);
     } catch (e) {
       Get.back();
-      Get.snackbar(
+      _showCustomSnackbar(
         'Erro',
         'Falha ao salvar o veículo: $e',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.redAccent,
+        isError: true,
       );
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void _showCustomSnackbar(
+    String titulo,
+    String mensagem, {
+    bool isError = false,
+  }) {
+    Get.snackbar(
+      titulo,
+      mensagem,
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: isError ? Colors.redAccent : Colors.greenAccent,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(15),
+      borderRadius: 20,
+      overlayBlur: 1,
+      boxShadows: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.3),
+          blurRadius: 10,
+          offset: Offset(0, 5),
+        ),
+      ],
+    );
   }
 }

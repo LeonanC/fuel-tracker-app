@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 
 class AppController extends GetxController {
+  bool carregamentoConcluido = false;
+  
   final String versionUrl =
       "https://raw.githubusercontent.com/LeonanC/fuel-tracker-app/blob/main/version.json";
 
@@ -30,9 +33,6 @@ class AppController extends GetxController {
         String versaoAtual = packageInfo.version;
 
         if (_precisaAtualizar(versaoAtual, versaoRemota)) {
-          print("Versão Local: $versaoAtual");
-          print("Versão Remota: $versaoRemota");
-          print("Status da Requisição: ${response.statusCode}");
           _exibirDialogAtualizacao(urlDownload, mensagem);
         }
       }

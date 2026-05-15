@@ -33,11 +33,10 @@ class VehicleController extends GetxController {
       final vehicleData = results[0] as List;
       vehicles.value = vehicleData.map((e) => VehicleModel.fromMap(e)).toList();
       vehiclesMap.value = {for (var v in vehicleData) v['id'].toString(): v};
-      
+
       final tiposData = results[1] as List;
       tipos.value = tiposData.map((e) => TypeGasModel.fromMap(e)).toList();
       tiposMap.value = {for (var t in tiposData) t['pk_tipo'].toString(): t};
-
     } catch (e) {
       _showSnackbar("Erro", "Falha ao carregar os veículos: $e", isError: true);
     } finally {
@@ -49,14 +48,16 @@ class VehicleController extends GetxController {
     try {
       isLoading.value = true;
 
+      data.remove('id');
+
       final response = await _supabase
           .from('veiculos')
           .insert(data)
           .select()
           .single();
-      final int idGerado = response['id'];
-      vehiclesMap[idGerado] = response;
-      vehiclesMap.refresh();
+
+      final newVehicle = VehicleModel.fromMap(response);
+      vehicles.insert(0, newVehicle);
 
       _showSnackbar("Sucesso", "Veículo ${data['nickname']} guardado!");
     } catch (e) {
@@ -67,21 +68,19 @@ class VehicleController extends GetxController {
   }
 
   Future<void> updateVeiculo(VehicleModel veiculo) async {
-    if (veiculo.id == null) {
-      _showSnackbar("Erro", "ID não encontrado", isError: true);
-      return;
-    }
-
     try {
       isLoading.value = true;
-      final data = veiculo.toMap();
-      await _supabase.from('veiculos').update(data).eq('id', veiculo.id!);
-      
-      vehiclesMap[veiculo.id] = data;
-      vehiclesMap.refresh();
+      await _supabase
+          .from('veiculos')
+          .update(veiculo.toMap())
+          .eq('id', veiculo.id!);
+      final index = vehicles.indexWhere((v) => v.id == veiculo.id);
+      if (index != -1) {
+        vehicles[index] = veiculo;
+        vehicles.refresh();
+      }
 
-      Get.back();
-      _showSnackbar("Sucesso", "Veículo ${data['nickname']} atualizado!");
+      _showSnackbar("Sucesso", "Veículo atualizado!");
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar: $e", isError: true);
     } finally {
@@ -99,6 +98,17 @@ class VehicleController extends GetxController {
       _showSnackbar("Eliminado", "O veículo foi removido.");
     } catch (e) {
       _showSnackbar("Erro", "Não foi possível eliminar: $e", isError: true);
+    }
+  }
+
+  void navigateToAddVehicle(BuildContext context) async {
+    final result = await Get.toNamed('/vehicles_entry');
+    if(result != null){
+      if(result is Map<String, dynamic>){
+        await saveVeiculo(result);
+      }else{
+        fetchVehicle();
+      }
     }
   }
 

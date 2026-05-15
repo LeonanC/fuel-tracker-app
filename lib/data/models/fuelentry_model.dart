@@ -40,8 +40,7 @@ class FuelEntryModel {
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      if (id != null) 'pk_fuel': id,
+    final Map<String, dynamic> data = {
       'fk_usuario': user,
       'fk_veiculo': vehicleId,
       'fk_tipo': fuelTypeId,
@@ -56,6 +55,10 @@ class FuelEntryModel {
       'receipt_path': receiptPath,
       'shared_with': sharedWith,
     };
+    if(id != null){
+      data['pk_fuel'] = id;
+    }
+    return data;
   }
 
   factory FuelEntryModel.fromMap(Map<String, dynamic> map, [String? docId]) {

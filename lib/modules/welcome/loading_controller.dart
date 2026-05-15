@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
+import 'package:fuel_tracker_app/data/controllers/app_controller.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -20,8 +19,15 @@ class LoadingController extends GetxController {
   }
 
   Future<void> inicializarApp() async {
+    final appController = Get.find<AppController>();
+
+    if(appController.carregamentoConcluido){
+      Get.offAllNamed('/main');
+      return;
+    }
+
     try {
-      temErro.value = false;
+      
 
       statusMensagem.value = "Autenticando motorista...";
       await Future.delayed(const Duration(milliseconds: 500));
@@ -37,24 +43,14 @@ class LoadingController extends GetxController {
         return;
       }
 
-      final user = session.user;
       progresso.value = 0.2;
 
       statusMensagem.value = "Sincronizando garagem...";
-      final responses = await Future.wait([
-        _supabase.from('veiculos').select(),
-        _supabase.from('abastecimentos').select().eq('fk_usuario', user.id).order('data'),
-      ]);
-      progresso.value = 0.8;
+      progresso.value = 0.5;
 
-      final homeController = Get.put(HomeController(), permanent: true);
+      await Get.find<HomeController>().fetchData();
 
-      homeController.vehicles.assignAll(
-        (responses[0] as List).map((v) => VehicleModel.fromMap(v)).toList(),
-        );
-      homeController.fuelEntries.assignAll(
-        (responses[1] as List).map((e) => FuelEntryModel.fromMap(e)).toList(),
-        );
+      appController.carregamentoConcluido = true;
       
       statusMensagem.value = "Tudo pronto!";
       progresso.value = 1.0;

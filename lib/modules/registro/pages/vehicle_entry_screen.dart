@@ -87,6 +87,13 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
                   icon: RemixIcons.medal_line,
                   isText: true,
                 ),
+                const Divider(),
+                _customTextField(
+                  controller: controller.plateController,
+                  label: "Placa (Ex: ABC1D23)",
+                  icon: RemixIcons.medal_line,
+                  isText: true,
+                ),
               ]),
               SizedBox(height: 25.h),
               _buildSectionTitle("Informações do Veículo", colorScheme),
@@ -159,8 +166,6 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
               ]),
         
               SizedBox(height: 25.h),
-              _buildSectionTitle("Configurações", colorScheme),
-              _buildCard(theme, [_buildSwitches(controller, theme)]),
             ],
           ),
         ),
@@ -172,7 +177,7 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
     return Obx(() {
       final path = c.selectedImageUrl.value;
       return GestureDetector(
-        onTap: c.pickImage,
+        onTap: c.processarUpload,
         child: Container(
           height: 150,
           width: double.infinity,

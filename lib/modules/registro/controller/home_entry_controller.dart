@@ -190,8 +190,6 @@ class HomeEntryController extends GetxController {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw "Sessão expirada";
 
-      String? remoteUrl = await _processarUpload();
-
       final fuelData = {
         'fk_usuario': userId,
         'fk_veiculo': selectedVeiculos.value,
@@ -203,13 +201,12 @@ class HomeEntryController extends GetxController {
         'preco_litro': pricePerLiterController.numberValue,
         'custo_total': totalPriceController.numberValue,
         'tanque_cheio': isTankFull.value,
-        'receipt_path': remoteUrl,
+        'receipt_path': comprovantePath.value,
       };
 
       if (editingEntry != null) {
-        await controller.updateFuel(
-          FuelEntryModel.fromMap(fuelData, editingEntry!.id!),
-        );
+        final updatedModel = FuelEntryModel.fromMap(fuelData, editingEntry!.id!);
+        await controller.updateFuel(updatedModel);
       } else {
         await controller.saveFuel(fuelData);
       }
