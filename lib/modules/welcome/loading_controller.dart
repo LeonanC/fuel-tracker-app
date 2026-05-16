@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:fuel_tracker_app/data/controllers/app_controller.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -19,22 +18,12 @@ class LoadingController extends GetxController {
   }
 
   Future<void> inicializarApp() async {
-    final appController = Get.find<AppController>();
-
-    if(appController.carregamentoConcluido){
-      Get.offAllNamed('/main');
-      return;
-    }
-
-    try {
-      
-
+    try {     
       statusMensagem.value = "Autenticando motorista...";
       await Future.delayed(const Duration(milliseconds: 500));
       final session = _supabase.auth.currentSession;
 
       if (session == null) {
-        print("Nenhuma sessão encontrada. Redirecionando para Login...");
         statusMensagem.value = "Usuário não identificado. Indo para login...";
         progresso.value = 1.0;
 
@@ -49,8 +38,6 @@ class LoadingController extends GetxController {
       progresso.value = 0.5;
 
       await Get.find<HomeController>().fetchData();
-
-      appController.carregamentoConcluido = true;
       
       statusMensagem.value = "Tudo pronto!";
       progresso.value = 1.0;
@@ -60,7 +47,6 @@ class LoadingController extends GetxController {
     } catch (e) {
       temErro.value = true;
       statusMensagem.value = "Erro ao sincronizar: $e";
-      print("Erro LoadingComtroller: $e");
     }
   }
 

@@ -80,6 +80,21 @@ class LoginController extends GetxController {
         nomeController.clear();
         telefoneController.clear();
       }
+    } on AuthException catch (e){
+      if(e.message.contains('Invalid login credentials') || e.statusCode == '400'){
+        _showCustomSnackbar(
+          "Falha no Login", 
+          "E-mail ou senha incorretos. Por favor, verifique os dados.",
+          isError: true,
+        );
+      }else{
+        _showCustomSnackbar(
+          "Erro de Autenticação", 
+          e.message,
+          isError: true,
+        );
+        print(e.message);
+      }    
     } catch (e) {
       _showCustomSnackbar(
         "Erro",

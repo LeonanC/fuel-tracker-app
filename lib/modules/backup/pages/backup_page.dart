@@ -14,25 +14,29 @@ class _BackupScreenState extends State<BackupScreen> {
   final List<Map<String, dynamic>> _tabelasConfig = [
     {
       'id': 'abastecimentos',
-      'label': 'Histórico de Abastecimentos',
+      'label': 'bk_scope_fuel_entries'.tr,
       'icon': RemixIcons.gas_station_line,
     },
     {
       'id': 'postos',
-      'label': 'Postos de Gasolina',
+      'label': 'gs_titulo'.tr,
       'icon': RemixIcons.user_location_line,
     },
     {
       'id': 'service_type',
-      'label': 'Tipos de Manutenção',
-      'icon': RemixIcons.building_line,
+      'label': 'bk_scope_manutencao'.tr,
+      'icon': RemixIcons.tools_line,
     },
     {
       'id': 'tipo_combustivel',
-      'label': 'Tipos de Combustível',
+      'label': 'bk_scope_types'.tr,
       'icon': RemixIcons.oil_line,
     },
-    {'id': 'veiculos', 'label': 'Meus Veículos', 'icon': RemixIcons.car_line},
+    {
+      'id': 'veiculos',
+      'label': 'bk_scope_vehicles'.tr,
+      'icon': RemixIcons.car_line,
+    },
   ];
   final Map<String, bool> colecoesSelecionadas = {
     'abastecimentos': true,
@@ -49,196 +53,257 @@ class _BackupScreenState extends State<BackupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('bk_title'.tr), centerTitle: true),
-      body: Column(
-        children: [
-          _buildHeader(isDark),
-          Divider(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _tabelasConfig.length,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemBuilder: (context, index) {
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar.large(
+            expandedHeight: 100,
+            title: Text(
+              'bk_title'.tr,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+            actions: [
+              IconButton(
+                icon: Icon(RemixIcons.question_line),
+                onPressed: () => _showSnackbar(
+                  "Ajuda",
+                  "Selecione os dados que deseja exportar ou restaurar",
+                ),
+              ),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: _buildHeader(theme),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
                 final item = _tabelasConfig[index];
                 final String id = item['id'];
                 final bool isSelected = colecoesSelecionadas[id] ?? false;
                 return _buildTableItem(
+                  theme: theme,
                   title: item['label'],
                   icon: item['icon'],
                   isSelected: isSelected,
-                  onTap: () {
-                    setState(() {
-                      colecoesSelecionadas[id] = !isSelected;
-                    });
-                  },
+                  onTap: () =>
+                      setState(() => colecoesSelecionadas[id] = !isSelected),
                 );
-              },
+              }, childCount: _tabelasConfig.length),
             ),
           ),
 
-          _buildActionButtons(context),
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
         ],
       ),
+      bottomSheet: _buildActionButtons(context),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-    decoration: BoxDecoration(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: Offset(0, -5),
-        ),
-      ],
-    ),
-    child: SafeArea(
-      top: false,
-      bottom: true,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _customButton(
-            label: "EXECUTAR BACKUP",
-            icon: RemixIcons.cloud_fill,
-            color: Colors.blueAccent,
-            onPressed: _getSelecaoFinal.isEmpty
-                ? null
-                : () => _processarBackup(context),
-          ),
-          const SizedBox(height: 12),
-          _customButton(
-            label: "RESTAURAR BACKUP",
-            icon: RemixIcons.refresh_line,
-            color: Colors.greenAccent,
-            onPressed: _getSelecaoFinal.isEmpty
-                ? null
-                : () => _processarRestauro(context),
-          ),
-          const SizedBox(height: 12),
-          _customButton(
-            label: "DELETAR DADOS",
-            icon: RemixIcons.delete_bin_5_line,
-            color: Colors.redAccent,
-            onPressed: _getSelecaoFinal.isEmpty
-                ? null
-                : () => _processarDeletar(context),
-          ),
-        ],
-      ),
-    ),
-  );
-
   Widget _buildTableItem({
+    required ThemeData theme,
     required String title,
     required IconData icon,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: isSelected
-            ? (isDark ? Colors.blueAccent.withOpacity(0.15) : Colors.blue[50])
-            : (isDark ? Colors.grey[900] : Colors.white),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected
-              ? Colors.blueAccent
-              : (isDark ? Colors.grey[800]! : Colors.grey[300]!),
-          width: 1,
-        ),
-      ),
-      child: ListTile(
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.blueAccent
-                : Colors.grey.withOpacity(0.1),
-            shape: BoxShape.circle,
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outlineVariant,
+                width: isSelected ? 2 : 1,
+              ),
+              color: isSelected
+                  ? theme.colorScheme.primary.withValues(alpha: 0.05)
+                  : theme.colorScheme.surface,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.surfaceContainerHighest,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurfaceVariant,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                Checkbox(
+                  value: isSelected,
+                  onChanged: (_) => onTap(),
+                  activeColor: theme.colorScheme.primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.grey,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            color: isSelected
-                ? (isDark ? Colors.blue[200] : Colors.blue[900])
-                : null,
-          ),
-        ),
-        trailing: Checkbox(
-          value: isSelected,
-          activeColor: Colors.blueAccent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-          onChanged: (_) => onTap(),
         ),
       ),
     );
   }
 
-  Widget _customButton({
+  Widget _buildActionButtons(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool hasSelection = _getSelecaoFinal.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20),
+        ],
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _actionButton(
+              label: "bk_action_export_btn".tr.toUpperCase(),
+              icon: RemixIcons.cloud_fill,
+              color: Colors.blueAccent,
+              onPressed: hasSelection ? () => _processarBackup(context) : null,
+            ),
+            const SizedBox(height: 12),
+            _actionButton(
+              label: "bk_btn_import".tr.toUpperCase(),
+              icon: RemixIcons.refresh_line,
+              color: Colors.green,
+              onPressed: hasSelection
+                  ? () => _processarRestauro(context)
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            _actionButton(
+              label: "DELETAR DADOS",
+              icon: RemixIcons.delete_bin_line,
+              color: theme.colorScheme.error,
+              isOutlined: true,
+              onPressed: hasSelection ? () => _processarDeletar(context) : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionButton({
     required String label,
     required IconData icon,
     required Color color,
     required VoidCallback? onPressed,
+    bool isOutlined = false,
   }) {
+    final style = FilledButton.styleFrom(
+      backgroundColor: isOutlined ? Colors.transparent : color,
+      foregroundColor: isOutlined ? color : Colors.white,
+      elevation: isOutlined ? 0 : 2,
+      side: isOutlined ? BorderSide(color: color) : null,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      padding: const EdgeInsets.symmetric(vertical: 16),
+    );
+
     return SizedBox(
       width: double.infinity,
-      height: 50,
-      child: ElevatedButton.icon(
-        icon: Icon(icon),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        onPressed: onPressed,
-      ),
+      child: isOutlined
+          ? OutlinedButton.icon(
+              onPressed: onPressed,
+              icon: Icon(icon),
+              label: Text(label),
+              style: style,
+            )
+          : FilledButton.icon(
+              onPressed: onPressed,
+              icon: Icon(icon),
+              label: Text(label),
+              style: style,
+            ),
     );
   }
 
-  Padding _buildHeader(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Card(
-        color: isDark ? Colors.grey[900] : Colors.blue[50],
-        child: ListTile(
-          leading: Icon(RemixIcons.filter_line, color: Colors.blue),
-          title: Text("Seleção de Dados"),
-          subtitle: Text("Excolha quais tabelas incluir na operação"),
-        ),
+  Widget _buildHeader(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
+      ),
+      child: Row(
+        children: [
+          Icon(RemixIcons.filter_3_line, color: theme.colorScheme.primary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              children: [
+                Text(
+                  "bk_scope_title".tr,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "Excolha quais tabelas incluir na operação",
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
   void _processarBackup(BuildContext context) async {
     await BackupService().exportarBackup();
-    _showSnackbar("Iniciando", "Exportando as tabelas...");
+    _showSnackbar(
+      "Exportar",
+      "Iniciando exportando das tabelas selecionadas...",
+    );
   }
 
   void _processarRestauro(BuildContext context) async {
     await BackupService().importarBackup(context);
-    _showSnackbar("Iniciando", "Restaurando as tabelas...");
+    _showSnackbar("Restaurar", "Iniciando processo de importação...");
   }
 
   void _processarDeletar(BuildContext context) async {
@@ -260,7 +325,7 @@ class _BackupScreenState extends State<BackupScreen> {
       icon: Icon(
         isError ? RemixIcons.error_warning_line : RemixIcons.check_line,
         color: Colors.white,
-      )
+      ),
     );
   }
 }

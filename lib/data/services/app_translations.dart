@@ -15,7 +15,7 @@ class AppTranslations extends Translations {
       'lg_modelo': 'Modelo do Veículo',
       'lg_odometro': 'Hodômetro',
       'lg_tanque': 'Tanque de Combustível',
-      'lg_city': 'Cidade do Usuário',
+      'lg_make': 'Marca do Veículo',
       'lg_selecione_veiculo': 'Selecione seu Veículo',
       'lg_email': 'E-mail',
       'lg_senha': 'Senha',
@@ -51,26 +51,14 @@ class AppTranslations extends Translations {
 
       // BACKUP PAGE
       'bk_title': 'Backup e Restauro',
-      'bk_scope_title': 'Selecione os dados para incluir:',
-      'bk_scope_all': 'Backup Completo (Recomendado)',
-      'bk_scope_fuel_entries': 'Histórico de Abastecimento',
-      'bk_scope_manutencao': 'Cronograma de Manutenções',
-      'bk_scope_types': 'Combustíveis',
-      'bk_scope_vehicles': 'Meus Veículos e Tanques',
-      'bk_scope_lookups': 'Serviços Personalizados',
-      'bk_export_card_title': 'Exportar Dados',
-      'bk_action_export_desc':
-          'Gere um arquivo de segurança (JSON) com seus dados.',
-      'bk_action_export_btn': 'Criar Backup Agora',
+      'bk_scope_title': 'Seleção de Dados',
+      'bk_scope_fuel_entries': 'Histórico de Abastecimentos',
+      'bk_scope_manutencao': 'Tipos de Manutenção',
+      'bk_scope_types': 'Tipos de Combustíveis',
+      'bk_scope_vehicles': 'Meus Veículos',
+      'bk_action_export_btn': 'Exportar para Nuvem',
       'bk_action_import_title': 'Restaurar Backup',
-      'bk_action_import_desc':
-          'Atenção: Os dados atuais serão substituídos pelo arquivo selecionado.',
-      'bk_action_import_btn': 'Selecionar Arquivo e Importar',
-      'bk_error_export': 'Falha ao gerar backup:',
-      'bk_export_success_prefix': 'Backup concluído! Aquivo salvo como',
-      'bk_import_no_file_selected': 'Selecione um arquivo para continuar.',
-      'bk_import_success': 'Dados restaurados com sucesso!',
-      'bk_error_import': 'Falha na restauração dos dados:',
+      
 
       // NAVIGATION PAGE
       'nav_fuel_entries': 'Abastecimentos',
@@ -149,6 +137,8 @@ class AppTranslations extends Translations {
       'sp_update_newVersion': 'Nova Versão',
 
       // UPDATE PAGE
+      'up_check_title': 'Atualização',
+      'up_no_updates': 'Você já está utilizando a versão mais recente.',
       'up_update_available': 'Atualização Disponível!',
       'up_check_for_updates': 'Verificar Atualizações',
       'up_current_version': 'Sua Versão: ',
@@ -298,6 +288,8 @@ class AppTranslations extends Translations {
       'gs_label_longitude': 'Longitude',
       'gs_label_price_gasoline': 'Preço da Gasolina',
       'gs_label_price_ethanol': 'Preço do Etanol',
+      'gs_label_price_diesel': 'Preço do Diesel',
+      'gs_label_price_gnv': 'Preço do GNV',
       'gs_label_convenience_store': 'Possui Conveniência',
       'gs_label_24hours': 'Atendimento 24h',
       'gs_name_required': 'O nome do posto é obrigatório.',

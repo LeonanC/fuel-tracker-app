@@ -46,20 +46,7 @@ class VehicleController extends GetxController {
 
   Future<void> saveVeiculo(Map<String, dynamic> data) async {
     try {
-      isLoading.value = true;
-
-      data.remove('id');
-
-      final response = await _supabase
-          .from('veiculos')
-          .insert(data)
-          .select()
-          .single();
-
-      final newVehicle = VehicleModel.fromMap(response);
-      vehicles.insert(0, newVehicle);
-
-      _showSnackbar("Sucesso", "Veículo ${data['nickname']} guardado!");
+      await _supabase.from('veiculos').insert(data);
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar: $e", isError: true);
     } finally {
@@ -69,18 +56,13 @@ class VehicleController extends GetxController {
 
   Future<void> updateVeiculo(VehicleModel veiculo) async {
     try {
+      if (veiculo.id == null) return;
       isLoading.value = true;
+
       await _supabase
           .from('veiculos')
           .update(veiculo.toMap())
           .eq('id', veiculo.id!);
-      final index = vehicles.indexWhere((v) => v.id == veiculo.id);
-      if (index != -1) {
-        vehicles[index] = veiculo;
-        vehicles.refresh();
-      }
-
-      _showSnackbar("Sucesso", "Veículo atualizado!");
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar: $e", isError: true);
     } finally {
@@ -91,10 +73,7 @@ class VehicleController extends GetxController {
   Future<void> deleteVeiculo(dynamic id) async {
     try {
       await _supabase.from('veiculos').delete().eq('id', id);
-      vehiclesMap.remove(id);
-      vehiclesMap.refresh();
-
-      Get.back();
+      vehicles.removeWhere((element) => element.id == id);
       _showSnackbar("Eliminado", "O veículo foi removido.");
     } catch (e) {
       _showSnackbar("Erro", "Não foi possível eliminar: $e", isError: true);
@@ -103,12 +82,9 @@ class VehicleController extends GetxController {
 
   void navigateToAddVehicle(BuildContext context) async {
     final result = await Get.toNamed('/vehicles_entry');
-    if(result != null){
-      if(result is Map<String, dynamic>){
-        await saveVeiculo(result);
-      }else{
-        fetchVehicle();
-      }
+    if (result == true) {
+      _showSnackbar("Sucesso", "Veículo registrado!");
+      fetchVehicle();
     }
   }
 

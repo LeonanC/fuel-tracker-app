@@ -111,7 +111,7 @@ class FuelCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    vehicle?['nickname'] ?? "---",
+                    '${vehicle?['model']} -  ${(vehicle?['nickname'])}' ?? "---",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -132,7 +132,7 @@ class FuelCard extends StatelessWidget {
     );
   }
 
-  Container _buildDeleteBackground() {
+  Widget _buildDeleteBackground() {
     return Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: 25),

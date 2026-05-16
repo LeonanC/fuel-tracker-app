@@ -60,8 +60,8 @@ class CompletarPerfilPage extends GetView<CompletarPerfilController> {
                     items: controller.lookupController.veiculosDrop
                         .map(
                           (v) => DropdownMenuItem(
-                            value: v.id.toString(),
-                            child: Text(v.nickname),
+                            value: v.id,
+                            child: Text('${v.model} - (${v.nickname})'),
                           ),
                         )
                         .toList(),

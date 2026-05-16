@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
-import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/modules/vehicle/controller/vehicle_controller.dart';
 import 'package:get/get.dart';
@@ -11,7 +10,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class VehicleEntryController extends GetxController {
   final controller = Get.find<VehicleController>();
-  final lookupController = Get.find<LookupController>();
   final formKey = GlobalKey<FormState>();
   final _supabase = Supabase.instance.client;
 
@@ -64,6 +62,7 @@ class VehicleEntryController extends GetxController {
 
     if (entry != null) {
       selectedTipo.value = entry.fuelType;
+      selectedImageUrl.value = entry.imagem;
     }
   }
 
@@ -112,7 +111,6 @@ class VehicleEntryController extends GetxController {
 
     try {
       final vehicleData = {
-        'id': editingEntry?.id,
         'nickname': nicknameController.text,
         'plate': plateController.text.toUpperCase(),
         'make': makeController.text,
@@ -126,9 +124,8 @@ class VehicleEntryController extends GetxController {
       };
 
       if (editingEntry != null) {
-        await controller.updateVeiculo(
-          VehicleModel.fromMap(vehicleData, editingEntry!.id!),
-        );
+        final updatedModel = VehicleModel.fromMap(vehicleData, editingEntry!.id!);
+        await controller.updateVeiculo(updatedModel);
       } else {
         await controller.saveVeiculo(vehicleData);
       }

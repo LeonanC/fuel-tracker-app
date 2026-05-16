@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/data/models/station_model.dart';
 import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
@@ -15,7 +15,7 @@ class HomeController extends GetxController {
 
   var vehicles = <VehicleModel>[].obs;
   var fuelEntries = <FuelEntryModel>[].obs;
-  var postos = <GasStationModel>[].obs;
+  var postos = <StationModel>[].obs;
   var tipos = <TypeGasModel>[].obs;
 
   var veiculosMap = <String, Map<String, dynamic>>{}.obs;
@@ -61,7 +61,7 @@ class HomeController extends GetxController {
           .toList();
 
       final postoData = results[2] as List;
-      postos.value = postoData.map((p) => GasStationModel.fromMap(p)).toList();
+      postos.value = postoData.map((p) => StationModel.fromMap(p)).toList();
       postosMap.value = {for (var p in postoData) p['pk_posto'].toString(): p};
 
       final tiposData = results[3] as List;
@@ -184,7 +184,6 @@ class HomeController extends GetxController {
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
       await _supabase.from('abastecimentos').insert(data);
-      _showSnackbar("Sucesso", "Abastecimento registrado!");
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar no banco", isError: true);
     } finally {
@@ -292,6 +291,7 @@ class HomeController extends GetxController {
   void navigateToAddEntry(BuildContext context) async {
     final result = await Get.toNamed('/fuel_entry');
     if (result == true) {
+      _showSnackbar("Sucesso", "Abastecimento registrado!");
       fetchData();
     }
   }

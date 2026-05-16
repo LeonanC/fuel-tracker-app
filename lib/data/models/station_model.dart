@@ -1,4 +1,4 @@
-class GasStationModel {
+class StationModel {
   final String? id;
   final String nome;
   final String? address;
@@ -12,7 +12,7 @@ class GasStationModel {
   final bool hasConvenientStore;
   final bool is24Hours;
 
-  GasStationModel({
+  StationModel({
     this.id,
     required this.nome,
     this.address,
@@ -44,8 +44,8 @@ class GasStationModel {
     };
   }
 
-   factory GasStationModel.fromMap(Map<String, dynamic> map, [String? docId]) {
-    return GasStationModel(
+   factory StationModel.fromMap(Map<String, dynamic> map, [String? docId]) {
+    return StationModel(
       id: (map['pk_posto'] ?? docId)?.toString(),
       nome: map['nome'] as String,
       latitude: (map['latitude'] as num?)?.toDouble() ?? 0.0,

@@ -4,6 +4,6 @@ import 'package:get/get.dart';
 class BackupBinding implements Bindings {
 @override
 void dependencies() {
-  Get.lazyPut<BackupController>(() => BackupController(), fenix: true);
+  
   }
 }

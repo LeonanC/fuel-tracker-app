@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:fuel_tracker_app/data/controllers/currency_controller.dart';
-import 'package:fuel_tracker_app/data/controllers/lookup_controller.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
@@ -15,7 +14,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class HomeEntryController extends GetxController {
   final controller = Get.find<HomeController>();
   final settingsController = Get.find<SettingController>();
-  final lookupController = Get.find<LookupController>();
   final currencyController = Get.find<CurrencyController>();
   final _supabase = Supabase.instance.client;
 

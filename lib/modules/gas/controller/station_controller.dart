@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/data/models/station_model.dart';
+import 'package:fuel_tracker_app/modules/registro/pages/station_entry_screen.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -7,11 +8,12 @@ import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class GasStationController extends GetxController {
+class StationController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
   final settings = Get.find<SettingController>();
 
   // Observáveis
+  var postos = <StationModel>[].obs;
   final isLoading = false.obs;
   final gasStationsMap = <dynamic, Map<String, dynamic>>{}.obs;
   var selectedPostoID = Rxn<dynamic>();
@@ -85,19 +87,7 @@ class GasStationController extends GetxController {
 
   Future<void> savePosto(Map<String, dynamic> data) async {
     try {
-      isLoading.value = true;
-
-      final response = await _supabase
-          .from('postos')
-          .insert(data)
-          .select()
-          .single();
-      final int idGerado = response['pk_posto'];
-      gasStationsMap[idGerado] = response;
-      gasStationsMap.refresh();
-
-      Get.back();
-      _showSnackbar("Sucesso", "Posto ${data['nome']} guardado!");
+      await _supabase.from('postos').insert(data);
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar: $e", isError: true);
     } finally {
@@ -105,22 +95,12 @@ class GasStationController extends GetxController {
     }
   }
 
-  Future<void> updatePosto(GasStationModel posto) async {
-    if (posto.id == null) {
-      _showSnackbar("Erro", "ID não encontrado", isError: true);
-      return;
-    }
+  Future<void> updatePosto(StationModel posto) async {
     try {
+      if(posto.id == null) return;
       isLoading.value = true;
-
-      final data = posto.toMap();
-      await _supabase.from('postos').update(data).eq('pk_posto', posto.id!);
-
-      gasStationsMap[posto.id] = data;
-      gasStationsMap.refresh();
-
-      Get.back();
-      _showSnackbar("Sucesso", "Posto ${posto.nome} atualizado!");
+      await _supabase.from('postos').update(posto.toMap()).eq('pk_posto', posto.id!);
+      
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar: $e", isError: true);
     } finally {
@@ -131,13 +111,27 @@ class GasStationController extends GetxController {
   Future<void> deletePosto(dynamic id) async {
     try {
       await _supabase.from('postos').delete().eq('pk_posto', id);
-
-      gasStationsMap.remove(id);
-      gasStationsMap.refresh();
-
+      postos.removeWhere((element) => element.id == id);
       _showSnackbar("Eliminado", "O posto foi removido.");
     } catch (e) {
       _showSnackbar("Erro", "Não foi possível eliminar: $e", isError: true);
+    }
+  }
+
+  void navigateToAddStation(BuildContext context) async {
+    final result = await Get.toNamed('/station_entry');
+    if (result == true) {
+      _showSnackbar("Sucesso", "Posto Registrado!");
+      fetchPosto();
+    }
+  }
+
+  void navigateToEditStation(StationModel entry) async {
+    final result = await Get.toNamed('/station_entry', arguments: entry);
+
+    if (result == true) {
+      _showSnackbar("Sucesso", "Posto atualizado!");
+      fetchPosto();
     }
   }
 

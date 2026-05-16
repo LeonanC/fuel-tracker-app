@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
+import 'package:fuel_tracker_app/data/models/station_model.dart';
 import 'package:fuel_tracker_app/data/models/services_type_model.dart';
 import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
@@ -16,7 +16,7 @@ class BackupService {
 
   final Map<String, Function> _modelFactories = {
     'abastecimentos': (data) => FuelEntryModel.fromMap(data),
-    'postos': (data) => GasStationModel.fromMap(data),
+    'postos': (data) => StationModel.fromMap(data),
     'service_type': (data) => ServicesTypeModel.fromMap(data),
     'tipo_combustivel': (data) => TypeGasModel.fromMap(data),
     'veiculos': (data) => VehicleModel.fromMap(data),

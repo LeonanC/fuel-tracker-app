@@ -196,7 +196,7 @@ class LoginPage extends GetView<LoginController> {
       c.lookupController.veiculosDrop.map((VehicleModel veiculo) {
         return DropdownMenuItem<String>(
           value: veiculo.id,
-          child: Text(veiculo.nickname),
+          child: Text('${veiculo.model} - (${veiculo.nickname})'),
         );
       }).toList(),
       "Veículo",

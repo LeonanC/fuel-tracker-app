@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
-import 'package:fuel_tracker_app/modules/gas/pages/gas_station_screen.dart';
+import 'package:fuel_tracker_app/modules/gas/pages/station_screen.dart';
 import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dart';
 import 'package:fuel_tracker_app/modules/remider/pages/reminders_screen.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
@@ -88,7 +88,7 @@ class SettingScreen extends GetView<SettingController> {
                   title: 'sp_gasStation_title'.tr,
                   subtitle: 'sp_gasStation_desc'.tr,
                   icon: RemixIcons.gas_station_line,
-                  onTap: () => Get.to(() => GasStationScreen()),
+                  onTap: () => Get.to(() => StationScreen()),
                 ),
                 _buildSettingTile(
                   theme: theme,

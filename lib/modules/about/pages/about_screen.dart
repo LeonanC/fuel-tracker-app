@@ -17,6 +17,7 @@ class AboutScreen extends StatelessWidget {
         'ab_error_title_desc'.tr,
         backgroundColor: Colors.red,
         colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
       );
     }
   }
@@ -24,144 +25,187 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('ab_about'.tr),
-        foregroundColor: theme.colorScheme.onSurface,
-        elevation: 0,
-      ),
-      body: Obx(() {
-        final isChecking = aboutController.isCheckingForUpdate.value;
+    final colorScheme = theme.colorScheme;
 
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.asset(
-                    'assets/app_icon/icon.png',
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'ab_title'.tr,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${'ab_currentVersion'.tr} ${aboutController.appVersion.value}',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'ab_tagline'.tr,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 30),
-              Text(
-                'ab_developed_by'.tr,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'ab_developer'.tr,
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              const SizedBox(height: 40),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Text(
-                  'ab_description'.tr,
-                  style: const TextStyle(fontSize: 16, height: 1.5),
-                ),
-              ),
-              const SizedBox(height: 40),
-              // _buildActionButton(
-              //   label: 'up_check_for_updates'.tr,
-              //   icon: isChecking ? null : RemixIcons.download_line,
-              //   color: Colors.orange,
-              //   isLoading: isChecking,
-              //   onPressed: isChecking ? null : _checkForUpdate,
-              // ),
-              const SizedBox(height: 12),
-              _buildActionButton(
-                label: 'ab_githubSource'.tr,
-                icon: RemixIcons.code_line,
-                color: Colors.blueAccent,
-                onPressed: () =>
-                    _launchUrl('https://github.com/LeonanC/fuel-tracker-app'),
-              ),
-              const SizedBox(height: 12),
-              _buildActionButton(
-                label: 'ab_privacyPolicy'.tr,
-                icon: RemixIcons.chat_private_line,
-                color: Colors.teal,
-                onPressed: () => _launchUrl(
-                  'https://github.com/LeonanC/fuel-tracker-app/blob/main/privacy.md',
-                ),
-              ),
-              const SizedBox(height: 40),
-              Text(
-                'ab_copyright'.tr,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-            ],
+    return Scaffold(
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar.large(
+            expandedHeight: 120,
+            stretch: true,
+            title: Text(
+              'ab_about'.tr,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            elevation: 0,
           ),
-        );
-      }),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  _buildHeaderCard(theme),
+                  const SizedBox(height: 32),
+                  _buildDescriptionSection(theme),
+                  const SizedBox(height: 32),
+
+                  Obx(() {
+                    final isChecking =
+                        aboutController.isCheckingForUpdate.value;
+                    return Column(
+                      children: [
+                        _buildActionButton(
+                          label: 'up_check_for_updates'.tr,
+                          icon: RemixIcons.refresh_line,
+                          color: Colors.orange,
+                          isLoading: isChecking,
+                          onPressed: isChecking
+                              ? null
+                              : () => aboutController.checkForUpdate(),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          label: 'ab_githubSource'.tr,
+                          icon: RemixIcons.github_fill,
+                          color: colorScheme.primary,
+                          onPressed: () => _launchUrl(
+                            'https://github.com/LeonanC/fuel-tracker-app',
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          label: 'ab_privacyPolicy'.tr,
+                          icon: RemixIcons.shield_user_line,
+                          color: Colors.teal,
+                          onPressed: () => _launchUrl(
+                            'https://github.com/LeonanC/fuel-tracker-app/blob/main/privacy.md',
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+
+                  const SizedBox(height: 48),
+                  Text(
+                    'ab_copyright'.tr,
+                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        children: [
+          Hero(
+            tag: 'app_logo',
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22),
+              child: Image.asset(
+                'assets/icon/app_icon.png',
+                width: 100,
+                height: 100,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'ab_title'.tr,
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${'ab_currentVersion'.tr} ${aboutController.appVersion.value}',
+            style: theme.textTheme.labelLarge?.copyWith(color: Colors.grey),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'ab_tagline'.tr,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontStyle: FontStyle.italic,
+              color: theme.colorScheme.primary.withValues(alpha: 0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ab_description'.tr,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.6,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Divider(color: theme.colorScheme.outlineVariant),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(RemixIcons.user_settings_line, size: 18, color: Colors.grey),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${'ab_developed_by'.tr} Leonan Carvalho',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
   Widget _buildActionButton({
     required String label,
-    IconData? icon,
+    required IconData icon,
     required Color color,
     required VoidCallback? onPressed,
     bool isLoading = false,
   }) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton.icon(
+      child: FilledButton.icon(
         onPressed: onPressed,
         icon: isLoading
             ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : Icon(icon),
+            : Icon(icon, size: 20),
         label: Text(label),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: color.withValues(alpha: 0.15),
+          foregroundColor: color,
         ),
       ),
     );

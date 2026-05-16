@@ -137,98 +137,101 @@ class VehicleScreen extends GetView<VehicleController> {
         ? Colors.redAccent
         : colorScheme.primary;
 
-    return Container(
-      margin: EdgeInsets.only(bottom: 16.h),
-      decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(24.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24.r),
-        child: InkWell(
-          onTap: () => Get.to(() => VehicleEntryScreen(data: veiculo)),
-          child: Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        color: brandColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16.r),
+    return Dismissible(
+      key: Key(veiculo.id ?? DateTime.now().millisecondsSinceEpoch.toString()),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => controller.deleteVeiculo(veiculo.id!),
+      background: _buildDeleteBackground(),
+      child: Container(
+        padding: EdgeInsets.only(right: 25),
+        margin: EdgeInsets.only(bottom: 24),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24.r),
+          child: InkWell(
+            onTap: () => Get.to(() => VehicleEntryScreen(data: veiculo)),
+            child: Padding(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: brandColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Icon(
+                          RemixIcons.car_fill,
+                          color: brandColor,
+                          size: 28.sp,
+                        ),
                       ),
-                      child: Icon(
-                        RemixIcons.car_fill,
-                        color: brandColor,
-                        size: 28.sp,
-                      ),
-                    ),
-                    SizedBox(width: 16.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            veiculo.model,
-                            style: GoogleFonts.montserrat(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onSurface,
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              veiculo.model,
+                              style: GoogleFonts.montserrat(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            "${veiculo.make} • ${veiculo.year}",
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withOpacity(0.5),
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w500,
+                            SizedBox(height: 4.h),
+                            Text(
+                              "${veiculo.make} • ${veiculo.year}",
+                              style: TextStyle(
+                                color: colorScheme.onSurface.withOpacity(0.5),
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    _buildDeleteButton(
-                      () => _confirmDelete(veiculo, theme),
-                      colorScheme,
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20.h),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildInfoTile(
-                      RemixIcons.steering_2_line,
-                      "Placa",
-                      veiculo.plate,
-                      colorScheme,
-                    ),
-                    _buildInfoTile(
-                      RemixIcons.gas_station_line,
-                      "Combustível",
-                      '${controller.tiposMap[veiculo.fuelType]?['nome']}',
-                      colorScheme,
-                    ),
-                    _buildInfoTile(
-                      RemixIcons.dashboard_3_line,
-                      "KM Atual",
-                      '${veiculo.initialOdometer}',
-                      colorScheme,
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                  SizedBox(height: 20.h),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildInfoTile(
+                        RemixIcons.steering_2_line,
+                        "Placa",
+                        veiculo.plate,
+                        colorScheme,
+                      ),
+                      _buildInfoTile(
+                        RemixIcons.gas_station_line,
+                        "Combustível",
+                        '${controller.tiposMap[veiculo.fuelType]?['nome']}',
+                        colorScheme,
+                      ),
+                      _buildInfoTile(
+                        RemixIcons.dashboard_3_line,
+                        "KM Atual",
+                        '${veiculo.initialOdometer}',
+                        colorScheme,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -277,50 +280,19 @@ class VehicleScreen extends GetView<VehicleController> {
     );
   }
 
-  Widget _buildDeleteButton(VoidCallback onTap, ColorScheme colorScheme) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12.r),
-        child: Container(
-          padding: EdgeInsets.all(8.w),
-          decoration: BoxDecoration(
-            color: colorScheme.error.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12.r),
-          ),
-          child: Icon(
-            RemixIcons.delete_bin_7_line,
-            color: colorScheme.error,
-            size: 20.sp,
-          ),
-        ),
+  Widget _buildDeleteBackground() {
+    return Container(
+      alignment: Alignment.centerRight,
+      padding: EdgeInsets.only(right: 25),
+      margin: EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: Colors.red.shade400,
+        borderRadius: BorderRadius.circular(20),
       ),
-    );
-  }
-
-  void _confirmDelete(VehicleModel veiculo, ThemeData theme) {
-    Get.defaultDialog(
-      title: "veh_excluir_titulo".tr,
-      middleText: "veh_excluir_confirm".tr,
-      backgroundColor: theme.cardColor,
-      titleStyle: TextStyle(
-        color: theme.colorScheme.onSurface,
-        fontWeight: FontWeight.bold,
+      child: Icon(
+        RemixIcons.delete_bin_line,
+        color: Colors.white,
       ),
-      middleTextStyle: TextStyle(
-        color: theme.colorScheme.onSurface.withOpacity(0.7),
-      ),
-      radius: 20.r,
-      textConfirm: 'veh_sim'.tr,
-      textCancel: 'veh_nao'.tr,
-      confirmTextColor: Colors.white,
-      cancelTextColor: theme.colorScheme.primary,
-      buttonColor: theme.colorScheme.error,
-      onConfirm: () {
-        controller.deleteVeiculo(veiculo.id);
-        Get.back();
-      },
     );
   }
 }

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
-import 'package:fuel_tracker_app/data/models/gas_station_model.dart';
-import 'package:fuel_tracker_app/modules/gas/controller/gasStation_controller.dart';
+import 'package:fuel_tracker_app/data/models/station_model.dart';
+import 'package:fuel_tracker_app/modules/gas/controller/station_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
-class GasEntryController extends GetxController {
-  final controller = Get.find<GasStationController>();
+class StationEntryController extends GetxController {
+  final controller = Get.find<StationController>();
   final formKey = GlobalKey<FormState>();
+
+  StationModel? editingEntry;
 
   late TextEditingController nameController;
   late TextEditingController addressController;
@@ -24,9 +26,14 @@ class GasEntryController extends GetxController {
   var isLocationLoading = false.obs;
   var isLoading = false.obs;
 
-  GasStationModel? editingEntry;
+  @override
+  void onInit(){
+    super.onInit();
+    final StationModel? argEntry = Get.arguments;
+    inicializer(argEntry);
+  }
 
-  void inicializer(GasStationModel? entry) {
+  void inicializer(StationModel? entry) {
     const int coordPrecision = 7;
     editingEntry = entry;
     final isEditing = entry != null;
@@ -105,29 +112,31 @@ class GasEntryController extends GetxController {
   Future<void> submit() async {
     if (!formKey.currentState!.validate()) return;
 
-    isLoading.value = true;
-
     try {
-      final stationData = GasStationModel(
-        id: editingEntry?.id,
-        nome: nameController.text.trim(),
-        address: addressController.text.trim(),
-        brand: brandController.text.trim(),
-        latitude: latitudeController.numberValue,
-        longitude: longitudeController.numberValue,
-        precoGasolina: priceGAController.numberValue,
-        precoEtanol: priceETAController.numberValue,
-        precoDiesel: priceDIEController.numberValue,
-        precoGnv: priceGNController.numberValue,
-        hasConvenientStore: hasConvenienceStore.value,
-        is24Hours: is24Hours.value,
-      );
+      isLoading.value = true;
+
+      final stationData = {
+        'nome': nameController.text.trim(),
+        'endereco': addressController.text.trim(),
+        'brand': brandController.text.trim(),
+        'latitude': latitudeController.numberValue,
+        'longitude': longitudeController.numberValue,
+        'preco_gasolina': priceGAController.numberValue,
+        'preco_etanol': priceETAController.numberValue,
+        'preco_diesel': priceDIEController.numberValue,
+        'preco_gnv': priceGNController.numberValue,
+        'has_convenient_store': hasConvenienceStore.value,
+        'is_24_hours': is24Hours.value,
+      };
 
       if (editingEntry != null) {
-        await controller.updatePosto(stationData);
+        final updatedModel = StationModel.fromMap(stationData, editingEntry!.id!);
+        await controller.updatePosto(updatedModel);
       } else {
-        await controller.savePosto(stationData.toMap());
+        await controller.savePosto(stationData);
       }
+
+      Get.back(result: true);
     } catch (e) {
       Get.back();
       Get.snackbar(

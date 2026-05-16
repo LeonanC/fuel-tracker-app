@@ -80,8 +80,8 @@ class PerfilPage extends GetView<PerfilController> {
                       _divider(colorScheme.outlineVariant),
                       _buildDataRow(
                         RemixIcons.map_pin_user_line,
-                        "lg_city".tr,
-                        vehicleData['city'],
+                        "lg_make".tr,
+                        vehicleData['make'],
                         textColor,
                         textSecondary,
                       ),
