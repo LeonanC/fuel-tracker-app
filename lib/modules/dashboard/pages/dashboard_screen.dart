@@ -241,7 +241,7 @@ class DashboardPage extends GetView<HomeController> {
           ),
           _statCard(
             "dh_stat_2".tr,
-            controller.settings.formatarDistancia(controller.kmRodadoTotal),
+            controller.settings.formatarDistancia(controller.averageCostPerKm),
             RemixIcons.roadster_line,
             Colors.orange,
           ),
@@ -253,7 +253,7 @@ class DashboardPage extends GetView<HomeController> {
           ),
           _statCard(
             "dh_stat_4".tr,
-            controller.settings.formatarConsumo(controller.consumoMediaGeral),
+            controller.settings.formatarConsumo(controller.gastoPorKmReal),
             RemixIcons.pulse_line,
             Colors.purple,
           ),

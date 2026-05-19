@@ -252,8 +252,8 @@ class PerfilPage extends GetView<PerfilController> {
       children: [
         Expanded(
           child: _buildStatCard(
-            "hp_total_accumulated".tr,
-            settings.formatarCurrency(home.totalGastoNoMes),
+            "hp_average_cost".tr,
+            settings.formatarCurrency(home.averageCostPerKm),
             Colors.green,
             cardColor,
             RemixIcons.money_dollar_circle_line,
@@ -263,7 +263,7 @@ class PerfilPage extends GetView<PerfilController> {
         Expanded(
           child: _buildStatCard(
             "hp_general_media".tr,
-            settings.formatarConsumo(home.consumoMediaGeral),
+            settings.formatarConsumo(home.gastoPorKmReal),
             Colors.blueAccent,
             cardColor,
             RemixIcons.dashboard_3_line,

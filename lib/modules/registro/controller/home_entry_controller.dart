@@ -188,6 +188,8 @@ class HomeEntryController extends GetxController {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw "Sessão expirada";
 
+      final String? finalReceiptPath = await _processarUpload();
+
       final fuelData = {
         'fk_usuario': userId,
         'fk_veiculo': selectedVeiculos.value,
@@ -199,7 +201,7 @@ class HomeEntryController extends GetxController {
         'preco_litro': pricePerLiterController.numberValue,
         'custo_total': totalPriceController.numberValue,
         'tanque_cheio': isTankFull.value,
-        'receipt_path': comprovantePath.value,
+        'receipt_path': finalReceiptPath ?? comprovantePath.value,
       };
 
       if (editingEntry != null) {

@@ -8,7 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 class AboutController extends GetxController {
   final supabase = Supabase.instance.client;
 
-  var appVersion = '10.0.0'.obs;
+  var appVersion = '10.4.0'.obs;
   var isCheckingForUpdate = false.obs;
 
   @override

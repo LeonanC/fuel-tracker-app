@@ -171,7 +171,7 @@ class HomePage extends GetView<HomeController> {
                 RemixIcons.dashboard_3_line,
                 Colors.blueAccent,
                 "hp_general_media".tr,
-                settings.formatarConsumo(controller.consumoMediaGeral),
+                settings.formatarConsumo(controller.gastoPorKmReal),
               ),
               VerticalDivider(
                 color: Colors.white.withOpacity(0.1),
@@ -183,7 +183,7 @@ class HomePage extends GetView<HomeController> {
                 RemixIcons.coins_line,
                 Color(0xFF007268),
                 "hp_average_cost".tr,
-                settings.formatarDistancia(controller.kmRodadoTotal),
+                settings.formatarCurrency(controller.averageCostPerKm / 100),
               ),
             ],
           ),

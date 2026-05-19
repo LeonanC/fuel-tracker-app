@@ -76,23 +76,30 @@ class HomeController extends GetxController {
     return filteredFuelEntries.fold(0.0, (sum, item) => sum + item.totalCost);
   }
 
-  double get kmRodadoTotal {
-    final list = filteredFuelEntries;
-    if (list.length < 2) return 0.0;
-    return list.first.odometerKm - list.last.odometerKm;
-  }
-
-  double get consumoMediaGeral {
+  double get averageCostPerKm {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
-    final atual = entries[0];
+
+    final novo = entries[0];
     final anterior = entries[1];
 
-    final double distancia = atual.odometerKm - anterior.odometerKm;
-    final double litros = atual.volumeLiters;
-    if (litros <= 0) return 0.0;
+    double kmNoTrecho = novo.odometerKm - anterior.odometerKm;
+    double custoTotal = novo.totalCost;
 
-    return distancia / litros;
+    return (custoTotal / kmNoTrecho) * 100;
+  }
+
+  double get gastoPorKmReal {
+    final entries = filteredFuelEntries;
+    if (entries.length < 2) return 0.0;
+
+    final novo = fuelEntries[0];
+    final anterior = fuelEntries[1];
+
+    double somaOdometro = novo.odometerKm - anterior.odometerKm;
+    double volumeLitros = novo.volumeLiters;
+
+    return (volumeLitros > 0) ? somaOdometro / volumeLitros : 0.0;
   }
 
   double get odometerAnterior {
@@ -150,16 +157,14 @@ class HomeController extends GetxController {
   List<FuelEntryModel> get filteredFuelEntries {
     List<FuelEntryModel> list = fuelEntries;
 
-    if (selectedVehicleID.value != null) {
+    if (selectedVehicleID.value != null && selectedVehicleID.value!.isEmpty) {
       list = list.where((e) => e.vehicleId == selectedVehicleID.value).toList();
     }
-    if (selectedTipoID.value != null) {
+    if (selectedTipoID.value != null && selectedTipoID.value!.isEmpty) {
       list = list.where((e) => e.fuelTypeId == selectedTipoID.value).toList();
     }
-    if (selectedPostoID.value != null) {
-      list = list
-          .where((e) => e.gasStationId == selectedPostoID.value)
-          .toList();
+    if (selectedPostoID.value != null && selectedPostoID.value!.isEmpty) {
+      list = list.where((e) => e.gasStationId == selectedPostoID.value).toList();
     }
 
     if (searchText.value.isNotEmpty) {
@@ -167,9 +172,10 @@ class HomeController extends GetxController {
       list = list.where((e) {
         final dadosPosto = postosMap[e.gasStationId];
         final posto = dadosPosto?['nome']?.toString().toLowerCase() ?? '';
+
         final dadosVeiculo = veiculosMap[e.vehicleId];
-        final veiculo =
-            dadosVeiculo?['nickname']?.toString().toLowerCase() ?? '';
+        final veiculo = dadosVeiculo?['nickname']?.toString().toLowerCase() ?? '';
+
         final dadosTipo = tiposMap[e.fuelTypeId];
         final tipo = dadosTipo?['nome']?.toString().toLowerCase() ?? '';
 
@@ -200,7 +206,6 @@ class HomeController extends GetxController {
           .from('abastecimentos')
           .update(data.toMap())
           .eq('pk_fuel', data.id!);
-      _showSnackbar("Sucesso", "Registro atualizado!");
     } catch (e) {
       _showSnackbar("Erro", "Falha na atualização", isError: true);
     } finally {
@@ -291,8 +296,8 @@ class HomeController extends GetxController {
   void navigateToAddEntry(BuildContext context) async {
     final result = await Get.toNamed('/fuel_entry');
     if (result == true) {
-      _showSnackbar("Sucesso", "Abastecimento registrado!");
       fetchData();
+      _showSnackbar("Sucesso", "Abastecimento registrado!");      
     }
   }
 
@@ -304,8 +309,8 @@ class HomeController extends GetxController {
       arguments: entry,
     );
     if (result == true) {
-      _showSnackbar("Sucesso", "Registro atualizado!");
       fetchData();
+      _showSnackbar("Sucesso", "Registro atualizado!");
     }
   }
 
