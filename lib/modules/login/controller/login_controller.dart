@@ -83,13 +83,13 @@ class LoginController extends GetxController {
     } on AuthException catch (e){
       if(e.message.contains('Invalid login credentials') || e.statusCode == '400'){
         _showCustomSnackbar(
-          "Falha no Login", 
-          "E-mail ou senha incorretos. Por favor, verifique os dados.",
+          "lg_auth_failed_title".tr, 
+          "lg_auth_failed_message".tr,
           isError: true,
         );
       }else{
         _showCustomSnackbar(
-          "Erro de Autenticação", 
+          "lg_auth_error_title".tr, 
           e.message,
           isError: true,
         );

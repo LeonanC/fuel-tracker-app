@@ -172,7 +172,7 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '${'ab_developed_by'.tr} Leonan Carvalho',
+                '${'ab_developed_by'.tr} ${'ab_developer'.tr}',
                 style: theme.textTheme.bodySmall,
               ),
             ),

@@ -19,6 +19,8 @@ class HomePage extends GetView<HomeController> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      floatingActionButton: _buildFAB(context, theme),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: RefreshIndicator(
         onRefresh: () => controller.fetchData(),
         edgeOffset: 100,
@@ -41,7 +43,7 @@ class HomePage extends GetView<HomeController> {
           ],
         ),
       ),
-      floatingActionButton: _buildFAB(context, theme),
+      
     );
   }
 
@@ -80,13 +82,13 @@ class HomePage extends GetView<HomeController> {
 
   Widget _buildFAB(BuildContext context, ThemeData theme) {
     return FloatingActionButton.extended(
-      onPressed: () => controller.navigateToAddEntry(Get.context!),
+      onPressed: () => controller.navigateToAddEntry(context),
       elevation: 4,
       highlightElevation: 8,
       backgroundColor: Colors.blueAccent,
       icon: Icon(RemixIcons.add_line, color: Colors.white),
       label: Text(
-        'NOVO REGISTRO',
+        'hp_new_registry'.tr,
         style: GoogleFonts.montserrat(
           fontWeight: FontWeight.w800,
           fontSize: 12,
@@ -131,7 +133,7 @@ class HomePage extends GetView<HomeController> {
           ),
           const SizedBox(height: 16),
           Text(
-            "Nenhum registro encontrado",
+            "hp_no_vehicle_found".tr,
             style: TextStyle(
               color: theme.disabledColor,
               fontWeight: FontWeight.w500,
@@ -168,7 +170,7 @@ class HomePage extends GetView<HomeController> {
               _statTile(
                 RemixIcons.dashboard_3_line,
                 Colors.blueAccent,
-                "MÉDIA GERAL",
+                "hp_general_media".tr,
                 settings.formatarConsumo(controller.consumoMediaGeral),
               ),
               VerticalDivider(
@@ -180,7 +182,7 @@ class HomePage extends GetView<HomeController> {
               _statTile(
                 RemixIcons.coins_line,
                 Color(0xFF007268),
-                "CUSTO MÉDIO",
+                "hp_average_cost".tr,
                 settings.formatarDistancia(controller.kmRodadoTotal),
               ),
             ],

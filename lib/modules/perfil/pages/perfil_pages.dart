@@ -54,11 +54,16 @@ class PerfilPage extends GetView<PerfilController> {
                       surfaceColor,
                     ),
                     const SizedBox(height: 25),
-                    _buildDriverRankCard(surfaceColor, colorScheme.primary, textColor, textSecondary),
+                    _buildDriverRankCard(
+                      surfaceColor,
+                      colorScheme.primary,
+                      textColor,
+                      textSecondary,
+                    ),
                     const SizedBox(height: 30),
                     _buildSectionHeader(
-                      "Informações da Conta", 
-                      RemixIcons.user_settings_line, 
+                      "Informações da Conta",
+                      RemixIcons.user_settings_line,
                       colorScheme.primary,
                     ),
                     _buildDataCard(surfaceColor, [
@@ -80,24 +85,36 @@ class PerfilPage extends GetView<PerfilController> {
                       _divider(colorScheme.outlineVariant),
                       _buildDataRow(
                         RemixIcons.map_pin_user_line,
+                        "lg_modelo".tr,
+                        vehicleData['model']?.toString() ?? "---",
+                        textColor,
+                        textSecondary,
+                      ),
+                      _divider(colorScheme.outlineVariant),
+                      _buildDataRow(
+                        RemixIcons.map_pin_user_line,
                         "lg_make".tr,
-                        vehicleData['make'],
+                        vehicleData['make']?.toString() ?? "---",
                         textColor,
                         textSecondary,
                       ),
                       _divider(colorScheme.outlineVariant),
                       _buildDataRow(
                         RemixIcons.car_line,
-                        "lg_modelo".tr,
-                        vehicleData['nickname'],
+                        "lg_nickname".tr,
+                        vehicleData['nickname']?.toString() ?? "---",
                         textColor,
                         textSecondary,
                       ),
                       _divider(colorScheme.outlineVariant),
                       _buildDataRow(
                         RemixIcons.calendar_event_line,
-                        "Membro desde",
-                        DateFormat('yyyy').format(DateTime.parse(user.criadoEm.toString())),
+                        "lg_member_since".tr,
+                        (user != null && user.criadoEm != null)
+                            ? DateFormat(
+                                'yyyy',
+                              ).format(DateTime.parse(user.criadoEm.toString()))
+                            : "---",
                         textColor,
                         textSecondary,
                       ),
@@ -196,7 +213,7 @@ class PerfilPage extends GetView<PerfilController> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Motorista Nível ${controller.nivelAtual}",
+                      "${'lg_driver_level'.tr} ${controller.nivelAtual}",
                       style: GoogleFonts.montserrat(
                         color: text,
                         fontWeight: FontWeight.w800,
@@ -204,8 +221,11 @@ class PerfilPage extends GetView<PerfilController> {
                       ),
                     ),
                     Text(
-                      "Faltam XP para subir de nível",
-                      style: GoogleFonts.montserrat(color: secondary, fontSize: 11),
+                      'lg_I_dont_have_enough_XP_to_level_up'.tr,
+                      style: GoogleFonts.montserrat(
+                        color: secondary,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -242,7 +262,7 @@ class PerfilPage extends GetView<PerfilController> {
         const SizedBox(width: 15),
         Expanded(
           child: _buildStatCard(
-            "Média Mensal",
+            "hp_general_media".tr,
             settings.formatarConsumo(home.consumoMediaGeral),
             Colors.blueAccent,
             cardColor,
@@ -355,21 +375,4 @@ class PerfilPage extends GetView<PerfilController> {
 
   Widget _divider(Color color) =>
       Divider(height: 1, color: color, indent: 20, endIndent: 20);
-
-  PreferredSizeWidget _buildAppbar(Color text) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      title: Text(
-        'lg_meu_painel'.tr,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontWeight: FontWeight.w900,
-          fontSize: 18,
-          color: text,
-        ),
-      ),
-      centerTitle: true,
-    );
-  }
 }

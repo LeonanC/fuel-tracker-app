@@ -37,15 +37,15 @@ class HomeController extends GetxController {
   Future<void> fetchData() async {
     try {
       isLoading.value = true;
-      final user = _supabase.auth.currentUser;
-      if (user == null) return;
+      final userUID = _supabase.auth.currentUser?.id;
+      if (userUID == null) return;
 
       final results = await Future.wait([
         _supabase.from('veiculos').select(),
         _supabase
             .from('abastecimentos')
             .select()
-            .eq('fk_usuario', user.id)
+            .or('fk_usuario.eq.$userUID')
             .order('velocimetro', ascending: false),
         _supabase.from('postos').select(),
         _supabase.from('tipo_combustivel').select(),

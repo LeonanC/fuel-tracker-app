@@ -26,11 +26,11 @@ class DashboardPage extends GetView<HomeController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle("Gastos Mensais (R\$)", colorScheme),
+                  _buildSectionTitle("dh_section_title_1".tr, colorScheme),
                   const SizedBox(height: 16),
                   _buildMainChart(theme, colorScheme),
                   const SizedBox(height: 28),
-                  _buildSectionTitle("Estatísticas Rápidas", colorScheme),
+                  _buildSectionTitle("dh_section_title_2".tr, colorScheme),
                   const SizedBox(height: 16),
                   _buildQuickStats(theme, colorScheme),
                   const SizedBox(height: 40),
@@ -65,7 +65,7 @@ class DashboardPage extends GetView<HomeController> {
                 child: DropdownButton<String>(
                   value: controller.selectedVehicleID.value,
                   hint: Text(
-                    'Todos Veículos',
+                    'dh_dropdown_title',
                     style: GoogleFonts.montserrat(fontSize: 12),
                   ),
                   onChanged: (String? newValue) =>
@@ -73,13 +73,13 @@ class DashboardPage extends GetView<HomeController> {
                   items: [
                     DropdownMenuItem<String>(
                       value: null,
-                      child: Text('Todos os Carros'),
+                      child: Text('dh_dropdown_subtitle'.tr),
                     ),
                     ...controller.veiculosMap.entries.map((entry) {
                       return DropdownMenuItem<String>(
                         value: entry.key,
                         child: Text(
-                          entry.value['nickname'] ?? "Veículo",
+                          entry.value['nickname'] ?? "dh_dropdown_label".tr,
                           style: GoogleFonts.montserrat(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -97,7 +97,7 @@ class DashboardPage extends GetView<HomeController> {
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: EdgeInsetsDirectional.only(start: 16, bottom: 16),
         title: Text(
-          'DASHBOARD'.toUpperCase(),
+          'dh_label'.tr.toUpperCase(),
           style: GoogleFonts.montserrat(
             color: theme.textTheme.titleLarge?.color,
             fontWeight: FontWeight.w800,
@@ -234,25 +234,25 @@ class DashboardPage extends GetView<HomeController> {
         childAspectRatio: 1.3,
         children: [
           _statCard(
-            "Total Gasto",
+            "dh_stat_1".tr,
             controller.settings.formatarCurrency(controller.totalGastoFiltrado),
             RemixIcons.money_dollar_circle_line,
             Colors.green,
           ),
           _statCard(
-            "KM Rodados",
+            "dh_stat_2".tr,
             controller.settings.formatarDistancia(controller.kmRodadoTotal),
             RemixIcons.roadster_line,
             Colors.orange,
           ),
           _statCard(
-            "Registros",
+            "dh_stat_3".tr,
             "${controller.filteredFuelEntries.length}",
             RemixIcons.gas_station_line,
             Colors.blue,
           ),
           _statCard(
-            "Média KM/L",
+            "dh_stat_4".tr,
             controller.settings.formatarConsumo(controller.consumoMediaGeral),
             RemixIcons.pulse_line,
             Colors.purple,

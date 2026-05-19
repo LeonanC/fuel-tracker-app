@@ -34,28 +34,38 @@ class HomeEntryPage extends GetView<HomeEntryController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle("VEÍCULO E LOCAL", theme),
+                    _buildSectionTitle("he_label_section_1".tr, theme),
                     _buildCardContainer(child: _buildDropdowns(controller)),
-              
+
                     const SizedBox(height: 20),
-                    _buildSectionTitle("MEDIÇÃO E VALORES", theme),
-                    _buildCardContainer(child: _buildInputField(controller, theme)),
+                    _buildSectionTitle("he_label_section_2".tr, theme),
+                    _buildCardContainer(
+                      child: _buildInputField(controller, theme),
+                    ),
 
                     const SizedBox(height: 20),
                     _buildImagePicker(controller, theme),
                     const SizedBox(height: 25),
                     _buildCardContainer(
-                      child: Obx(() => SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          "Tanque Cheio?",
-                          style: GoogleFonts.montserrat(fontWeight: FontWeight.w600, fontSize: 14),
+                      child: Obx(
+                        () => SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            "he_label_full_tank".tr,
+                            style: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          value: controller.isTankFull.value,
+                          secondary: Icon(
+                            RemixIcons.gas_station_fill,
+                            color: colorScheme.primary,
+                          ),
+                          onChanged: (v) => controller.isTankFull.value = v,
+                          activeColor: Colors.greenAccent,
                         ),
-                        value: controller.isTankFull.value,
-                        secondary: Icon(RemixIcons.gas_station_fill, color: colorScheme.primary),
-                        onChanged: (v) => controller.isTankFull.value = v,
-                        activeColor: Colors.greenAccent,
-                      ))
+                      ),
                     ),
                   ],
                 ),
@@ -144,7 +154,7 @@ class HomeEntryPage extends GetView<HomeEntryController> {
       children: [
         _customTextField(
           controller: c.kmController,
-          label: "Odômetro Atual",
+          label: "he_current_odometer".tr,
           icon: RemixIcons.dashboard_3_line,
           suffix: "km",
           theme: theme,
@@ -157,7 +167,7 @@ class HomeEntryPage extends GetView<HomeEntryController> {
             Expanded(
               child: _customTextField(
                 controller: c.litrosController,
-                label: "Litro",
+                label: "he_label_liters".tr,
                 icon: RemixIcons.drop_line,
                 theme: theme,
               ),
@@ -166,7 +176,7 @@ class HomeEntryPage extends GetView<HomeEntryController> {
             Expanded(
               child: _customTextField(
                 controller: c.pricePerLiterController,
-                label: "Preço/Litro",
+                label: "he_label_price_per_liter".tr,
                 icon: RemixIcons.price_tag_3_line,
                 theme: theme,
               ),
@@ -176,7 +186,7 @@ class HomeEntryPage extends GetView<HomeEntryController> {
         const SizedBox(height: 20),
         _customTextField(
           controller: c.totalPriceController,
-          label: "Valor Total",
+          label: "he_label_total_price".tr,
           icon: RemixIcons.money_dollar_circle_line,
           isBold: true,
           theme: theme,
@@ -201,13 +211,17 @@ class HomeEntryPage extends GetView<HomeEntryController> {
           ),
           child: Row(
             children: [
-              Icon(RemixIcons.calendar_event_line, size: 20, color: Colors.blueAccent),
+              Icon(
+                RemixIcons.calendar_event_line,
+                size: 20,
+                color: Colors.blueAccent,
+              ),
               const SizedBox(width: 15),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Data do Abastecimento",
+                    "he_supply_date".tr,
                     style: TextStyle(color: Colors.white54, fontSize: 10),
                   ),
                   Text(
@@ -293,74 +307,73 @@ class HomeEntryPage extends GetView<HomeEntryController> {
   }
 
   Widget _buildDropdowns(HomeEntryController c) {
-    return Column(
-      children: [
-        _customDropdown(
-          value: c.selectedVeiculos,
-          label: "Selecione o Veículo",
-          icon: RemixIcons.car_fill,
-          items: c.controller.vehicles
-              .map(
-                (v) => DropdownMenuItem(value: v.id, child: Text(v.nickname)),
-              )
-              .toList(),
-          onChanged: (v) {
-            c.selectedVeiculos.value = v;
-            c.atualizarHodometroPorVeiculo(v);
-          },
-        ),
-        const SizedBox(height: 15),
-        _customDropdown(
-          value: c.selectedStations,
-          label: "Selecione o Posto",
-          icon: RemixIcons.gas_station_line,
-          items: c.controller.postos
-              .map((p) => DropdownMenuItem(value: p.id, child: Text(p.nome)))
-              .toList(),
-          onChanged: (p) {
-            c.selectedStations.value = p;
-          },
-        ),
-        const SizedBox(height: 15),
-        _customDropdown(
-          value: c.selectedGas,
-          label: "Selecione o Combustível",
-          icon: RemixIcons.oil_line,
-          items: c.controller.tipos
-              .map((g) => DropdownMenuItem(value: g.id, child: Text(g.nome)))
-              .toList(),
-          onChanged: (g) {
-            c.selectedGas.value = g;
-          },
-        ),
-      ],
-    );
+    return Obx(() {
+      return Column(
+        children: [
+          _customDropdown(
+            value: c.selectedVeiculos.value,
+            label: "he_select_veiculos".tr,
+            icon: RemixIcons.car_fill,
+            items: c.controller.vehicles
+                .map(
+                  (v) => DropdownMenuItem(value: v.id, child: Text('${v.model} - (${v.nickname})')),
+                )
+                .toList(),
+            onChanged: (v) {
+              c.selectedVeiculos.value = v;
+              c.atualizarHodometroPorVeiculo(v);
+            },
+          ),
+          const SizedBox(height: 15),
+          _customDropdown(
+            value: c.selectedStations.value,
+            label: "he_select_station".tr,
+            icon: RemixIcons.gas_station_line,
+            items: c.controller.postos
+                .map((p) => DropdownMenuItem(value: p.id, child: Text(p.nome)))
+                .toList(),
+            onChanged: (p) {
+              c.selectedStations.value = p;
+            },
+          ),
+          const SizedBox(height: 15),
+          _customDropdown(
+            value: c.selectedGas.value,
+            label: "he_select_fuel_type".tr,
+            icon: RemixIcons.oil_line,
+            items: c.controller.tipos
+                .map((g) => DropdownMenuItem(value: g.id, child: Text(g.nome)))
+                .toList(),
+            onChanged: (g) {
+              c.selectedGas.value = g;
+            },
+          ),
+        ],
+      );
+    });
   }
 
   Widget _customDropdown({
-    required RxnString value,
+    required String? value,
     required String label,
     required IconData icon,
     required List<DropdownMenuItem<String>> items,
     required Function(String?) onChanged,
   }) {
-    return Obx(
-      () => DropdownButtonFormField<String>(
-        value: value.value,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: Colors.blueAccent),
-          filled: true,
-          fillColor: Colors.black26,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.blueAccent),
+        filled: true,
+        fillColor: Colors.black26,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
-        items: items,
-        onChanged: onChanged,
       ),
+      items: items,
+      onChanged: onChanged,
     );
   }
-
 }

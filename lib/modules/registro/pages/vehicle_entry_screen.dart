@@ -64,7 +64,7 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
             children: [
               _buildImagePicker(controller, theme),
               SizedBox(height: 25.h),
-              _buildSectionTitle("Identificação", colorScheme),
+              _buildSectionTitle("veh_label_identification".tr, colorScheme),
               _buildCard(theme, [
                 ValueListenableBuilder(
                   valueListenable: controller.plateController,
@@ -83,27 +83,27 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
                 const Divider(),
                 _customTextField(
                   controller: controller.nicknameController,
-                  label: "Apelido (Ex: City)",
+                  label: "veh_nickname".tr,
                   icon: RemixIcons.medal_line,
                   isText: true,
                 ),
                 const Divider(),
                 _customTextField(
                   controller: controller.plateController,
-                  label: "Placa (Ex: ABC1D23)",
+                  label: "veh_plate".tr,
                   icon: RemixIcons.medal_line,
                   isText: true,
                 ),
               ]),
               SizedBox(height: 25.h),
-              _buildSectionTitle("Informações do Veículo", colorScheme),
+              _buildSectionTitle("veh_label_vehicle_information".tr, colorScheme),
               _buildCard(theme, [
                 Row(
                   children: [
                     Expanded(
                       child: _customTextField(
                         controller: controller.makeController,
-                        label: "Marca",
+                        label: "veh_make".tr,
                         icon: RemixIcons.building_line,
                         isText: true,
                       ),
@@ -112,7 +112,7 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
                     Expanded(
                       child: _customTextField(
                         controller: controller.modelController,
-                        label: "Modelo",
+                        label: "veh_model".tr,
                         icon: RemixIcons.car_line,
                         isText: true,
                       ),
@@ -125,7 +125,7 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
                     Expanded(
                       child: _customTextField(
                         controller: controller.yearController,
-                        label: "Ano",
+                        label: "veh_year".tr,
                         icon: RemixIcons.calendar_line,
                       ),
                     ),
@@ -133,7 +133,7 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
                     Expanded(
                       child: _customTextField(
                         controller: controller.cityController,
-                        label: "Cidade",
+                        label: "veh_city".tr,
                         icon: RemixIcons.community_line,
                         isText: true,
                       ),
@@ -142,21 +142,21 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
                 ),
               ]),
               SizedBox(height: 25.h),
-              _buildSectionTitle("Especificações Tecnicas", colorScheme),
+              _buildSectionTitle("veh_label_technical_specifications".tr, colorScheme),
               _buildCard(theme, [
                 Row(
                   children: [
                     Expanded(
                       child: _customTextField(
                         controller: controller.odometerController,
-                        label: "KM Atual",
+                        label: "veh_odometer".tr,
                         icon: RemixIcons.dashboard_3_line,
                       ),
                     ),
                     Expanded(
                       child: _customTextField(
                         controller: controller.tankCapacityController,
-                        label: "Tanque (L)",
+                        label: "veh_fuel_tank".tr,
                         icon: RemixIcons.oil_line,
                       ),
                     ),
@@ -191,7 +191,7 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(RemixIcons.camera_line, size: 40),
-              Text("Tirar foto do veículo")
+              Text("veh_take_photo".tr)
             ],
           )
           : ClipRRect(
@@ -225,7 +225,7 @@ class VehicleEntryScreen extends GetView<VehicleEntryController> {
       children: [
         _customDropdown(
           value: v.selectedTipo,
-          label: 'Selecione o tipo de Combustível',
+          label: 'veh_select_type_fuel'.tr,
           icon: RemixIcons.oil_line,
           items: v.controller.tipos
               .map((g) => DropdownMenuItem(value: g.id, child: Text(g.nome)))

@@ -47,7 +47,7 @@ class StationEntryScreen extends GetView<StationEntryController> {
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _buildSectionTitle("INFORMAÇÕES BÁSICAS", colorScheme),
+                  _buildSectionTitle("gs_label_section_1".tr, colorScheme),
                   _buildCardContainer(
                     theme,
                     child: Column(
@@ -88,7 +88,7 @@ class StationEntryScreen extends GetView<StationEntryController> {
                     ),
                   ),
                   SizedBox(height: 24.h),
-                  _buildSectionTitle("LOCALIZAÇÃO GEOGRÁFICA", colorScheme),
+                  _buildSectionTitle("gs_label_section_2".tr, colorScheme),
                   _buildCardContainer(
                     theme,
                     child: Padding(
@@ -131,7 +131,7 @@ class StationEntryScreen extends GetView<StationEntryController> {
                     ),
                   ),
                   SizedBox(height: 24.h),
-                  _buildSectionTitle("PREÇOS ATUAIS (R\$)", colorScheme),
+                  _buildSectionTitle("gs_label_section_3".tr, colorScheme),
                   _buildCardContainer(
                     theme,
                     child: Column(
@@ -189,7 +189,7 @@ class StationEntryScreen extends GetView<StationEntryController> {
                     ),
                   ),
                   SizedBox(height: 24.h),
-                  _buildSectionTitle("SERVIÇOS E STATUS", colorScheme),
+                  _buildSectionTitle("gs_label_section_4".tr, colorScheme),
                   _buildCardContainer(
                     theme,
                     child: _buildSwitches(controller, theme),
