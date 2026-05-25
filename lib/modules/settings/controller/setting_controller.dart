@@ -69,7 +69,7 @@ class SettingController extends GetxController {
   }
 
   String formatarConsumo(double kmL) {
-    return "${kmL.toStringAsFixed(0)} km/L";
+    return "${kmL.toStringAsFixed(2)} km/L";
   }
 
   String get calcularFlex {

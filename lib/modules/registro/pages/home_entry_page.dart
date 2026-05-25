@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/registro/controller/home_entry_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,11 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 class HomeEntryPage extends GetView<HomeEntryController> {
-  final double? lastOdometer;
-  final FuelEntryModel? entry;
-  HomeEntryPage({super.key, this.lastOdometer, this.entry}) {
-    Get.put(HomeEntryController()).inicializar(entry, lastOdometer);
-  }
+  const HomeEntryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +17,43 @@ class HomeEntryPage extends GetView<HomeEntryController> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: Obx(
+        () => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: ElevatedButton.icon(
+              onPressed: controller.isLoading.value ? null : controller.submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 2,
+              ),
+              icon: controller.isLoading.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(RemixIcons.check_line, color: Colors.white),
+              label: Text(
+                controller.editingEntry != null ? "he_edit".tr : "he_new".tr,
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.white,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       body: Form(
         key: controller.formKey,
         child: CustomScrollView(
@@ -88,25 +120,6 @@ class HomeEntryPage extends GetView<HomeEntryController> {
         icon: Icon(RemixIcons.arrow_left_line),
         onPressed: () => Get.back(),
       ),
-      actions: [
-        Obx(
-          () => controller.isLoading.value
-              ? Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(15),
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              : IconButton(
-                  icon: Icon(
-                    RemixIcons.check_double_line,
-                    size: 28,
-                    color: Colors.greenAccent,
-                  ),
-                  onPressed: controller.submit,
-                ),
-        ),
-      ],
       flexibleSpace: FlexibleSpaceBar(
         titlePadding: const EdgeInsetsDirectional.only(start: 50, bottom: 16),
         centerTitle: false,
@@ -316,7 +329,10 @@ class HomeEntryPage extends GetView<HomeEntryController> {
             icon: RemixIcons.car_fill,
             items: c.controller.vehicles
                 .map(
-                  (v) => DropdownMenuItem(value: v.id, child: Text('${v.model} - (${v.nickname})')),
+                  (v) => DropdownMenuItem(
+                    value: v.id,
+                    child: Text('${v.model} - (${v.nickname})'),
+                  ),
                 )
                 .toList(),
             onChanged: (v) {

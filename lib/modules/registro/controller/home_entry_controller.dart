@@ -29,11 +29,22 @@ class HomeEntryController extends GetxController {
   var precoAtual = 0.0.obs;
 
   FuelEntryModel? editingEntry;
+  bool _isCalculating = false;
 
   late MoneyMaskedTextController pricePerLiterController;
   late MoneyMaskedTextController totalPriceController;
   late MoneyMaskedTextController litrosController;
   late TextEditingController kmController;
+
+  @override
+  void onInit() {
+    super.onInit();
+    final Map<String, dynamic>? args = Get.arguments;
+    final FuelEntryModel? entry = args?['entry'];
+    final double? lastOdometer = args?['lastOdometer'];
+
+    inicializar(entry, lastOdometer);
+  }
 
   void inicializar(FuelEntryModel? entry, double? lastOdometer) {
     editingEntry = entry;
@@ -51,13 +62,15 @@ class HomeEntryController extends GetxController {
     kmController = TextEditingController(
       text: entry != null
           ? entry.odometerKm.toString()
-          : (lastOdometer?.toString() ?? ''),
+          : (lastOdometer != null && lastOdometer > 0
+                ? lastOdometer.toString()
+                : ''),
     );
 
     litrosController = MoneyMaskedTextController(
       initialValue: entry?.volumeLiters ?? 0.0,
       leftSymbol: '',
-      precision: 1,
+      precision: 2,
     );
 
     if (entry != null) {
@@ -79,18 +92,25 @@ class HomeEntryController extends GetxController {
   }
 
   void _calcularLitros({required String from}) {
-    final double l = litrosController.numberValue;
-    final double p = pricePerLiterController.numberValue;
-    final double t = totalPriceController.numberValue;
+    if (_isCalculating) return;
+    _isCalculating = true;
 
-    if (from == 'litros' || from == 'preco') {
-      if (l > 0 && p > 0) {
-        totalPriceController.updateValue(l * p);
+    try {
+      final double l = litrosController.numberValue;
+      final double p = pricePerLiterController.numberValue;
+      final double t = totalPriceController.numberValue;
+
+      if (from == 'litros' || from == 'preco') {
+        if (l > 0 && p > 0) {
+          totalPriceController.updateValue(l * p);
+        }
+      } else if (from == 'total') {
+        if (t > 0 && l > 0) {
+          pricePerLiterController.updateValue(t / l);
+        }
       }
-    } else if (from == 'total') {
-      if (t > 0 && l > 0) {
-        pricePerLiterController.updateValue(t / l);
-      }
+    } finally {
+      _isCalculating = false;
     }
   }
 
@@ -181,6 +201,16 @@ class HomeEntryController extends GetxController {
   }
 
   Future<void> submit() async {
+    if (selectedVeiculos.value == null ||
+        selectedGas.value == null ||
+        selectedStations.value == null) {
+      _showSnackbar(
+        'Campos incompletos',
+        'Selecione o veículo, posto e tipo de combustível.',
+        isError: true,
+      );
+      return;
+    }
     if (!formKey.currentState!.validate()) return;
 
     try {
@@ -205,7 +235,10 @@ class HomeEntryController extends GetxController {
       };
 
       if (editingEntry != null) {
-        final updatedModel = FuelEntryModel.fromMap(fuelData, editingEntry!.id!);
+        final updatedModel = FuelEntryModel.fromMap(
+          fuelData,
+          editingEntry!.id!,
+        );
         await controller.updateFuel(updatedModel);
       } else {
         await controller.saveFuel(fuelData);

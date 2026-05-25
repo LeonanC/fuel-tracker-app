@@ -76,30 +76,31 @@ class HomeController extends GetxController {
     return filteredFuelEntries.fold(0.0, (sum, item) => sum + item.totalCost);
   }
 
-  double get averageCostPerKm {
+  double get custoPorKmGeral {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
 
-    final novo = entries[0];
-    final anterior = entries[1];
+    double maiorKm = entries.first.odometerKm;
+    double menorKm = entries.last.odometerKm;
+    double kmTotalRodado = maiorKm - menorKm;
 
-    double kmNoTrecho = novo.odometerKm - anterior.odometerKm;
-    double custoTotal = novo.totalCost;
+    double totalCusto = entries.take(entries.length - 1).fold(0.0, (sum, item) => sum + item.totalCost);
 
-    return (custoTotal / kmNoTrecho) * 100;
+    if(kmTotalRodado <= 0 || totalCusto <= 0) return 0.0;
+    return totalCusto / kmTotalRodado;
   }
 
-  double get gastoPorKmReal {
+  double get mediaConsumoGeral {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
 
-    final novo = fuelEntries[0];
-    final anterior = fuelEntries[1];
+    double maiorKm = entries.first.odometerKm;
+    double menorKm = entries.last.odometerKm;
+    double kmTotalRodado = maiorKm - menorKm;
 
-    double somaOdometro = novo.odometerKm - anterior.odometerKm;
-    double volumeLitros = novo.volumeLiters;
+    double totalLitros = entries.take(entries.length - 1).fold(0.0, (sum, item) => sum + item.volumeLiters);
 
-    return (volumeLitros > 0) ? somaOdometro / volumeLitros : 0.0;
+    return kmTotalRodado / totalLitros;
   }
 
   double get odometerAnterior {
@@ -157,14 +158,17 @@ class HomeController extends GetxController {
   List<FuelEntryModel> get filteredFuelEntries {
     List<FuelEntryModel> list = fuelEntries;
 
-    if (selectedVehicleID.value != null && selectedVehicleID.value!.isEmpty) {
+    if (selectedVehicleID.value != null &&
+        selectedVehicleID.value!.isNotEmpty) {
       list = list.where((e) => e.vehicleId == selectedVehicleID.value).toList();
     }
-    if (selectedTipoID.value != null && selectedTipoID.value!.isEmpty) {
+    if (selectedTipoID.value != null && selectedTipoID.value!.isNotEmpty) {
       list = list.where((e) => e.fuelTypeId == selectedTipoID.value).toList();
     }
-    if (selectedPostoID.value != null && selectedPostoID.value!.isEmpty) {
-      list = list.where((e) => e.gasStationId == selectedPostoID.value).toList();
+    if (selectedPostoID.value != null && selectedPostoID.value!.isNotEmpty) {
+      list = list
+          .where((e) => e.gasStationId == selectedPostoID.value)
+          .toList();
     }
 
     if (searchText.value.isNotEmpty) {
@@ -174,7 +178,8 @@ class HomeController extends GetxController {
         final posto = dadosPosto?['nome']?.toString().toLowerCase() ?? '';
 
         final dadosVeiculo = veiculosMap[e.vehicleId];
-        final veiculo = dadosVeiculo?['nickname']?.toString().toLowerCase() ?? '';
+        final veiculo =
+            dadosVeiculo?['nickname']?.toString().toLowerCase() ?? '';
 
         final dadosTipo = tiposMap[e.fuelTypeId];
         final tipo = dadosTipo?['nome']?.toString().toLowerCase() ?? '';
@@ -294,20 +299,22 @@ class HomeController extends GetxController {
   }
 
   void navigateToAddEntry(BuildContext context) async {
-    final result = await Get.toNamed('/fuel_entry');
+    final result = await Get.toNamed(
+      '/fuel_entry',
+      arguments: {'lastOdometer': odometerAnterior},
+    );
     if (result == true) {
       fetchData();
-      _showSnackbar("Sucesso", "Abastecimento registrado!");      
+      _showSnackbar("Sucesso", "Abastecimento registrado!");
     }
   }
 
   void navigateToEditEntry(BuildContext context, FuelEntryModel entry) async {
-    double odometerToSend = odometerAnterior;
-
-    final result = await Get.to(
-      () => HomeEntryPage(lastOdometer: odometerToSend, entry: entry),
-      arguments: entry,
+    final result = await Get.toNamed(
+      '/fuel_entry',
+      arguments: {'lastOdometer': odometerAnterior, 'entry': entry},
     );
+
     if (result == true) {
       fetchData();
       _showSnackbar("Sucesso", "Registro atualizado!");
