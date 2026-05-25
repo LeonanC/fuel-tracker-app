@@ -7,7 +7,6 @@ import 'package:remixicon/remixicon.dart';
 
 class StationEntryScreen extends GetView<StationEntryController> {
   const StationEntryScreen({super.key});
-  
 
   @override
   Widget build(BuildContext context) {
@@ -16,33 +15,51 @@ class StationEntryScreen extends GetView<StationEntryController> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      bottomNavigationBar: Obx(
+        () => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: ElevatedButton.icon(
+              onPressed: controller.isLoading.value ? null : controller.submit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                minimumSize: const Size.fromHeight(52),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 2,
+              ),
+              icon: controller.isLoading.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(RemixIcons.check_line, color: Colors.white),
+              label: Text(
+                controller.editingEntry != null
+                    ? "gs_title_edit".tr
+                    : "gs_novo_posto".tr,
+                style: GoogleFonts.montserrat(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Colors.white,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
       body: Form(
         key: controller.formKey,
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            SliverAppBar.large(
-              expandedHeight: 130.h,
-              pinned: true,
-              stretch: true,
-              centerTitle: true,
-              leading: IconButton(
-                icon: Icon(
-                  RemixIcons.arrow_left_s_line,
-                  color: colorScheme.onSurface,
-                ),
-                onPressed: () => Get.back(),
-              ),
-              title: Text(
-                controller.editingEntry != null
-                    ? 'gs_title_edit'.tr
-                    : 'gs_novo_posto'.tr,
-                style: GoogleFonts.montserrat(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18.sp,
-                ),
-              ),
-            ),
+            _buildSliverAppBar(colorScheme, theme),
             SliverPadding(
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
               sliver: SliverList(
@@ -52,37 +69,28 @@ class StationEntryScreen extends GetView<StationEntryController> {
                     theme,
                     child: Column(
                       children: [
-                        _buildInputField(
-                          ctrl: controller.nameController,
+                        _customTextField(
+                          controller: controller.nameController,
                           label: 'gs_label_name'.tr,
                           icon: RemixIcons.gas_station_line,
                           theme: theme,
+                          isText: true,
                         ),
-                        Divider(
-                          height: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                          indent: 16.w,
-                        ),
-                        _buildInputField(
-                          ctrl: controller.brandController,
+                        const SizedBox(height: 10),
+                        _customTextField(
+                          controller: controller.brandController,
                           label: 'gs_label_brand'.tr,
                           icon: RemixIcons.shield_user_line,
                           theme: theme,
+                          isText: true,
                         ),
-                        Divider(
-                          height: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                          indent: 16.w,
-                        ),
-                        _buildInputField(
-                          ctrl: controller.addressController,
+                        const SizedBox(height: 10),
+                        _customTextField(
+                          controller: controller.addressController,
                           label: 'gs_label_address'.tr,
                           icon: RemixIcons.map_pin_2_line,
                           theme: theme,
+                          isText: true,
                         ),
                       ],
                     ),
@@ -96,19 +104,12 @@ class StationEntryScreen extends GetView<StationEntryController> {
                       child: Row(
                         children: [
                           Expanded(
-                            child: _buildInputField(
-                              ctrl: controller.latitudeController,
+                            child: _customTextField(
+                              controller: controller.latitudeController,
                               label: "gs_label_latitude".tr,
                               icon: RemixIcons.map_pin_range_line,
                               theme: theme,
-                              isText: false,
-                              isSuffix: IconButton(
-                                icon: Icon(
-                                  RemixIcons.focus_3_line,
-                                  color: theme.colorScheme.primary,
-                                ),
-                                onPressed: () => controller.fetchLocation(),
-                              ),
+                              isBold: false,
                             ),
                           ),
                           Container(
@@ -118,12 +119,12 @@ class StationEntryScreen extends GetView<StationEntryController> {
                             margin: EdgeInsets.symmetric(horizontal: 4.w),
                           ),
                           Expanded(
-                            child: _buildInputField(
-                              ctrl: controller.longitudeController,
+                            child: _customTextField(
+                              controller: controller.longitudeController,
                               label: "gs_label_longitude".tr,
                               icon: RemixIcons.compass_3_line,
                               theme: theme,
-                              isText: false,
+                              isBold: false,
                             ),
                           ),
                         ],
@@ -134,59 +135,7 @@ class StationEntryScreen extends GetView<StationEntryController> {
                   _buildSectionTitle("gs_label_section_3".tr, colorScheme),
                   _buildCardContainer(
                     theme,
-                    child: Column(
-                      children: [
-                        _buildInputField(
-                          ctrl: controller.priceGAController,
-                          label: 'gs_label_price_gasoline'.tr,
-                          icon: RemixIcons.drop_line,
-                          theme: theme,
-                          isText: false,
-                        ),
-                        Divider(
-                          height: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                          indent: 16.w,
-                        ),
-                        _buildInputField(
-                          ctrl: controller.priceETAController,
-                          label: 'gs_label_price_ethanol'.tr,
-                          icon: RemixIcons.leaf_line,
-                          theme: theme,
-                          isText: false,
-                        ),
-                        Divider(
-                          height: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                          indent: 16.w,
-                        ),
-                        _buildInputField(
-                          ctrl: controller.priceDIEController,
-                          label: 'gs_label_price_diesel'.tr,
-                          icon: RemixIcons.truck_line,
-                          theme: theme,
-                          isText: false,
-                        ),
-                        Divider(
-                          height: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                          indent: 16.w,
-                        ),
-                        _buildInputField(
-                          ctrl: controller.priceGNController,
-                          label: 'gs_label_price_gnv'.tr,
-                          icon: RemixIcons.fire_line,
-                          theme: theme,
-                          isText: false,
-                        ),
-                      ],
-                    ),
+                    child: _buildInputField(controller, theme),
                   ),
                   SizedBox(height: 24.h),
                   _buildSectionTitle("gs_label_section_4".tr, colorScheme),
@@ -194,9 +143,6 @@ class StationEntryScreen extends GetView<StationEntryController> {
                     theme,
                     child: _buildSwitches(controller, theme),
                   ),
-                  SizedBox(height: 32.h),
-                  _buildSubmitButton(controller, colorScheme),
-                  SizedBox(height: 34.h),
                 ]),
               ),
             ),
@@ -206,16 +152,62 @@ class StationEntryScreen extends GetView<StationEntryController> {
     );
   }
 
+  Widget _buildSliverAppBar(ColorScheme colorScheme, ThemeData theme) {
+    return SliverAppBar(
+      expandedHeight: 120.0,
+      pinned: true,
+      elevation: 0,
+      stretch: true,
+      backgroundColor: theme.appBarTheme.backgroundColor,
+      leading: IconButton(
+        icon: Icon(RemixIcons.arrow_left_line),
+        onPressed: () => Get.back(),
+      ),
+      actions: [
+        controller.isLoading.value
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+            : IconButton(
+                icon: Icon(
+                  RemixIcons.focus_3_line,
+                  color: theme.colorScheme.primary,
+                ),
+                onPressed: () => controller.fetchLocation(),
+              ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        titlePadding: const EdgeInsetsDirectional.only(start: 50, bottom: 16),
+        centerTitle: false,
+        title: Text(
+          controller.editingEntry != null
+              ? 'gs_title_edit'.tr
+              : 'gs_novo_posto'.tr,
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSectionTitle(String title, ColorScheme colorScheme) {
     return Padding(
-      padding: EdgeInsets.only(left: 4.w, bottom: 8.h),
+      padding: EdgeInsets.only(left: 8, bottom: 12),
       child: Text(
         title,
         style: GoogleFonts.montserrat(
-          fontSize: 11.sp,
-          fontWeight: FontWeight.w800,
-          color: colorScheme.primary.withValues(alpha: 0.7),
-          letterSpacing: 1.2,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: colorScheme.primary.withOpacity(0.8),
+          letterSpacing: 1.5,
         ),
       ),
     );
@@ -223,60 +215,99 @@ class StationEntryScreen extends GetView<StationEntryController> {
 
   Widget _buildCardContainer(ThemeData theme, {required Widget child}) {
     return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.015),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.015),
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          ),
-        ],
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: child,
     );
   }
 
-  Widget _buildInputField({
-    required TextEditingController ctrl,
+  Widget _buildInputField(StationEntryController c, ThemeData theme) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _customTextField(
+                controller: controller.priceGAController,
+                label: 'gs_label_price_gasoline'.tr,
+                icon: RemixIcons.drop_line,
+                theme: theme,
+                isBold: false,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _customTextField(
+                controller: controller.priceETAController,
+                label: 'gs_label_price_ethanol'.tr,
+                icon: RemixIcons.leaf_line,
+                theme: theme,
+                isBold: false,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            Expanded(
+              child: _customTextField(
+                controller: controller.priceDIEController,
+                label: 'gs_label_price_diesel'.tr,
+                icon: RemixIcons.truck_line,
+                theme: theme,
+                isBold: false,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _customTextField(
+                controller: controller.priceGNController,
+                label: 'gs_label_price_gnv'.tr,
+                icon: RemixIcons.fire_line,
+                theme: theme,
+                isBold: false,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _customTextField({
+    required TextEditingController controller,
     required String label,
     required IconData icon,
     required ThemeData theme,
-    bool isText = true,
-    Widget? isSuffix,
+    String? suffix,
+    bool isText = false,
+    bool isBold = false,
   }) {
     return TextFormField(
-      controller: ctrl,
-      keyboardType: isText
-          ? TextInputType.text
-          : TextInputType.numberWithOptions(decimal: true),
-      style: GoogleFonts.montserrat(
-        fontSize: 14.sp,
-        fontWeight: FontWeight.w600,
-        color: theme.colorScheme.onSurface,
+      controller: controller,
+      keyboardType: isText ? TextInputType.text : TextInputType.numberWithOptions(decimal: true),
+      style: GoogleFonts.firaCode(
+        fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+        color: isBold ? Colors.greenAccent : Colors.white,
+        fontSize: 15,
       ),
-
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.montserrat(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-          fontSize: 12.sp,
-          fontWeight: FontWeight.w500,
+        labelStyle: GoogleFonts.montserrat(fontSize: 12, color: Colors.white54),
+        prefixIcon: Icon(icon, size: 20, color: theme.colorScheme.primary),
+        suffixText: suffix,
+        suffixStyle: TextStyle(color: Colors.white30),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
-        prefixIcon: Icon(
-          icon,
-          size: 20.sp,
-          color: theme.colorScheme.primary.withValues(alpha: 0.7),
-        ),
-        suffixIcon: isSuffix,
-        border: InputBorder.none,
-        focusedBorder: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+        filled: true,
+        fillColor: Colors.black.withOpacity(0.3),
       ),
     );
   }
