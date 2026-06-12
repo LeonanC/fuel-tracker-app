@@ -13,7 +13,7 @@ import 'package:fuel_tracker_app/modules/registro/controller/vehicle_entry_contr
 import 'package:fuel_tracker_app/modules/remider/controller/reminder_controller.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:fuel_tracker_app/modules/vehicle/controller/vehicle_controller.dart';
-import 'package:fuel_tracker_app/modules/welcome/loading_controller.dart';
+import 'package:fuel_tracker_app/modules/loading/loading_controller.dart';
 import 'package:get/get.dart';
 
 class AppBinding implements Bindings {

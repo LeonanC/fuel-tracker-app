@@ -28,6 +28,15 @@ class VehicleEntryController extends GetxController {
   var selectedTipo = RxnString();
 
   VehicleModel? editingEntry;
+  
+  @override
+  void onInit(){
+    super.onInit();
+    final Map<String, dynamic>? args = Get.arguments;
+    final VehicleModel? entry = args?['entry'];
+
+    inicializer(entry);
+  }
 
   void inicializer(VehicleModel? entry) {
     editingEntry = entry;

@@ -207,7 +207,7 @@ class _BackupScreenState extends State<BackupScreen> {
             ),
             const SizedBox(height: 12),
             _actionButton(
-              label: "bk_btn_import".tr.toUpperCase(),
+              label: "bk_action_import_btn".tr.toUpperCase(),
               icon: RemixIcons.refresh_line,
               color: Colors.green,
               onPressed: hasSelection

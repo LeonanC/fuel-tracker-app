@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fuel_tracker_app/modules/welcome/loading_controller.dart';
+import 'package:fuel_tracker_app/modules/loading/loading_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 
@@ -78,55 +78,65 @@ class LoadingPage extends GetView<LoadingController> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    Obx(
+                      () => Icon(
+                        controller.temErro.value
+                            ? RemixIcons.error_warning_fill
+                            : RemixIcons.gas_station_fill,
+                        size: 72,
+                        color: controller.temErro.value
+                            ? Colors.redAccent
+                            : Colors.blueAccent.withOpacity(0.9),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
                     Obx(() {
                       if (controller.temErro.value) {
-                        return Icon(
-                          RemixIcons.error_warning_line,
-                          color: Colors.redAccent,
-                          size: 64,
-                        );
+                        return const SizedBox.shrink();
                       }
+
                       return Text(
-                        "${(controller.progresso.value * 100).toInt()}%",
+                        "${controller.progresso.value}%",
                         style: theme.textTheme.displayMedium?.copyWith(
                           color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
                         ),
                       );
                     }),
 
-                    const SizedBox(height: 20),
-                    _buildProgressBar(context),
-                    const SizedBox(height: 30),
-
                     Obx(
-                      () => AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: Text(
-                          controller.statusMensagem.value,
-                          key: ValueKey(controller.statusMensagem.value),
-                          style: TextStyle(
-                            color: controller.temErro.value
-                                ? Colors.redAccent
-                                : theme.colorScheme.primary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
+                      () => SizedBox(height: controller.temErro.value ? 0 : 15),
                     ),
-                    if (controller.temErro.value) ...[
-                      const SizedBox(height: 20),
-                      ElevatedButton.icon(
-                        onPressed: () => controller.tentarNovamente(),
-                        icon: Icon(RemixIcons.refresh_line, size: 18),
-                        label: const Text('TENTAR NOVAMENTE'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.primary,
-                          foregroundColor: theme.colorScheme.onPrimary,
+
+                    Obx(() {
+                      return Text(
+                        controller.statusMensagem.value,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: controller.temErro.value
+                              ? Colors.redAccent.withOpacity(0.9)
+                              : Colors.white.withOpacity(0.6),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
                         ),
-                      ),
-                    ],
+                      );
+                    }),
+                    const SizedBox(height: 35),
+                    Obx(() {
+                      if (controller.temErro.value) {
+                        return ElevatedButton.icon(
+                          onPressed: () => controller.tentarNovamente(),
+                          icon: Icon(RemixIcons.refresh_line, size: 18),
+                          label: const Text('TENTAR NOVAMENTE'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: theme.colorScheme.primary,
+                            foregroundColor: theme.colorScheme.onPrimary,
+                          ),
+                        );
+                      }
+                      return _buildProgressBar(Colors.blueAccent);
+                    }),
                   ],
                 ),
               ),
@@ -137,13 +147,12 @@ class LoadingPage extends GetView<LoadingController> {
     );
   }
 
-  Widget _buildProgressBar(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget _buildProgressBar(Color primaryColor) {
     return Container(
       width: double.infinity,
-      height: 8,
+      height: 6,
       decoration: BoxDecoration(
-        color: theme.colorScheme.onSurface.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
       ),
       child: LayoutBuilder(
@@ -153,24 +162,18 @@ class LoadingPage extends GetView<LoadingController> {
             children: [
               Obx(
                 () => AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  width: constraints.maxWidth * controller.progresso.value,
-                  height: 8,
+                  duration: const Duration(milliseconds: 50),
+                  width: constraints.maxWidth * (controller.progresso.value / 100),
+                  height: 6,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: controller.temErro.value
-                          ? [Colors.redAccent, Colors.orangeAccent]
-                          : [Color(0xFF3B82F6), Color(0xFF22D3EE)],
+                      colors: [Color(0xFF3B82F6), Color(0xFF22D3EE)],
                     ),
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            (controller.temErro.value
-                                    ? Colors.redAccent
-                                    : Colors.blueAccent)
-                                .withOpacity(0.3),
-                        blurRadius: 8,
+                        color: primaryColor.withOpacity(0.3),
+                        blurRadius: 10,
                         offset: Offset(0, 2),
                       ),
                     ],

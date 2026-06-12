@@ -18,7 +18,7 @@ import 'package:fuel_tracker_app/modules/login/pages/completar_perfil.dart';
 import 'package:fuel_tracker_app/modules/login/pages/login_page.dart';
 import 'package:fuel_tracker_app/modules/registro/pages/vehicle_entry_screen.dart';
 import 'package:fuel_tracker_app/modules/settings/pages/settings_page.dart';
-import 'package:fuel_tracker_app/modules/welcome/loading_page.dart';
+import 'package:fuel_tracker_app/modules/loading/loading_page.dart';
 import 'package:fuel_tracker_app/modules/backup/pages/backup_page.dart';
 import 'package:fuel_tracker_app/modules/gas/pages/station_screen.dart';
 import 'package:fuel_tracker_app/modules/home/pages/home_page.dart';

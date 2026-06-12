@@ -3,7 +3,6 @@ import 'package:fuel_tracker_app/data/models/station_model.dart';
 import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
 import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
-import 'package:fuel_tracker_app/modules/registro/pages/home_entry_page.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
@@ -46,7 +45,7 @@ class HomeController extends GetxController {
             .from('abastecimentos')
             .select()
             .or('fk_usuario.eq.$userUID')
-            .order('velocimetro', ascending: false),
+            .order('data', ascending: false),
         _supabase.from('postos').select(),
         _supabase.from('tipo_combustivel').select(),
       ]);

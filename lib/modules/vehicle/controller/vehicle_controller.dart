@@ -83,8 +83,15 @@ class VehicleController extends GetxController {
   void navigateToAddVehicle(BuildContext context) async {
     final result = await Get.toNamed('/vehicles_entry');
     if (result == true) {
-      _showSnackbar("Sucesso", "Veículo registrado!");
       fetchVehicle();
+      _showSnackbar("Sucesso", "Veículo registrado!");
+    }
+  }
+  void navigateToEditVehicle(VehicleModel entry) async {
+    final result = await Get.toNamed('/vehicles_entry', arguments: {'entry': entry});
+    if (result == true) {
+      fetchVehicle();
+      _showSnackbar("Sucesso", "Registro atualizado!");
     }
   }
 

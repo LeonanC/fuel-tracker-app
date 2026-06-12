@@ -3,16 +3,13 @@ import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 class FuelCard extends StatelessWidget {
   final FuelEntryModel entry;
   final HomeController controller;
-  const FuelCard({
-    super.key,
-    required this.entry,
-    required this.controller,
-  });
+  const FuelCard({super.key, required this.entry, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +108,7 @@ class FuelCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '${vehicle?['model']} -  ${(vehicle?['nickname'])}' ?? "---",
+                    '${vehicle?['model']} -  ${(vehicle?['nickname'])}',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -145,49 +142,76 @@ class FuelCard extends StatelessWidget {
     );
   }
 
-  Widget _priceFooter(ThemeData theme) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.black12,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Preço/L", style: TextStyle(fontSize: 9, color: Colors.grey)),
-            Text(
-              controller.settings.formatarCurrency(entry.pricePerLiter),
-              style: GoogleFonts.firaCode(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+  Widget _priceFooter(ThemeData theme) {
+    String dataFormatada = '---';
+    if(entry.entryDate != null){
+      if(entry.entryDate is DateTime){
+        dataFormatada = DateFormat('dd/MM/yyyy').format(entry.entryDate as DateTime);
+      }else if (entry.entryDate is String){
+        dataFormatada = DateFormat('dd/MM/yyyy').format(DateTime.parse(entry.entryDate as String));      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black12,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Data", style: TextStyle(fontSize: 9, color: Colors.grey)),
+              Text(
+                dataFormatada,
+                style: GoogleFonts.firaCode(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
-            ),
-          ],
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              "Total pago",
-              style: TextStyle(fontSize: 9, color: Colors.blueAccent),
-            ),
-            Text(
-              controller.settings.formatarCurrency(entry.totalCost),
-              style: GoogleFonts.inter(
-                color: Colors.blueAccent,
-                fontWeight: FontWeight.w900,
-                fontSize: 16,
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Preço/L",
+                style: TextStyle(fontSize: 9, color: Colors.grey),
               ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+              Text(
+                controller.settings.formatarCurrency(entry.pricePerLiter),
+                style: GoogleFonts.firaCode(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "Total pago",
+                style: TextStyle(fontSize: 9, color: Colors.blueAccent),
+              ),
+              Text(
+                controller.settings.formatarCurrency(entry.totalCost),
+                style: GoogleFonts.inter(
+                  color: Colors.blueAccent,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _miniStat(String label, String value) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,

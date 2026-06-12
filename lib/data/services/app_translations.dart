@@ -63,6 +63,7 @@ class AppTranslations extends Translations {
       "bk_scope_types": "Tipos de Combustíveis",
       "bk_scope_vehicles": "Meus Veículos",
       "bk_action_export_btn": "Exportar para Nuvem",
+      "bk_action_import_btn": "Importar dados",
       "bk_action_import_title": "Restaurar Backup",
       // NAVIGATION PAGE
       "nav_fuel_entries": "Abastecimentos",

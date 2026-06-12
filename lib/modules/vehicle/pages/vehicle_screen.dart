@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/data/models/vehicle_model.dart';
-import 'package:fuel_tracker_app/modules/registro/pages/vehicle_entry_screen.dart';
 import 'package:fuel_tracker_app/modules/vehicle/controller/vehicle_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -160,7 +159,7 @@ class VehicleScreen extends GetView<VehicleController> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24.r),
           child: InkWell(
-            onTap: () => Get.to(() => VehicleEntryScreen(data: veiculo)),
+            onTap: () => controller.navigateToEditVehicle(veiculo),
             child: Padding(
               padding: EdgeInsets.all(16.w),
               child: Column(

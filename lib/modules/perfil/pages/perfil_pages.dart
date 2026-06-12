@@ -7,7 +7,6 @@ import 'package:fuel_tracker_app/modules/perfil/controller/perfil_controller.dar
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 class PerfilPage extends GetView<PerfilController> {
@@ -103,18 +102,6 @@ class PerfilPage extends GetView<PerfilController> {
                         RemixIcons.car_line,
                         "lg_nickname".tr,
                         vehicleData['nickname']?.toString() ?? "---",
-                        textColor,
-                        textSecondary,
-                      ),
-                      _divider(colorScheme.outlineVariant),
-                      _buildDataRow(
-                        RemixIcons.calendar_event_line,
-                        "lg_member_since".tr,
-                        (user != null && user.criadoEm != null)
-                            ? DateFormat(
-                                'yyyy',
-                              ).format(DateTime.parse(user.criadoEm.toString()))
-                            : "---",
                         textColor,
                         textSecondary,
                       ),

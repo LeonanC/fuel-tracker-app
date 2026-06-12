@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/station_model.dart';
-import 'package:fuel_tracker_app/modules/registro/pages/station_entry_screen.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';

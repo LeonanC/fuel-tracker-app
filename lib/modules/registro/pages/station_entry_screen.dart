@@ -374,36 +374,4 @@ class StationEntryScreen extends GetView<StationEntryController> {
       ),
     );
   }
-
-  Widget _buildSubmitButton(StationEntryController c, ColorScheme colorScheme) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56.h,
-      child: FilledButton.icon(
-        onPressed: c.submit,
-        style: FilledButton.styleFrom(
-          backgroundColor: colorScheme.primary,
-          shadowColor: colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16.r),
-          ),
-          elevation: 2,
-        ),
-        icon: Icon(
-          c.editingEntry != null
-              ? RemixIcons.edit_line
-              : RemixIcons.save_3_line,
-          size: 20.sp,
-        ),
-        label: Text(
-          c.editingEntry != null ? 'gs_btn_update'.tr : 'gs_btn_add'.tr,
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.bold,
-            fontSize: 16.sp,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
 }

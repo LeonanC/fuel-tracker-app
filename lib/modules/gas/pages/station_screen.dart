@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fuel_tracker_app/data/models/station_model.dart';
 import 'package:fuel_tracker_app/modules/gas/controller/station_controller.dart';
-import 'package:fuel_tracker_app/modules/registro/pages/station_entry_screen.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:remixicon/remixicon.dart';
@@ -381,32 +380,6 @@ class StationScreen extends GetView<StationController> {
           ),
         ],
       ),
-    );
-  }
-
-  void _confirmDelete(StationModel posto, ThemeData theme) {
-    Get.defaultDialog(
-      title: "gs_excluir_titulo".tr,
-      middleText: "gs_excluir_confirm".tr,
-      backgroundColor: theme.cardColor,
-      titleStyle: GoogleFonts.montserrat(
-        color: theme.colorScheme.onSurface,
-        fontWeight: FontWeight.bold,
-      ),
-      middleTextStyle: GoogleFonts.montserrat(
-        color: theme.colorScheme.onSurface.withOpacity(0.7),
-        fontSize: 14.sp,
-      ),
-      radius: 24.r,
-      textConfirm: 'gs_sim'.tr,
-      textCancel: 'gs_nao'.tr,
-      confirmTextColor: Colors.white,
-      cancelTextColor: theme.colorScheme.primary,
-      buttonColor: theme.colorScheme.error,
-      onConfirm: () {
-        controller.deletePosto(posto.id);
-        Get.back();
-      },
     );
   }
 }
