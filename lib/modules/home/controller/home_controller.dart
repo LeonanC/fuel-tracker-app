@@ -193,6 +193,7 @@ class HomeController extends GetxController {
 
   Future<void> saveFuel(Map<String, dynamic> data) async {
     try {
+      isLoading.value = true;
       await _supabase.from('abastecimentos').insert(data);
     } catch (e) {
       _showSnackbar("Erro", "Falha ao salvar no banco", isError: true);

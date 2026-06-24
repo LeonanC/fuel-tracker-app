@@ -44,6 +44,9 @@ class HomeEntryController extends GetxController {
     final double? lastOdometer = args?['lastOdometer'];
 
     inicializar(entry, lastOdometer);
+
+    ever(selectedStations, (_) => atualizarPrecoCombustivel());
+    ever(selectedGas, (_) => atualizarPrecoCombustivel());
   }
 
   void inicializar(FuelEntryModel? entry, double? lastOdometer) {
@@ -200,6 +203,39 @@ class HomeEntryController extends GetxController {
     }
   }
 
+  void atualizarPrecoCombustivel(){
+    final postoId = selectedStations.value;
+    final tipoCombustivelId = selectedGas.value;
+
+    if(postoId == null || tipoCombustivelId == null || editingEntry != null) return;
+
+    try{
+      final posto = controller.postos.firstWhereOrNull((p) => p.id == postoId);
+      final tipoCombustivel = controller.tipos.firstWhereOrNull((p) => p.id == tipoCombustivelId);
+
+      if(posto != null && tipoCombustivel != null){
+        
+        double? precoEncontrado = 0.0;
+        final nomeCombustivel = tipoCombustivel.nome.toLowerCase();
+        if(nomeCombustivel.contains('gasolina')){
+          precoEncontrado = double.tryParse(posto.precoGasolina.toString()) ?? 0.0;
+        } else if (nomeCombustivel.contains('etanol') || nomeCombustivel.contains('álcool')){
+          precoEncontrado = double.tryParse(posto.precoEtanol.toString()) ?? 0.0;
+        } else if (nomeCombustivel.contains('diesel')) {
+          precoEncontrado = double.tryParse(posto.precoDiesel.toString()) ?? 0.0;
+        } else if (nomeCombustivel.contains('gnv')){
+          precoEncontrado = double.tryParse(posto.precoGnv.toString()) ?? 0.0;
+        }
+
+        if(precoEncontrado > 0){
+          pricePerLiterController.updateValue(precoEncontrado);
+        }
+      }
+    }catch(e){
+      debugPrint("Erro ao buscar preço do combustível: $e");
+    }
+  }
+
   Future<void> submit() async {
     if (selectedVeiculos.value == null ||
         selectedGas.value == null ||
@@ -251,7 +287,6 @@ class HomeEntryController extends GetxController {
 
       Get.back(result: true);
     } catch (e) {
-      Get.back();
       _showSnackbar('Erro', e.toString(), isError: true);
     } finally {
       isLoading.value = false;
