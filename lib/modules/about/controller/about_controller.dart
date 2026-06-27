@@ -46,7 +46,7 @@ class AboutController extends GetxController {
           _showUpdateDialog(latestGithubVersion, updateUrl, updateMessage);
         } else {
           _showCustomSnackbar(
-            'up_check_title'.tr,
+            'up_service_no_update'.tr,
             'up_no_updates'.tr,
             isError: true,
           );

@@ -90,7 +90,9 @@ class AboutScreen extends StatelessWidget {
                   const SizedBox(height: 48),
                   Text(
                     'ab_copyright'.tr,
-                    style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.grey,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 40),
@@ -133,9 +135,11 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            '${'ab_currentVersion'.tr} ${aboutController.appVersion.value}',
-            style: theme.textTheme.labelLarge?.copyWith(color: Colors.grey),
+          Obx(
+            () => Text(
+              '${'ab_currentVersion'.tr} ${aboutController.appVersion.value}',
+              style: theme.textTheme.labelLarge?.copyWith(color: Colors.grey),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -203,7 +207,9 @@ class AboutScreen extends StatelessWidget {
         label: Text(label),
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           backgroundColor: color.withValues(alpha: 0.15),
           foregroundColor: color,
         ),
