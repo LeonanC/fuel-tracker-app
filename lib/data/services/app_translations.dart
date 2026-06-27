@@ -95,14 +95,14 @@ class AppTranslations extends Translations {
       "sp_feedback_title": "Feedback",
       "sp_feedback_desc": "Enviar sugestões ou reportar problemas",
       // UPDATE PAGE
-      "up_check_title": "Atualização",
+      "up_available_title": "Atualização",
       "up_no_updates": "Você já está utilizando a versão mais recente.",
       "up_update_available": "Atualização Disponível!",
       "up_check_for_updates": "Verificar Atualizações",
       "up_current_version": "Sua Versão: ",
-      "up_new_version": "Nova Versão: ",
+      "up_available_desc": "Nova Versão: ",
       "up_later": "Mais Tarde",
-      "up_download": "Baixar Agora",
+      "up_update_now": "Baixar Agora",
       "up_service_no_update": "Nenhuma atualização encontrada.",
       "up_check_failed": "Falha ao verificar atualizações.",
       "up_url_error":
