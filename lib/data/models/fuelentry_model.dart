@@ -9,9 +9,6 @@ class FuelEntryModel {
   final double volumeLiters;
   final double pricePerLiter;
   final double totalCost;
-  final double tankCapacity;
-  final bool tankFull;
-  final String? receiptPath;
   final List<String> sharedWith;
 
   FuelEntryModel({
@@ -25,9 +22,6 @@ class FuelEntryModel {
     required this.volumeLiters,
     required this.pricePerLiter,
     required this.totalCost,
-    required this.tankCapacity,
-    this.tankFull = false,
-    this.receiptPath,
     this.sharedWith = const [],
   });
 
@@ -50,9 +44,6 @@ class FuelEntryModel {
       'litros_volume': volumeLiters,
       'preco_litro': pricePerLiter,
       'custo_total': totalCost,
-      'tanque_cheio': tankFull,
-      'tank_capacity': tankCapacity,
-      'receipt_path': receiptPath,
       'shared_with': sharedWith,
     };
     if(id != null){
@@ -77,9 +68,6 @@ class FuelEntryModel {
       volumeLiters: _toDouble(map['litros_volume']),
       pricePerLiter: _toDouble(map['preco_litro']),
       totalCost: _toDouble(map['custo_total']),
-      tankCapacity: _toDouble(map['tank_capacity']),
-      tankFull: map['tanque_cheio'] ?? false,
-      receiptPath: map['receipt_path'] as String?,
       sharedWith: _toList(map['shared_with'] ?? map['sharedWith']),
     );
   }

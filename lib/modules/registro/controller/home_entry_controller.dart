@@ -80,9 +80,7 @@ class HomeEntryController extends GetxController {
       selectedGas.value = entry.fuelTypeId;
       selectedVeiculos.value = entry.vehicleId;
       selectedStations.value = entry.gasStationId;
-      isTankFull.value = entry.tankFull;
       selectedDate.value = entry.entryDate!;
-      comprovantePath.value = entry.receiptPath ?? '';
     }
 
     litrosController.addListener(() => _calcularLitros(from: 'litros'));
@@ -203,35 +201,41 @@ class HomeEntryController extends GetxController {
     }
   }
 
-  void atualizarPrecoCombustivel(){
+  void atualizarPrecoCombustivel() {
     final postoId = selectedStations.value;
     final tipoCombustivelId = selectedGas.value;
 
-    if(postoId == null || tipoCombustivelId == null || editingEntry != null) return;
+    if (postoId == null || tipoCombustivelId == null || editingEntry != null)
+      return;
 
-    try{
+    try {
       final posto = controller.postos.firstWhereOrNull((p) => p.id == postoId);
-      final tipoCombustivel = controller.tipos.firstWhereOrNull((p) => p.id == tipoCombustivelId);
+      final tipoCombustivel = controller.tipos.firstWhereOrNull(
+        (p) => p.id == tipoCombustivelId,
+      );
 
-      if(posto != null && tipoCombustivel != null){
-        
+      if (posto != null && tipoCombustivel != null) {
         double? precoEncontrado = 0.0;
         final nomeCombustivel = tipoCombustivel.nome.toLowerCase();
-        if(nomeCombustivel.contains('gasolina')){
-          precoEncontrado = double.tryParse(posto.precoGasolina.toString()) ?? 0.0;
-        } else if (nomeCombustivel.contains('etanol') || nomeCombustivel.contains('álcool')){
-          precoEncontrado = double.tryParse(posto.precoEtanol.toString()) ?? 0.0;
+        if (nomeCombustivel.contains('gasolina')) {
+          precoEncontrado =
+              double.tryParse(posto.precoGasolina.toString()) ?? 0.0;
+        } else if (nomeCombustivel.contains('etanol') ||
+            nomeCombustivel.contains('álcool')) {
+          precoEncontrado =
+              double.tryParse(posto.precoEtanol.toString()) ?? 0.0;
         } else if (nomeCombustivel.contains('diesel')) {
-          precoEncontrado = double.tryParse(posto.precoDiesel.toString()) ?? 0.0;
-        } else if (nomeCombustivel.contains('gnv')){
+          precoEncontrado =
+              double.tryParse(posto.precoDiesel.toString()) ?? 0.0;
+        } else if (nomeCombustivel.contains('gnv')) {
           precoEncontrado = double.tryParse(posto.precoGnv.toString()) ?? 0.0;
         }
 
-        if(precoEncontrado > 0){
+        if (precoEncontrado > 0) {
           pricePerLiterController.updateValue(precoEncontrado);
         }
       }
-    }catch(e){
+    } catch (e) {
       debugPrint("Erro ao buscar preço do combustível: $e");
     }
   }
@@ -266,7 +270,6 @@ class HomeEntryController extends GetxController {
         'litros_volume': litrosController.numberValue,
         'preco_litro': pricePerLiterController.numberValue,
         'custo_total': totalPriceController.numberValue,
-        'tanque_cheio': isTankFull.value,
         'receipt_path': finalReceiptPath ?? comprovantePath.value,
       };
 

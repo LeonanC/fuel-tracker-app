@@ -270,9 +270,6 @@ class HomeController extends GetxController {
 
     final last = vehicleEntries.first;
 
-    final double currentLevel = last.tankCapacity;
-    if (currentLevel > 10.0) return null;
-
     final vehicleInfo = veiculosMap[selectedVehicleID.value.toString()];
     final String nickname =
         vehicleInfo?['nickname'] ?? vehicleInfo?['modelo'] ?? "Veiculo";
@@ -288,12 +285,7 @@ class HomeController extends GetxController {
     return {
       'vehicleName': nickname,
       'tank': totalCap.toString(),
-      'displayRange': currentLevel > 0
-          ? currentLevel.toStringAsFixed(1)
-          : "---",
-      'level': currentLevel.toString(),
       'consumptionValue': consumoNoTrajeto,
-      'message': currentLevel <= 5.0 ? "Reserva Critica!" : "Nível Baixo",
       'distanceUnit': 'L',
     };
   }

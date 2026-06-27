@@ -74,31 +74,6 @@ class HomeEntryPage extends GetView<HomeEntryController> {
                     _buildCardContainer(
                       child: _buildInputField(controller, theme),
                     ),
-
-                    const SizedBox(height: 20),
-                    _buildImagePicker(controller, theme),
-                    const SizedBox(height: 25),
-                    _buildCardContainer(
-                      child: Obx(
-                        () => SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            "he_label_full_tank".tr,
-                            style: GoogleFonts.montserrat(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                          value: controller.isTankFull.value,
-                          secondary: Icon(
-                            RemixIcons.gas_station_fill,
-                            color: colorScheme.primary,
-                          ),
-                          onChanged: (v) => controller.isTankFull.value = v,
-                          activeColor: Colors.greenAccent,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -285,38 +260,6 @@ class HomeEntryPage extends GetView<HomeEntryController> {
         fillColor: Colors.black.withOpacity(0.3),
       ),
     );
-  }
-
-  Widget _buildImagePicker(HomeEntryController c, ThemeData theme) {
-    return Obx(() {
-      final path = c.comprovantePath.value;
-      return GestureDetector(
-        onTap: c.pickComprovante,
-        child: Container(
-          height: 150,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceVariant,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(color: theme.dividerColor),
-          ),
-          child: path.isEmpty
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(RemixIcons.camera_line, size: 40),
-                    Text("Tirar foto do recibo"),
-                  ],
-                )
-              : ClipRRect(
-                  borderRadius: BorderRadius.circular(15),
-                  child: path.startsWith('http')
-                      ? Image.network(path, fit: BoxFit.cover)
-                      : Image.file(File(path), fit: BoxFit.cover),
-                ),
-        ),
-      );
-    });
   }
 
   Widget _buildDropdowns(HomeEntryController c) {

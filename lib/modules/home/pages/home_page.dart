@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fuel_tracker_app/data/models/fuelentry_model.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_alert_card.dart';
 import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_list_filter_menu.dart';
 import 'package:fuel_tracker_app/modules/home/controller/home_controller.dart';
@@ -6,6 +7,7 @@ import 'package:fuel_tracker_app/modules/home/pages/widget/fuel_card.dart';
 import 'package:fuel_tracker_app/modules/settings/controller/setting_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:remixicon/remixicon.dart';
 
 class HomePage extends GetView<HomeController> {
@@ -149,18 +151,68 @@ class HomePage extends GetView<HomeController> {
         );
       }
 
+      final fuelsAgrupadas = _agruparFuelPorData(entries);
+      final datas = fuelsAgrupadas.keys.toList();
+
       return SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate((context, index) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: FuelCard(entry: entries[index], controller: controller),
+            final dataFormatada = datas[index];
+            final fuelsDoDia = fuelsAgrupadas[dataFormatada]!;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildDateHeader(theme, dataFormatada),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Column(
+                    children: fuelsDoDia
+                        .map(
+                          (fuel) => FuelCard(
+                            entry: entries[index],
+                            controller: controller,
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              ],
             );
           }, childCount: entries.length),
         ),
       );
     });
+  }
+
+  Map<String, List<FuelEntryModel>> _agruparFuelPorData(
+    List<FuelEntryModel> fuels,
+  ) {
+    Map<String, List<FuelEntryModel>> grupos = {};
+
+    for (var fuel in fuels) {
+      String dataFormatada;
+      DateTime hoje = DateTime.now();
+      DateTime dataFuel = fuel.entryDate!;
+
+      if (DateFormat('yyyy-MM-dd').format(dataFuel) ==
+          DateFormat('yyyy-MM-dd').format(hoje)) {
+        dataFormatada = "Hoje";
+      } else if (DateFormat('yyyy-MM-dd').format(dataFuel) ==
+          DateFormat(
+            'yyyy-MM-dd',
+          ).format(hoje.subtract(const Duration(days: 1)))) {
+        dataFormatada = "Ontem";
+      } else {
+        dataFormatada = DateFormat('dd MMMM', 'pt_BR').format(dataFuel);
+      }
+
+      if (grupos[dataFormatada] == null) grupos[dataFormatada] = [];
+      grupos[dataFormatada]!.add(fuel);
+    }
+
+    return grupos;
   }
 
   Widget _buildEmptyState(ThemeData theme) {
@@ -191,6 +243,21 @@ class HomePage extends GetView<HomeController> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDateHeader(ThemeData theme, String titulo) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+      child: Text(
+        titulo.toUpperCase(),
+        style: GoogleFonts.montserrat(
+          color: theme.textTheme.bodySmall!.color!.withOpacity(0.5),
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
@@ -256,7 +323,8 @@ class HomePage extends GetView<HomeController> {
                   color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 14)),
+                child: Icon(icon, color: color, size: 14),
+              ),
               const SizedBox(width: 10),
               Text(
                 label.toUpperCase(),
@@ -289,13 +357,23 @@ class HomePage extends GetView<HomeController> {
       padding: const EdgeInsets.symmetric(vertical: 20),
       child: TextField(
         onChanged: (v) => controller.searchText.value = v,
-        style: GoogleFonts.inter(fontSize: 15, color: theme.textTheme.bodyMedium?.color),
+        style: GoogleFonts.inter(
+          fontSize: 15,
+          color: theme.textTheme.bodyMedium?.color,
+        ),
         decoration: InputDecoration(
           hintText: "hp_buscar_hint".tr,
-          prefixIcon: Icon(RemixIcons.search_line, size: 20, color: theme.dividerColor),
+          prefixIcon: Icon(
+            RemixIcons.search_line,
+            size: 20,
+            color: theme.dividerColor,
+          ),
           filled: true,
           fillColor: theme.cardColor,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 18,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.05)),
@@ -306,7 +384,10 @@ class HomePage extends GetView<HomeController> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
-            borderSide: BorderSide(color: Color(0xFF3366FF).withOpacity(0.3), width: 1.5),
+            borderSide: BorderSide(
+              color: Color(0xFF3366FF).withOpacity(0.3),
+              width: 1.5,
+            ),
           ),
         ),
       ),

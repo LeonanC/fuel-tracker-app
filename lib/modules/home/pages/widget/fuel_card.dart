@@ -75,7 +75,6 @@ class FuelCard extends StatelessWidget {
                                 entry.volumeLiters,
                               ),
                             ),
-                            if (entry.tankFull) _consumptionTag(),
                           ],
                         ),
 
