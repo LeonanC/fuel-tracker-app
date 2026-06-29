@@ -66,7 +66,7 @@ class FuelCard extends StatelessWidget {
                             _miniStat(
                               "hp_odometro".tr,
                               controller.settings.formatarDistancia(
-                                entry.odometerKm,
+                                entry.odometerKm.toDouble(),
                               ),
                             ),
                             _miniStat(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:fuel_tracker_app/data/models/station_model.dart';
 import 'package:fuel_tracker_app/data/models/type_gas_model.dart';
@@ -27,25 +29,21 @@ class HomeController extends GetxController {
   var isLoading = false.obs;
   var searchText = ''.obs;
 
+  StreamSubscription? _fuelStreamSubscription;
+
   @override
   void onInit() {
     super.onInit();
-    fetchData();
+    fetchStaticData().then((_) {
+      initFuelStream();
+    });
   }
 
-  Future<void> fetchData() async {
+  Future<void> fetchStaticData() async {
     try {
       isLoading.value = true;
-      final userUID = _supabase.auth.currentUser?.id;
-      if (userUID == null) return;
-
       final results = await Future.wait([
         _supabase.from('veiculos').select(),
-        _supabase
-            .from('abastecimentos')
-            .select()
-            .or('fk_usuario.eq.$userUID')
-            .order('data', ascending: false),
         _supabase.from('postos').select(),
         _supabase.from('tipo_combustivel').select(),
       ]);
@@ -54,21 +52,48 @@ class HomeController extends GetxController {
       vehicles.value = vehicleData.map((e) => VehicleModel.fromMap(e)).toList();
       veiculosMap.value = {for (var v in vehicleData) v['id'].toString(): v};
 
-      final homeData = results[1] as List;
-      fuelEntries.value = homeData
-          .map((f) => FuelEntryModel.fromMap(f))
-          .toList();
-
-      final postoData = results[2] as List;
+      final postoData = results[1] as List;
       postos.value = postoData.map((p) => StationModel.fromMap(p)).toList();
       postosMap.value = {for (var p in postoData) p['pk_posto'].toString(): p};
 
-      final tiposData = results[3] as List;
+      final tiposData = results[2] as List;
       tipos.value = tiposData.map((t) => TypeGasModel.fromMap(t)).toList();
       tiposMap.value = {for (var t in tiposData) t['pk_tipo'].toString(): t};
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void initFuelStream() {
+    final userUID = _supabase.auth.currentUser?.id;
+    if (userUID == null) return;
+
+    _fuelStreamSubscription?.cancel();
+
+    _fuelStreamSubscription = _supabase
+        .from('abastecimentos')
+        .stream(primaryKey: ['pk_fuel'])
+        .eq('fk_usuario', userUID)
+        .order('data', ascending: false)
+        .listen(
+          (List<Map<String, dynamic>> snapshot) {
+            fuelEntries.value = snapshot
+                .map((f) => FuelEntryModel.fromMap(f))
+                .toList();
+          },
+          onError: (error) {
+            _showSnackbar(
+              "Erro",
+              "Erro na sincronização em tempo real",
+              isError: true,
+            );
+          },
+        );
+  }
+
+  Future<void> fetchData() async {
+    await fetchStaticData();
+    initFuelStream();
   }
 
   double get totalGastoFiltrado {
@@ -79,13 +104,15 @@ class HomeController extends GetxController {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
 
-    double maiorKm = entries.first.odometerKm;
-    double menorKm = entries.last.odometerKm;
+    double maiorKm = entries.first.odometerKm.toDouble();
+    double menorKm = entries.last.odometerKm.toDouble();
     double kmTotalRodado = maiorKm - menorKm;
 
-    double totalCusto = entries.take(entries.length - 1).fold(0.0, (sum, item) => sum + item.totalCost);
+    double totalCusto = entries
+        .take(entries.length - 1)
+        .fold(0.0, (sum, item) => sum + item.totalCost);
 
-    if(kmTotalRodado <= 0 || totalCusto <= 0) return 0.0;
+    if (kmTotalRodado <= 0 || totalCusto <= 0) return 0.0;
     return totalCusto / kmTotalRodado;
   }
 
@@ -93,11 +120,13 @@ class HomeController extends GetxController {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
 
-    double maiorKm = entries.first.odometerKm;
-    double menorKm = entries.last.odometerKm;
+    double maiorKm = entries.first.odometerKm.toDouble();
+    double menorKm = entries.last.odometerKm.toDouble();
     double kmTotalRodado = maiorKm - menorKm;
 
-    double totalLitros = entries.take(entries.length - 1).fold(0.0, (sum, item) => sum + item.volumeLiters);
+    double totalLitros = entries
+        .take(entries.length - 1)
+        .fold(0.0, (sum, item) => sum + item.volumeLiters);
 
     return kmTotalRodado / totalLitros;
   }
@@ -105,7 +134,7 @@ class HomeController extends GetxController {
   double get odometerAnterior {
     final entries = filteredFuelEntries;
     if (entries.length >= 2) {
-      return entries[1].odometerKm;
+      return entries[1].odometerKm.toDouble();
     }
 
     final veiculo = vehicles.firstWhereOrNull(
@@ -329,5 +358,11 @@ class HomeController extends GetxController {
         color: Colors.white,
       ),
     );
+  }
+
+  @override
+  void onClose() {
+    _fuelStreamSubscription?.cancel();
+    super.onClose();
   }
 }

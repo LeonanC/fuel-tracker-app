@@ -28,7 +28,7 @@ class FuelEntryModel {
   double calculateConsumption(FuelEntryModel previousEntry) {
     if (odometerKm <= previousEntry.odometerKm || volumeLiters <= 0) return 0.0;
 
-    final double distanceTraveled = odometerKm - previousEntry.odometerKm;
+    final double distanceTraveled = (odometerKm - previousEntry.odometerKm).toDouble();
 
     return distanceTraveled / volumeLiters;
   }
