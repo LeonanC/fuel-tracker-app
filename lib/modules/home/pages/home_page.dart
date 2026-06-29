@@ -171,7 +171,7 @@ class HomePage extends GetView<HomeController> {
                     children: fuelsDoDia
                         .map(
                           (fuel) => FuelCard(
-                            entry: entries[index],
+                            entry: fuel,
                             controller: controller,
                           ),
                         )
@@ -180,7 +180,7 @@ class HomePage extends GetView<HomeController> {
                 ),
               ],
             );
-          }, childCount: entries.length),
+          }, childCount: datas.length),
         ),
       );
     });
