@@ -120,21 +120,22 @@ class HomeController extends GetxController {
     final entries = filteredFuelEntries;
     if (entries.length < 2) return 0.0;
 
-    double maiorKm = entries.first.odometerKm.toDouble();
-    double menorKm = entries.last.odometerKm.toDouble();
-    double kmTotalRodado = maiorKm - menorKm;
+    final ultimoAbastecimento = entries.first;
+    final abastecimentoAnterior = entries[1];
 
-    double totalLitros = entries
-        .take(entries.length - 1)
-        .fold(0.0, (sum, item) => sum + item.volumeLiters);
+    double kmRodadoNoTrajeto = ultimoAbastecimento.odometerKm - abastecimentoAnterior.odometerKm;
 
-    return kmTotalRodado / totalLitros;
+    double litrosConsumidos = ultimoAbastecimento.volumeLiters;
+
+    if(kmRodadoNoTrajeto <= 0 || litrosConsumidos <= 0) return 0.0;
+
+    return kmRodadoNoTrajeto / litrosConsumidos;
   }
 
   double get odometerAnterior {
     final entries = filteredFuelEntries;
     if (entries.length >= 2) {
-      return entries[1].odometerKm.toDouble();
+      return entries[1].odometerKm;
     }
 
     final veiculo = vehicles.firstWhereOrNull(

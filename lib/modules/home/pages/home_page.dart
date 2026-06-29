@@ -196,16 +196,16 @@ class HomePage extends GetView<HomeController> {
       DateTime hoje = DateTime.now();
       DateTime dataFuel = fuel.entryDate!;
 
-      if (DateFormat('yyyy-MM-dd').format(dataFuel) ==
-          DateFormat('yyyy-MM-dd').format(hoje)) {
+      if (DateFormat('dd-MM-yyyy').format(dataFuel) ==
+          DateFormat('dd-MM-yyyy').format(hoje)) {
         dataFormatada = "Hoje";
-      } else if (DateFormat('yyyy-MM-dd').format(dataFuel) ==
+      } else if (DateFormat('dd-MM-yyyy').format(dataFuel) ==
           DateFormat(
-            'yyyy-MM-dd',
+            'dd-MM-yyyy',
           ).format(hoje.subtract(const Duration(days: 1)))) {
         dataFormatada = "Ontem";
       } else {
-        dataFormatada = DateFormat('dd MMMM', 'pt_BR').format(dataFuel);
+        dataFormatada = DateFormat('dd MMMM yyyy', 'pt_BR').format(dataFuel);
       }
 
       if (grupos[dataFormatada] == null) grupos[dataFormatada] = [];
